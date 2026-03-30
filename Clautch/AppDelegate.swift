@@ -135,8 +135,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupNotchPanel() {
         NSApp.setActivationPolicy(.accessory)
 
-        guard let screen = NSScreen.main, screen.hasNotch else {
-            logger.info("No notch detected on current screen")
+        // Check all screens for a notch — NSScreen.main may point to an
+        // external display when the app launches in accessory mode.
+        guard let screen = NSScreen.screens.first(where: { $0.hasNotch }) else {
+            logger.info("No notch detected on any screen")
             return
         }
 
