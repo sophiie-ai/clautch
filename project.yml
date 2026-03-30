@@ -1,0 +1,36 @@
+name: Clautch
+
+options:
+  bundleIdPrefix: com.clautch
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+
+targets:
+  Clautch:
+    type: application
+    platform: macOS
+    sources:
+      - path: Clautch
+        excludes:
+          - Resources/**
+    resources:
+      - path: Clautch/Resources
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clautch.app
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: Clautch/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Clautch/Clautch.entitlements
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        COMBINE_HIDPI_IMAGES: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        ENABLE_APP_SANDBOX: NO
+        CODE_SIGN_IDENTITY: "-"
