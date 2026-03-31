@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.8](https://github.com/sophiie-ai/clautch/compare/v0.2.7...v0.2.8) (2026-03-31)
+
+
+### Bug Fixes
+
+* use separate archive entitlements without iCloud for CI xcodebuild ([abb1a8d](https://github.com/sophiie-ai/clautch/commit/abb1a8d9df09efa94e49ac569988490e1c8e12e3))
+
 ## [0.2.7](https://github.com/sophiie-ai/clautch/compare/v0.2.6...v0.2.7) (2026-03-31)
 
 
