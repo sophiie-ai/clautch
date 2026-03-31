@@ -8,16 +8,23 @@
         2. Write access to ~/.claude/hooks/ and ~/.claude/settings.json
         Mitigations: hardened runtime, socket UID check (getpeereid),
         per-user TMPDIR, 0600 socket permissions, symlink validation.
-        Future: consider XPC helper for hook installation to enable sandbox.
 
-        CloudKit entitlements are NOT in this file because Developer ID
-        signing without a provisioning profile cannot include iCloud
-        entitlements. The app's CloudKitService uses SecTaskCopyValueForEntitlement
-        to detect CloudKit availability from the development-signed entitlements
-        embedded during the archive step.
+        iCloud entitlements are included here for the codesign re-sign step.
+        The archive step uses separate entitlements without iCloud to avoid
+        xcodebuild's provisioning profile requirement. codesign embeds these
+        entitlements directly without that check.
     -->
     <key>com.apple.security.app-sandbox</key>
     <false/>
+    <!-- CloudKit for room/presence sync -->
+    <key>com.apple.developer.icloud-container-identifiers</key>
+    <array>
+        <string>iCloud.com.clautch.app</string>
+    </array>
+    <key>com.apple.developer.icloud-services</key>
+    <array>
+        <string>CloudKit</string>
+    </array>
     <!-- Hardened runtime restrictions — keep all disabled (secure defaults) -->
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
     <false/>
