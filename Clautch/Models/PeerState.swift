@@ -36,4 +36,6 @@ struct CreatureDisplay: Identifiable {
     let isLocal: Bool
     let displayName: String
     var sessionDuration: TimeInterval?
+    var lastToolName: String?
+    var facingRight: Bool = true
 }

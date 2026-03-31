@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import ServiceManagement
+import Sparkle
 import os
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -9,6 +10,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var roomWindow: NSWindow?
     private var statusItem: NSStatusItem?
     private let logger = Logger(subsystem: "com.clautch.app", category: "AppDelegate")
+    private lazy var updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -258,6 +260,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notifItem.tag = 500
         menu.addItem(notifItem)
 
+        // Check for Updates
+        let updateItem = NSMenuItem(
+            title: "Check for Updates…",
+            action: #selector(checkForUpdates),
+            keyEquivalent: ""
+        )
+        updateItem.target = self
+        menu.addItem(updateItem)
+
         // Launch at Login toggle
         let loginItem = NSMenuItem(
             title: "Launch at Login",
@@ -275,6 +286,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Menu Actions
+
+    @objc private func checkForUpdates() {
+        updaterController.checkForUpdates(nil)
+    }
 
     @objc private func toggleNotifications() {
         Task { @MainActor in

@@ -8,6 +8,7 @@ final class SessionData: Identifiable {
     var state: CreatureState  = CreatureState()
     var xPosition: CGFloat    = 0.5  // normalized 0…1 position on the island
     let startedAt: Date       = Date()
+    var lastToolName: String?
 
     private var emotionResetTask: Task<Void, Never>?
 
@@ -28,8 +29,10 @@ final class SessionData: Identifiable {
             state.task = .thinking
         case .preToolUse:
             state.task = .working
+            lastToolName = event.toolName
         case .postToolUse:
             state.task = .thinking
+            lastToolName = event.toolName
             // Trigger emotion based on tool result
             if let status = event.status {
                 if status == "success" {

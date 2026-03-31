@@ -26,6 +26,7 @@
 		AE578DD9D1FD3FEF6C7EEDED /* CreatureType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA221585FBB871CB2504786D /* CreatureType.swift */; };
 		B6B15D06D1E72E27B450A0D2 /* RoomManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA6E1ABC182E8A0F7C88B1A /* RoomManager.swift */; };
 		C007A5DC669A8C0702B47BAC /* CreatureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3999AF3656ACC6EEA809E4A1 /* CreatureState.swift */; };
+		C1CA3D0FBA81D955DA0C2AE3 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = FF89FBDAAD4B2E24B493F045 /* Sparkle */; };
 		C59FF3BA1A0679902FCB5BF6 /* SocketServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A96C317933A876142263C02 /* SocketServer.swift */; };
 		CBDA2473ACF805DD27769C31 /* PeerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EEA97069510BF43AEF4A0F /* PeerStore.swift */; };
 		D111D15AA4DAAA2FB8C09769 /* NotchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8C9B4777BFE300C4B219C61 /* NotchPanel.swift */; };
@@ -67,6 +68,17 @@
 		FCA6E1ABC182E8A0F7C88B1A /* RoomManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomManager.swift; sourceTree = "<group>"; };
 		FD55EFF2D31C0DBC2642B326 /* NotchHitTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchHitTestView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D47F23AE676F651FD6EA1550 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1CA3D0FBA81D955DA0C2AE3 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		13E8CBF1BD35C6320007B1E2 = {
@@ -177,6 +189,7 @@
 			buildConfigurationList = 40FAA26A59F7BB948B9E762C /* Build configuration list for PBXNativeTarget "Clautch" */;
 			buildPhases = (
 				2CD105A79283246A051669EF /* Sources */,
+				D47F23AE676F651FD6EA1550 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -184,6 +197,7 @@
 			);
 			name = Clautch;
 			packageProductDependencies = (
+				FF89FBDAAD4B2E24B493F045 /* Sparkle */,
 			);
 			productName = Clautch;
 			productReference = 435CA37D802F20490420EF91 /* Clautch.app */;
@@ -213,6 +227,9 @@
 			);
 			mainGroup = 13E8CBF1BD35C6320007B1E2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7BA275FC33395224F2E600A6 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F2AA2A105B0CCEB1161D572E /* Products */;
 			projectDirPath = "";
@@ -441,6 +458,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7BA275FC33395224F2E600A6 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FF89FBDAAD4B2E24B493F045 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7BA275FC33395224F2E600A6 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B280860D0D327043A201D152 /* Project object */;
 }

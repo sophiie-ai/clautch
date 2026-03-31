@@ -191,7 +191,7 @@ final class HookInstaller {
         return result
     }
 
-    /// Fallback hook script embedded in code (used when bundle resource is missing).
+    /// Pure-bash hook script — no Python dependency.
     private func inlineHookScript() -> String {
         """
         #!/bin/bash
@@ -199,29 +199,16 @@ final class HookInstaller {
         [ -S "$SOCKET" ] || exit 0
 
         EVENT=$(cat)
+        [ -z "$EVENT" ] && exit 0
 
-        python3 -c "
-        import socket, sys, json, os
+        # Inject session_id from environment if not present in the event
+        if ! echo "$EVENT" | grep -q '"session_id"'; then
+            SID="${CLAUDE_SESSION_ID:-unknown}"
+            EVENT=$(echo "$EVENT" | sed 's/^{/{"session_id":"'"$SID"'",/')
+        fi
 
-        raw = sys.stdin.read() if not '''$EVENT''' else '''$EVENT'''
-        try:
-            event = json.loads(raw)
-        except:
-            sys.exit(0)
-
-        if 'session_id' not in event:
-            event['session_id'] = os.environ.get('CLAUDE_SESSION_ID', 'unknown')
-
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        try:
-            sock.connect('$SOCKET')
-            sock.sendall(json.dumps(event).encode())
-        except:
-            pass
-        finally:
-            sock.close()
-        " 2>/dev/null
-
+        # Send to Clautch via Unix socket
+        echo "$EVENT" | nc -U "$SOCKET" 2>/dev/null
         exit 0
         """
     }

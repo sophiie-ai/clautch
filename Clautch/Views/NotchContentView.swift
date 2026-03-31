@@ -54,7 +54,8 @@ struct NotchContentView: View {
             xPosition: wanderPosition,
             isLocal: true,
             displayName: profile?.displayName ?? "You",
-            sessionDuration: effective.map { Date().timeIntervalSince($0.startedAt) }
+            sessionDuration: effective.map { Date().timeIntervalSince($0.startedAt) },
+            lastToolName: effective?.lastToolName
         ))
 
         if let myId = profile?.peerId {
@@ -76,6 +77,21 @@ struct NotchContentView: View {
             }
         }
 
-        return creatures
+        // Compute facing: each creature faces its nearest neighbor
+        return computeFacing(creatures)
+    }
+
+    private func computeFacing(_ creatures: [CreatureDisplay]) -> [CreatureDisplay] {
+        guard creatures.count > 1 else { return creatures }
+        let sorted = creatures.sorted { $0.xPosition < $1.xPosition }
+        return creatures.map { c in
+            var c = c
+            // Find nearest other creature
+            if let nearest = sorted.filter({ $0.id != c.id })
+                .min(by: { abs($0.xPosition - c.xPosition) < abs($1.xPosition - c.xPosition) }) {
+                c.facingRight = nearest.xPosition > c.xPosition
+            }
+            return c
+        }
     }
 }

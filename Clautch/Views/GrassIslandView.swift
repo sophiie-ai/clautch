@@ -120,12 +120,19 @@ struct GrassIslandView: View {
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
                     VStack(spacing: 2) {
-                        // Task label (expanded only)
-                        if isExpanded && creature.id != "local-idle" {
-                            Text(creature.state.task.displayLabel)
-                                .font(.system(size: 7, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.6))
-                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                        // Task + tool label (expanded only)
+                        if isExpanded && creature.sessionDuration != nil {
+                            VStack(spacing: 1) {
+                                Text(creature.state.task.displayLabel)
+                                    .font(.system(size: 7, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.6))
+                                if let tool = creature.lastToolName {
+                                    Text(tool)
+                                        .font(.system(size: 6, design: .monospaced))
+                                        .foregroundStyle(.white.opacity(0.35))
+                                }
+                            }
+                            .transition(.opacity.combined(with: .scale(scale: 0.8)))
                         }
 
                         CreatureSpriteView(
@@ -134,6 +141,7 @@ struct GrassIslandView: View {
                             colorPreset: creature.colorPreset
                         )
                         .frame(width: creatureSize, height: creatureSize)
+                        .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
                         // Squash-stretch on landing
                         .scaleEffect(
                             x: 1 + (1 - bounceScale) * 0.5,
