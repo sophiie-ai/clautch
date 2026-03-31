@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.10](https://github.com/sophiie-ai/clautch/compare/v0.2.9...v0.2.10) (2026-03-31)
+
+
+### Bug Fixes
+
+* fetch full git history for accurate build number, fix appcast version ([679448a](https://github.com/sophiie-ai/clautch/commit/679448a9f4812e4a2ae4c61790adcac2856dac19))
+
 ## [0.2.9](https://github.com/sophiie-ai/clautch/compare/v0.2.8...v0.2.9) (2026-03-31)
 
 
