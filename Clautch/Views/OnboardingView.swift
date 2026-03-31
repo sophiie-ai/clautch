@@ -4,10 +4,10 @@ import SwiftUI
 struct OnboardingView: View {
     var onComplete: (UserProfile) -> Void
 
-    @State private var selectedType: CreatureType = .ghost
-    @State private var displayName: String = ""
-    @State private var colorPreset: CreatureColorPreset = .none
-    @State private var accessory: CreatureAccessory = .none
+    @State private var selectedType: CreatureType = UserProfile.current?.creatureType ?? .ghost
+    @State private var displayName: String = UserProfile.current?.displayName ?? ""
+    @State private var colorPreset: CreatureColorPreset = UserProfile.current?.colorPreset ?? .none
+    @State private var accessory: CreatureAccessory = UserProfile.current?.accessory ?? .none
     @State private var isHovering: CreatureType?
     @FocusState private var nameFieldFocused: Bool
 
@@ -196,7 +196,10 @@ struct OnboardingView: View {
         let name = displayName.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else { return }
 
-        let profile = UserProfile.create(
+        // Preserve existing peerId if re-customizing (keeps room membership)
+        let peerId = UserProfile.current?.peerId ?? UUID().uuidString
+        let profile = UserProfile(
+            peerId: peerId,
             displayName: name,
             creatureType: selectedType,
             colorPreset: colorPreset,

@@ -39,6 +39,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		041EAFB9F0D9E9651BBF5DF8 /* Clautch-Archive.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Clautch-Archive.entitlements"; sourceTree = "<group>"; };
 		090F343EB758F84B29BC0125 /* Clautch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Clautch.entitlements; sourceTree = "<group>"; };
 		1A96C317933A876142263C02 /* SocketServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketServer.swift; sourceTree = "<group>"; };
 		1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStats.swift; sourceTree = "<group>"; };
@@ -121,6 +122,7 @@
 			children = (
 				C98751085909AD9B03FF8968 /* AppDelegate.swift */,
 				CABCBAFC5BE6C93BC7615722 /* Assets.xcassets */,
+				041EAFB9F0D9E9651BBF5DF8 /* Clautch-Archive.entitlements */,
 				5D4F2183AEE158387C85D7A8 /* Clautch-CloudKit.entitlements */,
 				AA4C042944ADE78B236A9D27 /* Clautch-Release.entitlements */,
 				090F343EB758F84B29BC0125 /* Clautch.entitlements */,
@@ -432,7 +434,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.5;
+				MARKETING_VERSION = 0.2.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};
@@ -453,7 +455,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.5;
+				MARKETING_VERSION = 0.2.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};
