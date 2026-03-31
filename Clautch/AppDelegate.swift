@@ -19,6 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Install Claude Code hooks and start socket server
         HookInstaller.shared.installIfNeeded()
+        HookInstaller.shared.startPeriodicRepair()
         SocketServer.shared.start()
 
         // Request notification permission
@@ -56,6 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        HookInstaller.shared.stopPeriodicRepair()
         SocketServer.shared.stop()
         if let monitor = clickOutsideMonitor { NSEvent.removeMonitor(monitor) }
         // Leave room gracefully
@@ -193,6 +195,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func didWake() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             self?.screenDidChange()
+            HookInstaller.shared.repairIfNeeded()
         }
     }
 

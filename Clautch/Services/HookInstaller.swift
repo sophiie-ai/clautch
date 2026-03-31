@@ -18,6 +18,8 @@ final class HookInstaller {
     /// Marker used to identify Clautch-managed hook entries.
     private let clautchMarker = "clautch-hook"
 
+    private var repairTimer: Timer?
+
     func installIfNeeded() {
         do {
             try FileManager.default.createDirectory(at: hooksDir, withIntermediateDirectories: true)
@@ -26,6 +28,42 @@ final class HookInstaller {
             logger.info("Hooks installed")
         } catch {
             logger.error("Hook install failed: \(error)")
+        }
+    }
+
+    /// Starts periodic checks that repair hooks if they get removed or overwritten.
+    func startPeriodicRepair(interval: TimeInterval = 60) {
+        repairTimer?.invalidate()
+        repairTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.repairIfNeeded()
+        }
+    }
+
+    func stopPeriodicRepair() {
+        repairTimer?.invalidate()
+        repairTimer = nil
+    }
+
+    /// Checks hook integrity and reinstalls if broken.
+    @discardableResult
+    func repairIfNeeded() -> Bool {
+        if verifyHooksIntact() { return false }
+        logger.warning("Hooks missing or damaged — repairing")
+        installIfNeeded()
+        return true
+    }
+
+    /// Returns true if hooks appear correctly installed.
+    func verifyHooksIntact() -> Bool {
+        guard FileManager.default.fileExists(atPath: hookDest.path) else { return false }
+        guard FileManager.default.fileExists(atPath: settingsFile.path),
+              let data = try? Data(contentsOf: settingsFile),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let hooks = json["hooks"] as? [String: Any] else { return false }
+
+        return hooks.values.contains { value in
+            guard let groups = value as? [[String: Any]] else { return false }
+            return groups.contains { isClautchGroup($0) }
         }
     }
 
