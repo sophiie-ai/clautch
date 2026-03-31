@@ -191,10 +191,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(
+            let image = NSImage(
                 systemSymbolName: "ghost.fill",
                 accessibilityDescription: "Clautch"
             )
+            image?.isTemplate = true
+            button.image = image
         }
 
         rebuildMenu()
