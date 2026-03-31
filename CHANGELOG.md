@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/sophiie-ai/clautch/compare/v0.2.5...v0.2.6) (2026-03-31)
+
+
+### Features
+
+* accessories, walk sprites, dark/light mode, chat, session stats ([15c6a8c](https://github.com/sophiie-ai/clautch/commit/15c6a8cb8d993d930d88a4e68067254575ede6d9))
+
 ## [0.2.5](https://github.com/sophiie-ai/clautch/compare/v0.2.4...v0.2.5) (2026-03-31)
 
 
