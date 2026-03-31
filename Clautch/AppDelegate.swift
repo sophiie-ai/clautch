@@ -89,10 +89,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.appearance = NSAppearance(named: .darkAqua)
         window.contentView = NSHostingView(rootView: onboarding)
         window.isReleasedWhenClosed = false
-        window.makeKeyAndOrderFront(nil)
 
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
 
         // Return to accessory when closed via X button
         NotificationCenter.default.addObserver(
@@ -109,9 +110,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func changeCreature() {
         if let existing = onboardingWindow {
-            existing.makeKeyAndOrderFront(nil)
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
+            existing.makeKeyAndOrderFront(nil)
+            existing.orderFrontRegardless()
             return
         }
         notchPanel?.close()
@@ -123,9 +125,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showRoomWindow() {
         if let existing = roomWindow {
-            existing.makeKeyAndOrderFront(nil)
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
+            existing.makeKeyAndOrderFront(nil)
+            existing.orderFrontRegardless()
             return
         }
 
@@ -140,10 +143,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = "Clautch Room"
         window.contentView = NSHostingView(rootView: roomView)
         window.isReleasedWhenClosed = false
-        window.makeKeyAndOrderFront(nil)
 
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
 
         // Return to accessory when closed
         NotificationCenter.default.addObserver(
@@ -242,7 +246,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func rebuildMenu() {
         let menu = NSMenu()
         menu.delegate = self
-        menu.addItem(withTitle: "Clautch v0.1.0", action: nil, keyEquivalent: "")
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+        menu.addItem(withTitle: "Clautch v\(version)", action: nil, keyEquivalent: "")
         menu.addItem(.separator())
 
         // Profile info

@@ -108,21 +108,62 @@ codesign --force --sign "$IDENTITY" \
 # ---------------------------------------------------------------------------
 # Step 6 — Create DMG
 # ---------------------------------------------------------------------------
-echo "==> Creating DMG"
+echo "==> Creating styled DMG"
 rm -rf "$DMG_STAGING"
 mkdir -p "$DMG_STAGING"
 
 ditto "$APP_PATH" "$DMG_STAGING/$APP_NAME.app"
 ln -s /Applications "$DMG_STAGING/Applications"
 
+# Create a temporary read-write DMG to style it
+RW_DMG="$BUILD_DIR/Clautch-rw.dmg"
+rm -f "$RW_DMG" "$DMG_PATH"
+
 hdiutil create \
-    -volname "Clautch Installer" \
+    -volname "Clautch" \
     -srcfolder "$DMG_STAGING" \
     -ov \
-    -format UDZO \
-    "$DMG_PATH"
+    -format UDRW \
+    -size 20m \
+    "$RW_DMG"
 
 rm -rf "$DMG_STAGING"
+
+# Mount and style the DMG with Finder view options
+MOUNT_DIR=$(hdiutil attach "$RW_DMG" -readwrite -noverify | tail -1 | awk '{print $NF}')
+echo "    Mounted at: $MOUNT_DIR"
+
+# Set Finder window properties via AppleScript
+osascript << APPLESCRIPT
+tell application "Finder"
+    tell disk "Clautch"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set bounds of container window to {100, 100, 640, 440}
+        set viewOptions to the icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 96
+        set background color of viewOptions to {2570, 2570, 3084}
+        set position of item "Clautch.app" of container window to {150, 160}
+        set position of item "Applications" of container window to {390, 160}
+        close
+    end tell
+end tell
+APPLESCRIPT
+
+# Ensure changes are flushed
+sync
+sleep 1
+
+# Detach
+hdiutil detach "$MOUNT_DIR" -force 2>/dev/null || true
+sleep 1
+
+# Convert to compressed read-only DMG
+hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG_PATH"
+rm -f "$RW_DMG"
 
 # ---------------------------------------------------------------------------
 # Step 7 — Verify code signature
