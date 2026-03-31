@@ -34,6 +34,7 @@
 		DAE848DD2CE57399BFFA5F29 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9DD10E685875E91848C6C55 /* UserProfile.swift */; };
 		E5F8490C42AFBCD2AC7C8219 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98751085909AD9B03FF8968 /* AppDelegate.swift */; };
 		F2C4B920C09A812FBEC8A82B /* HookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91B03F44A420102018F1805 /* HookInstaller.swift */; };
+		FFF95B8DF8695D4A1B274CBF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CABCBAFC5BE6C93BC7615722 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,10 +55,12 @@
 		8939C7DD222D0AECDD18A300 /* ClautchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClautchApp.swift; sourceTree = "<group>"; };
 		9612774E06FC2528A320C225 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		9737E9CAA66D882E4E9BB53A /* GrassIslandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrassIslandView.swift; sourceTree = "<group>"; };
+		AA4C042944ADE78B236A9D27 /* Clautch-Release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Clautch-Release.entitlements"; sourceTree = "<group>"; };
 		B0C6B8FD06DF6B10CCB6A961 /* RoomInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomInfo.swift; sourceTree = "<group>"; };
 		B3AAB35F796235E7F1580F4C /* HookEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HookEvent.swift; sourceTree = "<group>"; };
 		BD912A5F01994C9E24785F8F /* CloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitService.swift; sourceTree = "<group>"; };
 		C98751085909AD9B03FF8968 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		CABCBAFC5BE6C93BC7615722 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CC6DF5F6D203AF00F28F0795 /* SessionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionData.swift; sourceTree = "<group>"; };
 		EA221585FBB871CB2504786D /* CreatureType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureType.swift; sourceTree = "<group>"; };
 		ED5FCDCBD1B87DAFB21C6830 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -115,7 +118,9 @@
 			isa = PBXGroup;
 			children = (
 				C98751085909AD9B03FF8968 /* AppDelegate.swift */,
+				CABCBAFC5BE6C93BC7615722 /* Assets.xcassets */,
 				5D4F2183AEE158387C85D7A8 /* Clautch-CloudKit.entitlements */,
+				AA4C042944ADE78B236A9D27 /* Clautch-Release.entitlements */,
 				090F343EB758F84B29BC0125 /* Clautch.entitlements */,
 				8939C7DD222D0AECDD18A300 /* ClautchApp.swift */,
 				ED5FCDCBD1B87DAFB21C6830 /* Info.plist */,
@@ -189,6 +194,7 @@
 			buildConfigurationList = 40FAA26A59F7BB948B9E762C /* Build configuration list for PBXNativeTarget "Clautch" */;
 			buildPhases = (
 				2CD105A79283246A051669EF /* Sources */,
+				B6820E4CCCDCF5E260E4C835 /* Resources */,
 				D47F23AE676F651FD6EA1550 /* Frameworks */,
 			);
 			buildRules = (
@@ -239,6 +245,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B6820E4CCCDCF5E260E4C835 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FFF95B8DF8695D4A1B274CBF /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2CD105A79283246A051669EF /* Sources */ = {
