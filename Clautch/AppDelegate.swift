@@ -96,6 +96,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func changeCreature() {
+        if let existing = onboardingWindow {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
         notchPanel?.close()
         notchPanel = nil
         showOnboarding()
@@ -104,8 +110,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Room Window
 
     @objc private func showRoomWindow() {
-        if let existing = roomWindow, existing.isVisible {
+        if let existing = roomWindow {
             existing.makeKeyAndOrderFront(nil)
+            NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
