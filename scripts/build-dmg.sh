@@ -119,8 +119,11 @@ ln -s /Applications "$DMG_STAGING/Applications"
 RW_DMG="$BUILD_DIR/Clautch-rw.dmg"
 rm -f "$RW_DMG" "$DMG_PATH"
 
+# Use a unique volume name to avoid conflicts with stale mounts
+VOL_NAME="Clautch-Install-$$"
+
 hdiutil create \
-    -volname "Clautch" \
+    -volname "$VOL_NAME" \
     -srcfolder "$DMG_STAGING" \
     -ov \
     -format UDRW \
@@ -130,13 +133,13 @@ hdiutil create \
 rm -rf "$DMG_STAGING"
 
 # Mount and style the DMG with Finder view options
-MOUNT_DIR=$(hdiutil attach "$RW_DMG" -readwrite -noverify | tail -1 | awk '{print $NF}')
+MOUNT_DIR=$(hdiutil attach "$RW_DMG" -readwrite -noverify | tail -1 | sed 's/.*\t//')
 echo "    Mounted at: $MOUNT_DIR"
 
 # Set Finder window properties via AppleScript
 osascript << APPLESCRIPT
 tell application "Finder"
-    tell disk "Clautch"
+    tell disk "$VOL_NAME"
         open
         set current view of container window to icon view
         set toolbar visible of container window to false
