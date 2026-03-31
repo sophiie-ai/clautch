@@ -6,12 +6,13 @@ set -euo pipefail
 # Example: ./scripts/release.sh 0.2.0
 
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <version>"
-    echo "Example: $0 0.2.0"
+    echo "Usage: $0 <version> [release-notes-file]"
+    echo "Example: $0 0.2.0 RELEASE_NOTES.md"
     exit 1
 fi
 
 VERSION="$1"
+NOTES_FILE="${2:-}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$ROOT/build"
@@ -100,11 +101,20 @@ if gh release view "$TAG" --repo "$REPO" &>/dev/null; then
     gh release delete "$TAG" --repo "$REPO" --yes --cleanup-tag
 fi
 
-gh release create "$TAG" \
-    --repo "$REPO" \
-    --title "Clautch $TAG" \
-    --generate-notes \
-    "$DMG_PATH"
+if [ -n "$NOTES_FILE" ] && [ -f "$NOTES_FILE" ]; then
+    gh release create "$TAG" \
+        --repo "$REPO" \
+        --title "Clautch $TAG" \
+        --notes-file "$NOTES_FILE" \
+        "$DMG_PATH"
+else
+    gh release create "$TAG" \
+        --repo "$REPO" \
+        --title "Clautch $TAG" \
+        --generate-notes \
+        "$DMG_PATH"
+    echo "    WARNING: No release notes file provided — used auto-generated notes"
+fi
 
 echo "    Release created: https://github.com/$REPO/releases/tag/$TAG"
 
