@@ -40,6 +40,7 @@ targets:
         COMBINE_HIDPI_IMAGES: YES
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
         ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: U2KP726DRL
