@@ -6,6 +6,7 @@ import SwiftUI
 final class NotchHitTestView: NSView {
     private let hostingView: NSView
     var onHoverChanged: ((Bool) -> Void)?
+    var onClicked: (() -> Void)?
 
     init<Content: View>(hostingView: NSHostingView<Content>) {
         self.hostingView = hostingView
@@ -44,9 +45,24 @@ final class NotchHitTestView: NSView {
         onHoverChanged?(false)
     }
 
+    override func mouseDown(with event: NSEvent) {
+        onClicked?()
+    }
+
     override func hitTest(_ point: NSPoint) -> NSView? {
-        // Pass through clicks on transparent background.
+        // When collapsed, accept clicks on the small peek area.
+        // When expanded, accept clicks on the full panel.
         let hit = super.hitTest(point)
-        return hit === self ? nil : hit
+        if hit === self {
+            // Check if click is within the island region (center of the view)
+            let local = convert(point, from: superview)
+            let midX = bounds.midX
+            let halfWidth = bounds.width / 2
+            if abs(local.x - midX) < halfWidth {
+                return self
+            }
+            return nil
+        }
+        return hit
     }
 }
