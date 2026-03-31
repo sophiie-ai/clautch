@@ -2,6 +2,7 @@ import Foundation
 import os
 
 /// Installs the Clautch hook script into Claude Code's hook system.
+/// Safely merges with existing user hooks without overwriting them.
 final class HookInstaller {
     static let shared = HookInstaller()
     private let logger = Logger(subsystem: "com.clautch.app", category: "HookInstaller")
@@ -13,6 +14,9 @@ final class HookInstaller {
     private var hooksDir: URL { claudeDir.appendingPathComponent("hooks") }
     private var settingsFile: URL { claudeDir.appendingPathComponent("settings.json") }
     private var hookDest: URL { hooksDir.appendingPathComponent("clautch-hook.sh") }
+
+    /// Marker used to identify Clautch-managed hook entries.
+    private let clautchMarker = "clautch-hook"
 
     func installIfNeeded() {
         do {
@@ -28,6 +32,11 @@ final class HookInstaller {
     // MARK: - Private
 
     private func copyHookScript() throws {
+        // Always overwrite to ensure latest version
+        if FileManager.default.fileExists(atPath: hookDest.path) {
+            try FileManager.default.removeItem(at: hookDest)
+        }
+
         guard let src = Bundle.main.url(forResource: "clautch-hook", withExtension: "sh") else {
             logger.warning("clautch-hook.sh not in bundle, writing inline fallback")
             try inlineHookScript().write(to: hookDest, atomically: true, encoding: .utf8)
@@ -42,6 +51,18 @@ final class HookInstaller {
         )
     }
 
+    /// Register Clautch hooks in Claude Code's settings.json.
+    ///
+    /// The expected format per event type is:
+    /// ```json
+    /// "EventName": [
+    ///   { "matcher": "", "hooks": [{"type": "command", "command": "..."}] }
+    /// ]
+    /// ```
+    ///
+    /// Each event type's array can contain multiple matcher groups. We add
+    /// one matcher group for Clautch (matcher="" to match all) and leave
+    /// any existing user-defined matcher groups untouched.
     private func registerHooks() throws {
         var settings: [String: Any] = [:]
 
@@ -52,7 +73,7 @@ final class HookInstaller {
             }
         }
 
-        var hooks = settings["hooks"] as? [String: [[String: Any]]] ?? [:]
+        var hooks = settings["hooks"] as? [String: Any] ?? [:]
 
         let events = [
             "UserPromptSubmit", "SessionStart", "SessionEnd",
@@ -60,20 +81,30 @@ final class HookInstaller {
             "PermissionRequest", "PreCompact",
         ]
 
-        let entry: [String: Any] = [
+        let clautchHookEntry: [String: Any] = [
             "type": "command",
             "command": hookDest.path,
         ]
 
+        let clautchMatcherGroup: [String: Any] = [
+            "matcher": "",
+            "hooks": [clautchHookEntry],
+        ]
+
         for event in events {
-            var list = hooks[event] ?? []
-            let alreadyInstalled = list.contains {
-                ($0["command"] as? String)?.contains("clautch-hook") == true
+            var matcherGroups = hooks[event] as? [[String: Any]] ?? []
+
+            // Migrate old-format entries (flat {type, command} without matcher/hooks)
+            matcherGroups = migrateOldFormat(matcherGroups)
+
+            // Remove any existing Clautch matcher groups (we'll re-add a fresh one)
+            matcherGroups.removeAll { group in
+                isClautchGroup(group)
             }
-            if !alreadyInstalled {
-                list.append(entry)
-                hooks[event] = list
-            }
+
+            // Append our matcher group
+            matcherGroups.append(clautchMatcherGroup)
+            hooks[event] = matcherGroups
         }
 
         settings["hooks"] = hooks
@@ -86,8 +117,43 @@ final class HookInstaller {
         logger.info("Claude Code settings updated with Clautch hooks")
     }
 
-    /// Fallback hook script embedded in code (used when bundle resource is missing,
-    /// e.g. during development).
+    /// Check if a matcher group was created by Clautch.
+    private func isClautchGroup(_ group: [String: Any]) -> Bool {
+        guard let hooksList = group["hooks"] as? [[String: Any]] else { return false }
+        return hooksList.contains { entry in
+            (entry["command"] as? String)?.contains(clautchMarker) == true
+        }
+    }
+
+    /// Migrate old-format flat entries (pre-matcher format) to the new format.
+    /// Old: {"type": "command", "command": "..."} (flat, no matcher/hooks wrapper)
+    /// New: {"matcher": "", "hooks": [{"type": "command", "command": "..."}]}
+    private func migrateOldFormat(_ groups: [[String: Any]]) -> [[String: Any]] {
+        var result: [[String: Any]] = []
+
+        for group in groups {
+            if group["hooks"] != nil {
+                // Already in new format
+                result.append(group)
+            } else if let command = group["command"] as? String {
+                // Old flat format — wrap it in the new structure
+                if command.contains(clautchMarker) {
+                    // Skip old Clautch entries; we'll add a fresh one
+                    continue
+                }
+                // Preserve user's old-format entry by wrapping it
+                let migrated: [String: Any] = [
+                    "matcher": "",
+                    "hooks": [group],
+                ]
+                result.append(migrated)
+            }
+        }
+
+        return result
+    }
+
+    /// Fallback hook script embedded in code (used when bundle resource is missing).
     private func inlineHookScript() -> String {
         """
         #!/bin/bash
