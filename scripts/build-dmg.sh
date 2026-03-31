@@ -147,10 +147,17 @@ echo "    Mounted at $VOL_PATH (device: $DEVICE)"
 # Copy background image and hide the folder
 mkdir -p "$VOL_PATH/.background"
 cp "$SCRIPT_DIR/dmg-background.png" "$VOL_PATH/.background/background.png"
-SetFile -a V "$VOL_PATH/.background"
 
-# Hide the .background file extension on the app
-SetFile -a E "$VOL_PATH/Clautch.app"
+# Hide dotfiles using chflags (modern macOS) + SetFile (legacy fallback)
+chflags hidden "$VOL_PATH/.background"
+SetFile -a V "$VOL_PATH/.background" 2>/dev/null || true
+if [ -d "$VOL_PATH/.fseventsd" ]; then
+    chflags hidden "$VOL_PATH/.fseventsd"
+    SetFile -a V "$VOL_PATH/.fseventsd" 2>/dev/null || true
+fi
+
+# Hide the file extension on the app
+SetFile -a E "$VOL_PATH/Clautch.app" 2>/dev/null || true
 
 # Configure Finder window via AppleScript
 echo "    Configuring Finder window"
@@ -180,6 +187,12 @@ APPLESCRIPT
 
 # Ensure Finder flushes .DS_Store
 sync
+
+# Re-hide dotfiles after AppleScript (Finder can reset flags)
+chflags hidden "$VOL_PATH/.background"
+if [ -d "$VOL_PATH/.fseventsd" ]; then
+    chflags hidden "$VOL_PATH/.fseventsd"
+fi
 
 # Detach
 hdiutil detach "$DEVICE"
