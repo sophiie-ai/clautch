@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/sophiie-ai/clautch/compare/v0.2.6...v0.2.7) (2026-03-31)
+
+
+### Bug Fixes
+
+* include iCloud entitlements in release re-sign step ([2fea96d](https://github.com/sophiie-ai/clautch/commit/2fea96d82938778e0c18c02ab171429b89e70a37))
+
 ## [0.2.6](https://github.com/sophiie-ai/clautch/compare/v0.2.5...v0.2.6) (2026-03-31)
 
 
