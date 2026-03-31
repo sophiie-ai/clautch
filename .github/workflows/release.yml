@@ -65,7 +65,7 @@ jobs:
             archive \
             CODE_SIGN_IDENTITY="Developer ID Application: Sophiie AI Pty Ltd (U2KP726DRL)" \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_ENTITLEMENTS=Clautch/Clautch-Release.entitlements \
+            CODE_SIGN_ENTITLEMENTS=Clautch/Clautch-Archive.entitlements \
             PROVISIONING_PROFILE_SPECIFIER="" \
             ENABLE_HARDENED_RUNTIME=YES \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
