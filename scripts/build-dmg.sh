@@ -10,7 +10,9 @@ BUILD_DIR="$ROOT/build"
 SCHEME="Clautch"
 APP_NAME="Clautch"
 IDENTITY="Developer ID Application: Sophiie AI Pty Ltd (U2KP726DRL)"
+TEAM_ID="U2KP726DRL"
 ENTITLEMENTS="$ROOT/Clautch/Clautch-Release.entitlements"
+CLOUDKIT_ENTITLEMENTS="$ROOT/Clautch/Clautch-CloudKit.entitlements"
 ARCHIVE_PATH="$BUILD_DIR/$APP_NAME.xcarchive"
 APP_PATH="$ARCHIVE_PATH/Products/Applications/$APP_NAME.app"
 DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
@@ -33,18 +35,18 @@ xcodegen generate
 # ---------------------------------------------------------------------------
 # Step 3 — Archive with Developer ID
 # ---------------------------------------------------------------------------
+# Archive with Automatic signing so the provisioning profile includes
+# iCloud/CloudKit entitlements. We re-sign with Developer ID later.
 echo "==> Archiving release build"
 xcodebuild \
     -scheme "$SCHEME" \
     -configuration Release \
     -archivePath "$ARCHIVE_PATH" \
     archive \
-    CODE_SIGN_IDENTITY="$IDENTITY" \
-    CODE_SIGN_STYLE=Manual \
-    CODE_SIGN_ENTITLEMENTS="$ENTITLEMENTS" \
-    PROVISIONING_PROFILE_SPECIFIER="" \
-    ENABLE_HARDENED_RUNTIME=YES \
-    OTHER_CODE_SIGN_FLAGS="--timestamp"
+    CODE_SIGN_STYLE=Automatic \
+    DEVELOPMENT_TEAM="$TEAM_ID" \
+    CODE_SIGN_ENTITLEMENTS="$CLOUDKIT_ENTITLEMENTS" \
+    ENABLE_HARDENED_RUNTIME=YES
 
 if [ ! -d "$APP_PATH" ]; then
     echo "ERROR: App not found at $APP_PATH"
