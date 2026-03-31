@@ -79,14 +79,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 540),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 600),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
         window.center()
         window.title = "Welcome to Clautch"
-        window.appearance = NSAppearance(named: .darkAqua)
         window.contentView = NSHostingView(rootView: onboarding)
         window.isReleasedWhenClosed = false
 
@@ -268,6 +267,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(creatureItem)
         }
 
+        // Session stats (dynamic, updated in menuWillOpen)
+        let statsItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        statsItem.tag = 150
+        menu.addItem(statsItem)
+
         // Sessions header (dynamic content filled in menuWillOpen)
         menu.addItem(.separator())
         let sessionsHeader = NSMenuItem(title: "Sessions (0)", action: nil, keyEquivalent: "")
@@ -439,6 +443,13 @@ extension AppDelegate: NSMenuDelegate {
         }
         if let copyItem = menu.item(withTag: 201) {
             copyItem.isHidden = RoomManager.shared.currentRoom == nil
+        }
+
+        // Update session stats
+        if let statsItem = menu.item(withTag: 150) {
+            let today = SessionStats.format(SessionStats.shared.todayTotal)
+            let week = SessionStats.format(SessionStats.shared.weekTotal)
+            statsItem.title = "Today: \(today)  ·  Week: \(week)"
         }
         if let reactItem = menu.item(withTag: 250) {
             reactItem.isHidden = RoomManager.shared.currentRoom == nil

@@ -23,7 +23,9 @@ struct CreatureSpriteView: View {
     let state: CreatureState
     var creatureType: CreatureType = .ghost
     var colorPreset: CreatureColorPreset = .none
+    var accessory: CreatureAccessory = .none
     var isExpanded: Bool = true
+    var isWalking: Bool = false
 
     var body: some View {
         let shouldAnimate = isExpanded || !AnimationSettings.shared.reduceAnimationWhenCollapsed
@@ -36,7 +38,8 @@ struct CreatureSpriteView: View {
                 period: state.task.bobPeriod,
                 amplitude: state.task.bobAmplitude
             )
-            let frame = Int(t * state.task.fps) % max(creatureType.frames.count, 1)
+            let activeFrames = isWalking ? creatureType.walkFrames : creatureType.frames
+            let frame = Int(t * (isWalking ? 6 : state.task.fps)) % max(activeFrames.count, 1)
 
             PixelCreatureView(
                 type: creatureType,
@@ -44,6 +47,8 @@ struct CreatureSpriteView: View {
                 task: state.task,
                 emotion: state.emotion,
                 colorPreset: colorPreset,
+                accessory: accessory,
+                isWalking: isWalking,
                 time: t
             )
             .frame(width: 32, height: 32)
@@ -108,6 +113,8 @@ struct PixelCreatureView: View {
     let task: CreatureTask
     let emotion: CreatureEmotion
     var colorPreset: CreatureColorPreset = .none
+    var accessory: CreatureAccessory = .none
+    var isWalking: Bool = false
     var time: Double = 0
 
     private var colors: CreatureColors {
@@ -115,7 +122,7 @@ struct PixelCreatureView: View {
     }
 
     private var grid: [[Int]] {
-        let frames = type.frames
+        let frames = isWalking ? type.walkFrames : type.frames
         guard !frames.isEmpty else { return [] }
         return frames[frame % frames.count]
     }
@@ -146,6 +153,28 @@ struct PixelCreatureView: View {
                     default: colors.body
                     }
                     ctx.fill(Path(rect), with: .color(color))
+                }
+            }
+
+            // --- Accessory overlay ---
+            if let accPixels = accessory.pixels {
+                let accRows = accPixels.count
+                let accCols = accPixels.first?.count ?? 4
+                let accPx = px
+                // Center horizontally, position above the creature head
+                let offsetX = (CGFloat(cols) - CGFloat(accCols)) / 2 * accPx
+                let offsetY = -CGFloat(accRows) * accPx + accPx * 0.5
+                for (r, row) in accPixels.enumerated() {
+                    for (c, cell) in row.enumerated() {
+                        guard cell != 0 else { continue }
+                        let rect = CGRect(
+                            x: offsetX + CGFloat(c) * accPx,
+                            y: offsetY + CGFloat(r) * accPx,
+                            width: accPx + 0.5, height: accPx + 0.5
+                        )
+                        let color = cell == 6 ? accessory.primaryColor : accessory.secondaryColor
+                        ctx.fill(Path(rect), with: .color(color))
+                    }
                 }
             }
 

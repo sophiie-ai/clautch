@@ -7,6 +7,7 @@ struct OnboardingView: View {
     @State private var selectedType: CreatureType = .ghost
     @State private var displayName: String = ""
     @State private var colorPreset: CreatureColorPreset = .none
+    @State private var accessory: CreatureAccessory = .none
     @State private var isHovering: CreatureType?
     @FocusState private var nameFieldFocused: Bool
 
@@ -15,12 +16,12 @@ struct OnboardingView: View {
             // Header
             Text("Choose your creature")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .padding(.top, 32)
 
             Text("This little friend will live in your notch")
                 .font(.system(size: 13))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.secondary)
                 .padding(.top, 4)
 
             // Creature grid
@@ -36,7 +37,7 @@ struct OnboardingView: View {
             VStack(spacing: 8) {
                 Text("Color")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.secondary)
 
                 HStack(spacing: 10) {
                     ForEach(CreatureColorPreset.allCases) { preset in
@@ -44,22 +45,48 @@ struct OnboardingView: View {
                     }
                 }
             }
-            .padding(.top, 24)
+            .padding(.top, 20)
+
+            // Accessory picker
+            VStack(spacing: 8) {
+                Text("Accessory")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 8) {
+                    ForEach(CreatureAccessory.allCases) { acc in
+                        let selected = acc == accessory
+                        Text(acc == .none ? "✕" : acc.emoji)
+                            .font(.system(size: 14))
+                            .frame(width: 28, height: 28)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(selected ? Color.accentColor.opacity(0.3) : Color.white.opacity(0.06))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 1.5)
+                            )
+                            .onTapGesture { accessory = acc }
+                    }
+                }
+            }
+            .padding(.top, 12)
 
             // Name field
             HStack(spacing: 12) {
                 Text("Name")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
 
                 TextField("What should we call you?", text: $displayName)
                     .textFieldStyle(.plain)
                     .font(.system(size: 14, design: .rounded))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.1))
+                    .background(Color.primary.opacity(0.08))
                     .cornerRadius(8)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .frame(maxWidth: 200)
                     .focused($nameFieldFocused)
                     .onSubmit { complete() }
@@ -77,7 +104,7 @@ struct OnboardingView: View {
             Button(action: complete) {
                 Text("Let's go!")
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .padding(.horizontal, 32)
                     .padding(.vertical, 10)
                     .background(
@@ -89,8 +116,8 @@ struct OnboardingView: View {
             .disabled(displayName.trimmingCharacters(in: .whitespaces).isEmpty)
             .padding(.bottom, 32)
         }
-        .frame(width: 440, height: 540)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .frame(width: 440, height: 600)
+        .background(.background)
     }
 
     // MARK: - Creature Card
@@ -110,7 +137,8 @@ struct OnboardingView: View {
                     frame: frame,
                     task: .idle,
                     emotion: .neutral,
-                    colorPreset: colorPreset
+                    colorPreset: colorPreset,
+                    accessory: type == selectedType ? accessory : .none
                 )
                 .frame(width: 48, height: 48)
                 .offset(y: bob)
@@ -119,14 +147,14 @@ struct OnboardingView: View {
 
             Text(type.displayName)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(.primary)
         }
         .frame(width: 100, height: 90)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(selected
                     ? Color.accentColor.opacity(0.3)
-                    : Color.white.opacity(isHovering == type ? 0.08 : 0.04))
+                    : Color.primary.opacity(isHovering == type ? 0.08 : 0.04))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -147,18 +175,18 @@ struct OnboardingView: View {
             .frame(width: size, height: size)
             .overlay(
                 Circle()
-                    .strokeBorder(selected ? .white : .clear, lineWidth: 2)
+                    .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 2)
             )
             .overlay(
                 // "No color" indicator
                 preset == .none
                     ? AnyView(
                         Circle()
-                            .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                            .strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1)
                     )
                     : AnyView(EmptyView())
             )
-            .shadow(color: selected ? .white.opacity(0.3) : .clear, radius: 4)
+            .shadow(color: selected ? Color.accentColor.opacity(0.3) : .clear, radius: 4)
             .onTapGesture { colorPreset = preset }
     }
 
@@ -171,7 +199,8 @@ struct OnboardingView: View {
         let profile = UserProfile.create(
             displayName: name,
             creatureType: selectedType,
-            colorPreset: colorPreset
+            colorPreset: colorPreset,
+            accessory: accessory
         )
         UserProfile.current = profile
         onComplete(profile)

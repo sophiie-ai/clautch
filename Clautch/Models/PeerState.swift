@@ -32,9 +32,12 @@ struct PeerState: Codable, Sendable, Identifiable {
     let task: CreatureTask
     let emotion: CreatureEmotion
     let colorPreset: CreatureColorPreset
+    let accessory: CreatureAccessory
     let timestamp: Date
     var reaction: PeerReaction?
     var reactionTimestamp: Date?
+    var chatMessage: String?
+    var chatTimestamp: Date?
 
     var id: String { peerId }
 
@@ -53,6 +56,17 @@ struct PeerState: Codable, Sendable, Identifiable {
         guard let rt = reactionTimestamp else { return false }
         return Date().timeIntervalSince(rt) < 4
     }
+
+    /// Whether the chat message is still fresh (show for 8 seconds).
+    var hasActiveChat: Bool {
+        guard let ct = chatTimestamp else { return false }
+        return Date().timeIntervalSince(ct) < 8
+    }
+
+    /// The active chat message, if still fresh.
+    var activeChatMessage: String? {
+        hasActiveChat ? chatMessage : nil
+    }
 }
 
 // MARK: - Unified Creature Display
@@ -63,6 +77,7 @@ struct CreatureDisplay: Identifiable {
     let state: CreatureState
     let creatureType: CreatureType
     let colorPreset: CreatureColorPreset
+    let accessory: CreatureAccessory
     let xPosition: CGFloat
     let isLocal: Bool
     let displayName: String
@@ -71,4 +86,5 @@ struct CreatureDisplay: Identifiable {
     var facingRight: Bool = true
     var reaction: PeerReaction?
     var reactionActive: Bool = false
+    var chatMessage: String?
 }

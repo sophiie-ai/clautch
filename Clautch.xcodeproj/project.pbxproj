@@ -29,6 +29,7 @@
 		C1CA3D0FBA81D955DA0C2AE3 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = FF89FBDAAD4B2E24B493F045 /* Sparkle */; };
 		C59FF3BA1A0679902FCB5BF6 /* SocketServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A96C317933A876142263C02 /* SocketServer.swift */; };
 		CBDA2473ACF805DD27769C31 /* PeerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EEA97069510BF43AEF4A0F /* PeerStore.swift */; };
+		CF2A287CEF7133514A48A36E /* SessionStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */; };
 		D111D15AA4DAAA2FB8C09769 /* NotchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8C9B4777BFE300C4B219C61 /* NotchPanel.swift */; };
 		D78AB26A7D77261B497278B6 /* CreatureSpriteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B322233C180E7390E3E334 /* CreatureSpriteView.swift */; };
 		DAE848DD2CE57399BFFA5F29 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9DD10E685875E91848C6C55 /* UserProfile.swift */; };
@@ -40,6 +41,7 @@
 /* Begin PBXFileReference section */
 		090F343EB758F84B29BC0125 /* Clautch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Clautch.entitlements; sourceTree = "<group>"; };
 		1A96C317933A876142263C02 /* SocketServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketServer.swift; sourceTree = "<group>"; };
+		1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStats.swift; sourceTree = "<group>"; };
 		35B322233C180E7390E3E334 /* CreatureSpriteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureSpriteView.swift; sourceTree = "<group>"; };
 		37A05E9A0BB497F97DCA2375 /* NotchContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchContentView.swift; sourceTree = "<group>"; };
 		3999AF3656ACC6EEA809E4A1 /* CreatureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureState.swift; sourceTree = "<group>"; };
@@ -138,6 +140,7 @@
 			children = (
 				F91B03F44A420102018F1805 /* HookInstaller.swift */,
 				67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */,
+				1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */,
 				7A6999253CA6EA31609F60BB /* SessionStore.swift */,
 				1A96C317933A876142263C02 /* SocketServer.swift */,
 				668377B4E6CDB23F75C0607F /* StateMachine.swift */,
@@ -284,6 +287,7 @@
 				B6B15D06D1E72E27B450A0D2 /* RoomManager.swift in Sources */,
 				2CFF3A5C1D6EF61293E2D228 /* RoomView.swift in Sources */,
 				9A8A38D46A84C41E24F908A9 /* SessionData.swift in Sources */,
+				CF2A287CEF7133514A48A36E /* SessionStats.swift in Sources */,
 				76BBFC0A3FD6F9F465229AB4 /* SessionStore.swift in Sources */,
 				C59FF3BA1A0679902FCB5BF6 /* SocketServer.swift in Sources */,
 				ABA1A08C987E488DF347FF54 /* StateMachine.swift in Sources */,
@@ -421,14 +425,14 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = U2KP726DRL;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.1;
+				MARKETING_VERSION = 0.2.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};
@@ -442,14 +446,14 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = U2KP726DRL;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.1;
+				MARKETING_VERSION = 0.2.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};

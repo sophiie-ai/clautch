@@ -6,6 +6,7 @@ struct UserProfile: Codable, Sendable {
     var displayName: String
     var creatureType: CreatureType
     var colorPreset: CreatureColorPreset
+    var accessory: CreatureAccessory
 
     // MARK: - Persistence
 
@@ -41,16 +42,36 @@ struct UserProfile: Codable, Sendable {
     static var hasProfile: Bool { current != nil }
 
     /// Create a new profile with defaults.
+    init(peerId: String, displayName: String, creatureType: CreatureType, colorPreset: CreatureColorPreset, accessory: CreatureAccessory = .none) {
+        self.peerId = peerId
+        self.displayName = displayName
+        self.creatureType = creatureType
+        self.colorPreset = colorPreset
+        self.accessory = accessory
+    }
+
+    /// Backward-compatible decoding: default accessory to .none for older profiles.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        peerId = try c.decode(String.self, forKey: .peerId)
+        displayName = try c.decode(String.self, forKey: .displayName)
+        creatureType = try c.decode(CreatureType.self, forKey: .creatureType)
+        colorPreset = try c.decode(CreatureColorPreset.self, forKey: .colorPreset)
+        accessory = try c.decodeIfPresent(CreatureAccessory.self, forKey: .accessory) ?? .none
+    }
+
     static func create(
         displayName: String,
         creatureType: CreatureType,
-        colorPreset: CreatureColorPreset = .none
+        colorPreset: CreatureColorPreset = .none,
+        accessory: CreatureAccessory = .none
     ) -> UserProfile {
         UserProfile(
             peerId: UUID().uuidString,
             displayName: displayName,
             creatureType: creatureType,
-            colorPreset: colorPreset
+            colorPreset: colorPreset,
+            accessory: accessory
         )
     }
 }

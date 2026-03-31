@@ -122,6 +122,24 @@ struct GrassIslandView: View {
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
                     VStack(spacing: 2) {
+                        // Speech bubble
+                        if isExpanded, let chat = creature.chatMessage {
+                            Text(chat)
+                                .font(.system(size: 7, weight: .medium, design: .rounded))
+                                .foregroundStyle(.black)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(.white.opacity(0.9))
+                                )
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.5).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
+                                .id("chat-\(creature.id)-\(chat)")
+                        }
+
                         // Floating reaction emoji
                         if let reaction = creature.reaction {
                             Text(reaction.emoji)
@@ -159,7 +177,9 @@ struct GrassIslandView: View {
                                 state: creature.state,
                                 creatureType: creature.creatureType,
                                 colorPreset: creature.colorPreset,
-                                isExpanded: isExpanded
+                                accessory: creature.accessory,
+                                isExpanded: isExpanded,
+                                isWalking: isWalking && creature.isLocal
                             )
                             .frame(width: creatureSize, height: creatureSize)
                             .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)

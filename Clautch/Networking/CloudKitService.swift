@@ -108,11 +108,16 @@ final class CloudKitService: @unchecked Sendable {
         record["task"] = state.task.rawValue
         record["emotion"] = state.emotion.rawValue
         record["colorPreset"] = state.colorPreset.rawValue
+        record["accessory"] = state.accessory.rawValue
         record["heartbeat"] = Date() as NSDate
         record["isActive"] = 1
         record["reaction"] = state.reaction?.rawValue ?? ""
         if let rt = state.reactionTimestamp {
             record["reactionTimestamp"] = rt as NSDate
+        }
+        record["chatMessage"] = state.chatMessage ?? ""
+        if let ct = state.chatTimestamp {
+            record["chatTimestamp"] = ct as NSDate
         }
 
         let saved = try await db.save(record)
@@ -192,7 +197,10 @@ extension PeerState {
         else { return nil }
 
         let colorRaw = record["colorPreset"] as? String ?? "none"
+        let accessoryRaw = record["accessory"] as? String ?? "none"
         let reactionRaw = record["reaction"] as? String ?? ""
+        let chatMsg = record["chatMessage"] as? String ?? ""
+        let chatTs = record["chatTimestamp"] as? Date
         let reactionTs = record["reactionTimestamp"] as? Date
 
         self.init(
@@ -202,9 +210,12 @@ extension PeerState {
             task: CreatureTask(rawValue: taskRaw) ?? .idle,
             emotion: CreatureEmotion(rawValue: emotionRaw) ?? .neutral,
             colorPreset: CreatureColorPreset(rawValue: colorRaw) ?? .none,
+            accessory: CreatureAccessory(rawValue: accessoryRaw) ?? .none,
             timestamp: heartbeat,
             reaction: reactionRaw.isEmpty ? nil : PeerReaction(rawValue: reactionRaw),
-            reactionTimestamp: reactionTs
+            reactionTimestamp: reactionTs,
+            chatMessage: chatMsg.isEmpty ? nil : chatMsg,
+            chatTimestamp: chatTs
         )
     }
 }

@@ -70,13 +70,15 @@ struct NotchContentView: View {
             state: effective?.state ?? CreatureState(),
             creatureType: profile?.creatureType ?? .ghost,
             colorPreset: profile?.colorPreset ?? .none,
+            accessory: profile?.accessory ?? .none,
             xPosition: wanderPosition,
             isLocal: true,
             displayName: profile?.displayName ?? "You",
             sessionDuration: effective.map { Date().timeIntervalSince($0.startedAt) },
             lastToolName: effective?.lastToolName,
             reaction: localReactionActive ? localReaction : nil,
-            reactionActive: localReactionActive
+            reactionActive: localReactionActive,
+            chatMessage: roomManager.localState?.activeChatMessage
         ))
 
         if let myId = profile?.peerId {
@@ -91,11 +93,13 @@ struct NotchContentView: View {
                     ),
                     creatureType: peer.creatureType,
                     colorPreset: peer.colorPreset,
+                    accessory: peer.accessory,
                     xPosition: roomManager.peerStore.xPosition(for: peer.peerId),
                     isLocal: false,
                     displayName: peer.displayName,
                     reaction: peer.hasActiveReaction ? peer.reaction : nil,
-                    reactionActive: peer.hasActiveReaction
+                    reactionActive: peer.hasActiveReaction,
+                    chatMessage: peer.activeChatMessage
                 ))
             }
         }

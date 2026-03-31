@@ -186,9 +186,11 @@ final class RoomManager {
 
     func broadcastState(task: CreatureTask, emotion: CreatureEmotion) {
         guard let profile = UserProfile.current else { return }
-        // Preserve active reaction when updating state
+        // Preserve active reaction and chat when updating state
         let existingReaction = localState?.reaction
         let existingReactionTs = localState?.reactionTimestamp
+        let existingChat = localState?.chatMessage
+        let existingChatTs = localState?.chatTimestamp
         localState = PeerState(
             peerId: profile.peerId,
             displayName: profile.displayName,
@@ -196,10 +198,43 @@ final class RoomManager {
             task: task,
             emotion: emotion,
             colorPreset: profile.colorPreset,
+            accessory: profile.accessory,
             timestamp: Date(),
             reaction: existingReaction,
-            reactionTimestamp: existingReactionTs
+            reactionTimestamp: existingReactionTs,
+            chatMessage: existingChat,
+            chatTimestamp: existingChatTs
         )
+    }
+
+    /// Send a chat message — broadcast on next sync, auto-clear after 8s.
+    func sendChat(_ message: String) {
+        guard var state = localState else { return }
+        let trimmed = String(message.prefix(60))
+        guard !trimmed.isEmpty else { return }
+        state = PeerState(
+            peerId: state.peerId,
+            displayName: state.displayName,
+            creatureType: state.creatureType,
+            task: state.task,
+            emotion: state.emotion,
+            colorPreset: state.colorPreset,
+            accessory: state.accessory,
+            timestamp: Date(),
+            reaction: state.reaction,
+            reactionTimestamp: state.reactionTimestamp,
+            chatMessage: trimmed,
+            chatTimestamp: Date()
+        )
+        localState = state
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(8))
+            if localState?.chatMessage == trimmed {
+                localState?.chatMessage = nil
+                localState?.chatTimestamp = nil
+            }
+        }
     }
 
     /// Send a reaction — it will be broadcast on the next sync cycle and auto-clear after 4s.
@@ -212,9 +247,12 @@ final class RoomManager {
             task: state.task,
             emotion: state.emotion,
             colorPreset: state.colorPreset,
+            accessory: state.accessory,
             timestamp: Date(),
             reaction: reaction,
-            reactionTimestamp: Date()
+            reactionTimestamp: Date(),
+            chatMessage: state.chatMessage,
+            chatTimestamp: state.chatTimestamp
         )
         localState = state
 
@@ -302,6 +340,7 @@ final class RoomManager {
             task: localState?.task ?? .idle,
             emotion: localState?.emotion ?? .neutral,
             colorPreset: profile.colorPreset,
+            accessory: profile.accessory,
             timestamp: Date()
         )
     }

@@ -52,6 +52,9 @@ final class StateMachine {
 
         // Broadcast effective state to the room
         broadcastCurrentState()
+
+        // Update session stats tracking
+        updateStatsTracking()
     }
 
     /// Push the current effective session state to RoomManager for network broadcast.
@@ -60,5 +63,14 @@ final class StateMachine {
         let task = effective?.state.task ?? .idle
         let emotion = effective?.state.emotion ?? .neutral
         RoomManager.shared.broadcastState(task: task, emotion: emotion)
+    }
+
+    private func updateStatsTracking() {
+        let hasActive = !sessionStore.activeSessions.isEmpty
+        if hasActive {
+            SessionStats.shared.startTracking()
+        } else {
+            SessionStats.shared.stopTracking()
+        }
     }
 }

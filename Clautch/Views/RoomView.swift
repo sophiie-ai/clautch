@@ -7,6 +7,7 @@ struct RoomView: View {
     @State private var errorMessage: String?
     @State private var isLoading = false
     @State private var copiedCode = false
+    @State private var chatInput = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -102,6 +103,28 @@ struct RoomView: View {
 
             Spacer()
 
+            // Chat input
+            HStack(spacing: 8) {
+                TextField("Send a message…", text: $chatInput)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.primary.opacity(0.06))
+                    .cornerRadius(6)
+                    .onSubmit { sendChat() }
+
+                Button(action: sendChat) {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(chatInput.isEmpty ? Color.secondary : Color.accentColor)
+                }
+                .buttonStyle(.plain)
+                .disabled(chatInput.isEmpty)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
+
             // Leave button
             Button(action: {
                 Task { await roomManager.leaveRoom() }
@@ -116,7 +139,7 @@ struct RoomView: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 16)
         }
     }
 
@@ -290,6 +313,13 @@ struct RoomView: View {
     }
 
     // MARK: - Actions
+
+    private func sendChat() {
+        let msg = chatInput.trimmingCharacters(in: .whitespaces)
+        guard !msg.isEmpty else { return }
+        roomManager.sendChat(msg)
+        chatInput = ""
+    }
 
     private func copyCode() {
         guard let room = roomManager.currentRoom else { return }
