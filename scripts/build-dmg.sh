@@ -109,64 +109,26 @@ codesign --force --sign "$IDENTITY" \
 # Step 6 — Create DMG
 # ---------------------------------------------------------------------------
 echo "==> Creating styled DMG"
-rm -rf "$DMG_STAGING"
-mkdir -p "$DMG_STAGING"
+rm -f "$DMG_PATH"
 
-ditto "$APP_PATH" "$DMG_STAGING/$APP_NAME.app"
-ln -s /Applications "$DMG_STAGING/Applications"
+# Requires: brew install create-dmg
+if ! command -v create-dmg &>/dev/null; then
+    echo "ERROR: create-dmg not found. Install with: brew install create-dmg"
+    exit 1
+fi
 
-# Create a temporary read-write DMG to style it
-RW_DMG="$BUILD_DIR/Clautch-rw.dmg"
-rm -f "$RW_DMG" "$DMG_PATH"
-
-# Use a unique volume name to avoid conflicts with stale mounts
-VOL_NAME="Clautch-Install-$$"
-
-hdiutil create \
-    -volname "$VOL_NAME" \
-    -srcfolder "$DMG_STAGING" \
-    -ov \
-    -format UDRW \
-    -size 20m \
-    "$RW_DMG"
-
-rm -rf "$DMG_STAGING"
-
-# Mount and style the DMG with Finder view options
-MOUNT_DIR=$(hdiutil attach "$RW_DMG" -readwrite -noverify | tail -1 | sed 's/.*\t//')
-echo "    Mounted at: $MOUNT_DIR"
-
-# Set Finder window properties via AppleScript
-osascript << APPLESCRIPT
-tell application "Finder"
-    tell disk "$VOL_NAME"
-        open
-        set current view of container window to icon view
-        set toolbar visible of container window to false
-        set statusbar visible of container window to false
-        set bounds of container window to {100, 100, 640, 440}
-        set viewOptions to the icon view options of container window
-        set arrangement of viewOptions to not arranged
-        set icon size of viewOptions to 96
-        set background color of viewOptions to {2570, 2570, 3084}
-        set position of item "Clautch.app" of container window to {150, 160}
-        set position of item "Applications" of container window to {390, 160}
-        close
-    end tell
-end tell
-APPLESCRIPT
-
-# Ensure changes are flushed
-sync
-sleep 1
-
-# Detach
-hdiutil detach "$MOUNT_DIR" -force 2>/dev/null || true
-sleep 1
-
-# Convert to compressed read-only DMG
-hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG_PATH"
-rm -f "$RW_DMG"
+create-dmg \
+    --volname "Install Clautch" \
+    --window-pos 200 120 \
+    --window-size 660 400 \
+    --icon-size 128 \
+    --icon "Clautch.app" 170 190 \
+    --hide-extension "Clautch.app" \
+    --app-drop-link 490 190 \
+    --text-size 14 \
+    --no-internet-enable \
+    "$DMG_PATH" \
+    "$APP_PATH"
 
 # ---------------------------------------------------------------------------
 # Step 7 — Verify code signature
