@@ -19,6 +19,7 @@
 		71865577E19CCAC699C4BC42 /* NotchHitTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD55EFF2D31C0DBC2642B326 /* NotchHitTestView.swift */; };
 		76BBFC0A3FD6F9F465229AB4 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6999253CA6EA31609F60BB /* SessionStore.swift */; };
 		7CE35954FCD5225CECEE5218 /* NotchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A05E9A0BB497F97DCA2375 /* NotchContentView.swift */; };
+		92E35E9DC11983F9A01A89F1 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */; };
 		9A8A38D46A84C41E24F908A9 /* SessionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6DF5F6D203AF00F28F0795 /* SessionData.swift */; };
 		A98C74683BA1820EE7406713 /* ClautchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8939C7DD222D0AECDD18A300 /* ClautchApp.swift */; };
 		ABA1A08C987E488DF347FF54 /* StateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668377B4E6CDB23F75C0607F /* StateMachine.swift */; };
@@ -45,6 +46,7 @@
 		48EEA97069510BF43AEF4A0F /* PeerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerStore.swift; sourceTree = "<group>"; };
 		5D4F2183AEE158387C85D7A8 /* Clautch-CloudKit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Clautch-CloudKit.entitlements"; sourceTree = "<group>"; };
 		668377B4E6CDB23F75C0607F /* StateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateMachine.swift; sourceTree = "<group>"; };
+		67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		7A24772089DC4C3D8257AFED /* BobAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BobAnimation.swift; sourceTree = "<group>"; };
 		7A6999253CA6EA31609F60BB /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		7B1A8940C490CCD0E8772503 /* NSScreen+Notch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Notch.swift"; sourceTree = "<group>"; };
@@ -118,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				F91B03F44A420102018F1805 /* HookInstaller.swift */,
+				67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */,
 				7A6999253CA6EA31609F60BB /* SessionStore.swift */,
 				1A96C317933A876142263C02 /* SocketServer.swift */,
 				668377B4E6CDB23F75C0607F /* StateMachine.swift */,
@@ -194,6 +197,12 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					6E055F8042251BC2A2998F64 = {
+						DevelopmentTeam = U2KP726DRL;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = BE5148321BF346DA6D76C9AF /* Build configuration list for PBXProject "Clautch" */;
 			developmentRegion = en;
@@ -233,6 +242,7 @@
 				7CE35954FCD5225CECEE5218 /* NotchContentView.swift in Sources */,
 				71865577E19CCAC699C4BC42 /* NotchHitTestView.swift in Sources */,
 				D111D15AA4DAAA2FB8C09769 /* NotchPanel.swift in Sources */,
+				92E35E9DC11983F9A01A89F1 /* NotificationService.swift in Sources */,
 				7034B5642B557D7225CE885C /* OnboardingView.swift in Sources */,
 				0A377F6A4CD2FE55E3A818B7 /* PeerState.swift in Sources */,
 				CBDA2473ACF805DD27769C31 /* PeerStore.swift in Sources */,
@@ -378,14 +388,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = U2KP726DRL;
+				DEVELOPMENT_TEAM = U2KP726DRL;
 				ENABLE_APP_SANDBOX = NO;
 				INFOPLIST_FILE = Clautch/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
@@ -402,14 +408,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = U2KP726DRL;
+				DEVELOPMENT_TEAM = U2KP726DRL;
 				ENABLE_APP_SANDBOX = NO;
 				INFOPLIST_FILE = Clautch/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;

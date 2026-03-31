@@ -37,6 +37,18 @@ final class StateMachine {
             sessionStore.markInactive(id: event.sessionId)
         }
 
+        // Notifications
+        switch event.eventType {
+        case .stop:
+            NotificationService.shared.postSessionFinished(sessionId: event.sessionId)
+        case .postToolUse:
+            if let status = event.status, status == "error" || status == "failure" {
+                NotificationService.shared.postToolError(sessionId: event.sessionId, toolName: event.toolName)
+            }
+        default:
+            break
+        }
+
         // Broadcast effective state to the room
         broadcastCurrentState()
     }

@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ServiceManagement
 import os
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -19,6 +20,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Install Claude Code hooks and start socket server
         HookInstaller.shared.installIfNeeded()
         SocketServer.shared.start()
+
+        // Request notification permission
+        NotificationService.shared.requestPermissionIfNeeded()
 
         // Setup menu bar
         setupStatusItem()
@@ -53,6 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         SocketServer.shared.stop()
+        if let monitor = clickOutsideMonitor { NSEvent.removeMonitor(monitor) }
         // Leave room gracefully
         Task { await RoomManager.shared.leaveRoom() }
     }
@@ -221,6 +226,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(creatureItem)
         }
 
+        // Sessions header (dynamic content filled in menuWillOpen)
+        menu.addItem(.separator())
+        let sessionsHeader = NSMenuItem(title: "Sessions (0)", action: nil, keyEquivalent: "")
+        sessionsHeader.tag = 300
+        menu.addItem(sessionsHeader)
+        let sentinel = NSMenuItem.separator()
+        sentinel.tag = 399
+        menu.addItem(sentinel)
+
         // Room
         let roomItem = NSMenuItem(
             title: "Room…",
@@ -231,9 +245,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(roomItem)
 
         // Room status (dynamic, updated via delegate)
-        let statusItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        statusItem.tag = 200
-        menu.addItem(statusItem)
+        let roomStatus = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        roomStatus.tag = 200
+        menu.addItem(roomStatus)
 
         menu.addItem(.separator())
 
@@ -246,9 +260,54 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(changeItem)
 
         menu.addItem(.separator())
+
+        // Notifications toggle
+        let notifItem = NSMenuItem(
+            title: "Notifications",
+            action: #selector(toggleNotifications),
+            keyEquivalent: ""
+        )
+        notifItem.target = self
+        notifItem.tag = 500
+        menu.addItem(notifItem)
+
+        // Launch at Login toggle
+        let loginItem = NSMenuItem(
+            title: "Launch at Login",
+            action: #selector(toggleLaunchAtLogin),
+            keyEquivalent: ""
+        )
+        loginItem.target = self
+        loginItem.tag = 600
+        menu.addItem(loginItem)
+
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Clautch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         self.statusItem?.menu = menu
+    }
+
+    // MARK: - Menu Actions
+
+    @objc private func toggleNotifications() {
+        Task { @MainActor in
+            NotificationService.shared.isEnabled.toggle()
+        }
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled {
+                try service.unregister()
+                logger.info("Unregistered from login items")
+            } else {
+                try service.register()
+                logger.info("Registered as login item")
+            }
+        } catch {
+            logger.error("Login item toggle failed: \(error.localizedDescription)")
+        }
     }
 }
 
@@ -256,7 +315,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
-        // Update room status line dynamically
+        // Update room status
         if let item = menu.item(withTag: 200) {
             let rm = RoomManager.shared
             if let room = rm.currentRoom {
@@ -266,6 +325,42 @@ extension AppDelegate: NSMenuDelegate {
                 item.title = ""
                 item.isHidden = true
             }
+        }
+
+        // Update sessions
+        menu.items
+            .filter { $0.tag >= 301 && $0.tag <= 398 }
+            .forEach { menu.removeItem($0) }
+
+        let active = StateMachine.shared.sessionStore.activeSessions
+        if let header = menu.item(withTag: 300) {
+            header.title = active.isEmpty ? "No active sessions" : "Sessions (\(active.count))"
+        }
+
+        if let sentinelIndex = menu.items.firstIndex(where: { $0.tag == 399 }) {
+            for (i, session) in active.prefix(10).enumerated() {
+                let shortId = String(session.id.prefix(8))
+                let taskLabel = session.state.task.displayLabel
+                let item = NSMenuItem(title: "  \(shortId)… — \(taskLabel)", action: nil, keyEquivalent: "")
+                item.tag = 301 + i
+                let symbolName: String = switch session.state.task {
+                case .idle:       "circle"
+                case .thinking:   "brain"
+                case .working:    "hammer"
+                case .sleeping:   "moon.zzz"
+                case .compacting: "arrow.triangle.2.circlepath"
+                }
+                item.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: taskLabel)
+                menu.insertItem(item, at: sentinelIndex + i)
+            }
+        }
+
+        // Update toggles
+        if let notifItem = menu.item(withTag: 500) {
+            notifItem.state = NotificationService.shared.isEnabled ? .on : .off
+        }
+        if let loginItem = menu.item(withTag: 600) {
+            loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         }
     }
 }
