@@ -4,7 +4,18 @@ import SwiftUI
 @Observable
 final class NotchHoverState {
     static let shared = NotchHoverState()
-    var isHovered = false
+
+    private static let persistenceKey = "com.clautch.panelExpanded"
+
+    var isHovered: Bool = false {
+        didSet {
+            UserDefaults.standard.set(isHovered, forKey: Self.persistenceKey)
+        }
+    }
+
+    init() {
+        self.isHovered = UserDefaults.standard.bool(forKey: Self.persistenceKey)
+    }
 }
 
 /// Root view rendered inside the notch panel.

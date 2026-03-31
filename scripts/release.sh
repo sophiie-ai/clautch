@@ -1,62 +1,180 @@
 #!/bin/bash
 set -euo pipefail
 
-# Full release workflow: build DMG, sign for Sparkle, update appcast
-# Usage: ./scripts/release.sh [version]
+# Full release workflow for Clautch
+# Usage: ./scripts/release.sh <version>
 # Example: ./scripts/release.sh 0.2.0
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT="$(dirname "$SCRIPT_DIR")"
-BUILD_DIR="$ROOT/build"
-SPARKLE_BIN="$(find ~/Library/Developer/Xcode/DerivedData/Clautch-*/SourcePackages/artifacts/sparkle/Sparkle/bin -maxdepth 0 2>/dev/null | head -1)"
-
-VERSION="${1:-$(defaults read "$ROOT/Clautch/Info.plist" CFBundleShortVersionString)}"
-echo "==> Releasing Clautch v$VERSION"
-
-# Step 1: Build DMG
-"$SCRIPT_DIR/build-dmg.sh"
-
-DMG_PATH="$BUILD_DIR/Clautch.dmg"
-if [ ! -f "$DMG_PATH" ]; then
-    echo "ERROR: DMG not found"
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <version>"
+    echo "Example: $0 0.2.0"
     exit 1
 fi
 
-# Step 2: Sign DMG with Sparkle EdDSA key
-if [ -n "$SPARKLE_BIN" ] && [ -f "$SPARKLE_BIN/sign_update" ]; then
-    echo "==> Signing DMG for Sparkle"
-    SIGNATURE=$("$SPARKLE_BIN/sign_update" "$DMG_PATH" 2>&1 | grep 'sparkle:edSignature=' | sed 's/.*sparkle:edSignature="\([^"]*\)".*/\1/')
-    DMG_SIZE=$(stat -f%z "$DMG_PATH")
-    echo "    Signature: $SIGNATURE"
-    echo "    Size: $DMG_SIZE bytes"
-else
-    echo "WARNING: Sparkle sign_update not found — skipping signature"
-    SIGNATURE=""
-    DMG_SIZE=$(stat -f%z "$DMG_PATH")
+VERSION="$1"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(dirname "$SCRIPT_DIR")"
+BUILD_DIR="$ROOT/build"
+DMG_PATH="$BUILD_DIR/Clautch.dmg"
+APPCAST="$ROOT/public/appcast.xml"
+REPO="sophiie-ai/clautch"
+TAG="v$VERSION"
+
+echo "============================================"
+echo "  Releasing Clautch $TAG"
+echo "============================================"
+echo ""
+
+# ---------------------------------------------------------------------------
+# Step 1 — Build DMG
+# ---------------------------------------------------------------------------
+echo "==> Step 1: Building DMG"
+"$SCRIPT_DIR/build-dmg.sh"
+
+if [ ! -f "$DMG_PATH" ]; then
+    echo "ERROR: DMG not found at $DMG_PATH"
+    exit 1
 fi
 
-# Step 3: Print appcast item to add
-DATE=$(date -R)
+# ---------------------------------------------------------------------------
+# Step 2 — Notarize
+# ---------------------------------------------------------------------------
 echo ""
-echo "==> Add this to public/appcast.xml inside <channel>:"
+echo "==> Step 2: Notarizing DMG"
+xcrun notarytool submit "$DMG_PATH" \
+    --keychain-profile "notarytool" \
+    --wait
+
+# ---------------------------------------------------------------------------
+# Step 3 — Staple
+# ---------------------------------------------------------------------------
 echo ""
-cat <<ITEM
-    <item>
+echo "==> Step 3: Stapling notarization ticket"
+xcrun stapler staple "$DMG_PATH"
+
+# ---------------------------------------------------------------------------
+# Step 4 — Sign for Sparkle (EdDSA)
+# ---------------------------------------------------------------------------
+echo ""
+echo "==> Step 4: Signing for Sparkle updates"
+
+SIGN_UPDATE=""
+# Search DerivedData for the Sparkle sign_update tool
+for CANDIDATE in ~/Library/Developer/Xcode/DerivedData/Clautch-*/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update; do
+    if [ -f "$CANDIDATE" ]; then
+        SIGN_UPDATE="$CANDIDATE"
+        break
+    fi
+done
+
+if [ -z "$SIGN_UPDATE" ]; then
+    echo "ERROR: sign_update not found in DerivedData. Build the project in Xcode first."
+    exit 1
+fi
+
+SPARKLE_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH")
+echo "    $SPARKLE_OUTPUT"
+
+# Parse signature and length from sign_update output
+# Output format: sparkle:edSignature="..." length="..."
+SIGNATURE=$(echo "$SPARKLE_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
+DMG_LENGTH=$(stat -f%z "$DMG_PATH")
+
+if [ -z "$SIGNATURE" ]; then
+    echo "ERROR: Failed to extract Sparkle signature"
+    exit 1
+fi
+
+echo "    Signature: $SIGNATURE"
+echo "    Length: $DMG_LENGTH bytes"
+
+# ---------------------------------------------------------------------------
+# Step 5 — GitHub release
+# ---------------------------------------------------------------------------
+echo ""
+echo "==> Step 5: Creating GitHub release $TAG"
+
+# Delete existing release and tag if present
+if gh release view "$TAG" --repo "$REPO" &>/dev/null; then
+    echo "    Deleting existing release $TAG"
+    gh release delete "$TAG" --repo "$REPO" --yes --cleanup-tag
+fi
+
+gh release create "$TAG" \
+    --repo "$REPO" \
+    --title "Clautch $TAG" \
+    --generate-notes \
+    "$DMG_PATH"
+
+echo "    Release created: https://github.com/$REPO/releases/tag/$TAG"
+
+# ---------------------------------------------------------------------------
+# Step 6 — Update appcast.xml
+# ---------------------------------------------------------------------------
+echo ""
+echo "==> Step 6: Updating appcast.xml"
+
+PUB_DATE=$(date -R)
+
+# Build the new <item> block
+NEW_ITEM="    <item>
       <title>Version $VERSION</title>
       <sparkle:version>$VERSION</sparkle:version>
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <pubDate>$DATE</pubDate>
+      <pubDate>$PUB_DATE</pubDate>
       <enclosure
-        url="https://github.com/sophiie-ai/clautch/releases/download/v$VERSION/Clautch.dmg"
-        length="$DMG_SIZE"
-        type="application/octet-stream"
-        sparkle:edSignature="$SIGNATURE" />
-    </item>
-ITEM
+        url=\"https://github.com/$REPO/releases/download/$TAG/Clautch.dmg\"
+        length=\"$DMG_LENGTH\"
+        type=\"application/octet-stream\"
+        sparkle:edSignature=\"$SIGNATURE\" />
+    </item>"
+
+# Replace everything between <channel>...</channel> with just the latest item
+# This keeps a single-item feed (latest release only)
+python3 -c "
+import re, sys
+
+appcast = open('$APPCAST', 'r').read()
+
+new_item = '''$NEW_ITEM'''
+
+# Replace all existing <item>...</item> blocks with the new one
+appcast = re.sub(
+    r'(<language>en</language>\n).*?(  </channel>)',
+    r'\1' + new_item + r'\n\2',
+    appcast,
+    flags=re.DOTALL
+)
+
+open('$APPCAST', 'w').write(appcast)
+print('    appcast.xml updated')
+"
+
+# ---------------------------------------------------------------------------
+# Step 7 — Commit and push
+# ---------------------------------------------------------------------------
+echo ""
+echo "==> Step 7: Committing and pushing"
+cd "$ROOT"
+git add public/appcast.xml
+git commit -m "release: update appcast for $TAG"
+git push
+
+# ---------------------------------------------------------------------------
+# Step 8 — Deploy to Vercel
+# ---------------------------------------------------------------------------
+echo ""
+echo "==> Step 8: Deploying to Vercel"
+cd "$ROOT"
+vercel --prod
 
 echo ""
-echo "==> Next steps:"
-echo "   1. Create GitHub release v$VERSION and attach build/Clautch.dmg"
-echo "   2. Add the <item> above to public/appcast.xml"
-echo "   3. Deploy to Vercel: git push (or vercel --prod)"
+echo "============================================"
+echo "  Clautch $TAG released successfully!"
+echo "============================================"
+echo ""
+echo "  DMG: $DMG_PATH"
+echo "  Release: https://github.com/$REPO/releases/tag/$TAG"
+echo "  Appcast: https://clautch.app/appcast.xml"
+echo ""

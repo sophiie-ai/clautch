@@ -9,6 +9,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWindow: NSWindow?
     private var roomWindow: NSWindow?
     private var statusItem: NSStatusItem?
+    private var sessionBadgeTimer: Timer?
     private let logger = Logger(subsystem: "com.clautch.app", category: "AppDelegate")
     private lazy var updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
 
@@ -58,6 +59,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        sessionBadgeTimer?.invalidate()
         HookInstaller.shared.stopPeriodicRepair()
         SocketServer.shared.stop()
         // Leave room gracefully
@@ -91,6 +93,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+
+        // Return to accessory when closed via X button
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            self?.onboardingWindow = nil
+            NSApp.setActivationPolicy(.accessory)
+        }
 
         self.onboardingWindow = window
     }
@@ -180,9 +192,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func screenDidChange() {
         guard onboardingWindow == nil else { return }
+        let wasExpanded = NotchHoverState.shared.isHovered
         notchPanel?.close()
         notchPanel = nil
         setupNotchPanel()
+        NotchHoverState.shared.isHovered = wasExpanded
     }
 
     @objc private func didWake() {
@@ -195,16 +209,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Status Item (Menu Bar)
 
     private func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
             let image = NSImage(named: "MenuBarIcon")
             image?.isTemplate = true
             image?.size = NSSize(width: 18, height: 18)
             button.image = image
+            button.imagePosition = .imageLeading
         }
 
         rebuildMenu()
+        startSessionBadgeTimer()
+    }
+
+    private func startSessionBadgeTimer() {
+        sessionBadgeTimer?.invalidate()
+        sessionBadgeTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateSessionBadge()
+            }
+        }
+    }
+
+    @MainActor
+    private func updateSessionBadge() {
+        let count = StateMachine.shared.sessionStore.activeSessions.count
+        guard let button = statusItem?.button else { return }
+        button.title = count > 0 ? "\(count)" : ""
     }
 
     private func rebuildMenu() {
@@ -244,6 +276,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let roomStatus = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         roomStatus.tag = 200
         menu.addItem(roomStatus)
+
+        let copyCodeItem = NSMenuItem(
+            title: "Copy Room Code",
+            action: #selector(copyRoomCode),
+            keyEquivalent: ""
+        )
+        copyCodeItem.target = self
+        copyCodeItem.tag = 201
+        menu.addItem(copyCodeItem)
 
         menu.addItem(.separator())
 
@@ -304,6 +345,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @objc private func copyRoomCode() {
+        Task { @MainActor in
+            guard let code = RoomManager.shared.currentRoom?.roomCode else { return }
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(code, forType: .string)
+        }
+    }
+
     @objc private func toggleLaunchAtLogin() {
         let service = SMAppService.mainApp
         do {
@@ -334,6 +383,9 @@ extension AppDelegate: NSMenuDelegate {
                 item.title = ""
                 item.isHidden = true
             }
+        }
+        if let copyItem = menu.item(withTag: 201) {
+            copyItem.isHidden = RoomManager.shared.currentRoom == nil
         }
 
         // Update sessions
