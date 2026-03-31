@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9](https://github.com/sophiie-ai/clautch/compare/v0.2.8...v0.2.9) (2026-03-31)
+
+
+### Features
+
+* persist creature selection when reopening customization ([8e1c4b3](https://github.com/sophiie-ai/clautch/commit/8e1c4b3bbf4856df06d306a4ba5566b9aa5eae94))
+
 ## [0.2.8](https://github.com/sophiie-ai/clautch/compare/v0.2.7...v0.2.8) (2026-03-31)
 
 
