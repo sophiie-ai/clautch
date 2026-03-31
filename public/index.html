@@ -3,23 +3,72 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clautch — macOS Notch Companion</title>
+  <title>Clautch — macOS Notch Companion for Claude Code</title>
   <style>
-    body { font-family: -apple-system, system-ui, sans-serif; background: #0a0a0a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .hero { text-align: center; max-width: 600px; padding: 2rem; }
-    h1 { font-size: 3rem; margin-bottom: 0.5rem; }
-    p { color: #888; font-size: 1.1rem; line-height: 1.6; }
-    a.btn { display: inline-block; background: #fff; color: #000; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 1.5rem; }
-    a.btn:hover { background: #ddd; }
-    .ghost { font-size: 5rem; margin-bottom: 1rem; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; }
+    .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; text-align: center; }
+    .ghost { image-rendering: pixelated; width: 120px; height: 120px; margin-bottom: 2rem; }
+    h1 { font-size: 3.5rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .tagline { color: #888; font-size: 1.2rem; line-height: 1.6; max-width: 500px; margin-bottom: 2rem; }
+    .buttons { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    a.btn { display: inline-block; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; }
+    a.btn-primary { background: #fff; color: #000; }
+    a.btn-primary:hover { background: #ddd; }
+    a.btn-secondary { background: transparent; color: #888; border: 1px solid #333; }
+    a.btn-secondary:hover { border-color: #666; color: #fff; }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; max-width: 800px; margin: 3rem auto 0; padding: 0 2rem; }
+    .feature { background: #111; border: 1px solid #222; border-radius: 12px; padding: 1.5rem; }
+    .feature h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .feature p { color: #666; font-size: 0.85rem; line-height: 1.5; }
+    .footer { text-align: center; padding: 3rem 2rem; color: #444; font-size: 0.8rem; }
+    /* Pixel ghost rendered with CSS */
+    .pixel-ghost { display: grid; grid-template-columns: repeat(8, 1fr); width: 120px; height: 120px; margin: 0 auto 2rem; }
+    .pixel-ghost .p { background: #fff; border-radius: 1px; }
+    .pixel-ghost .e { background: #222; border-radius: 1px; }
+    .pixel-ghost .m { background: #aaa; border-radius: 1px; }
   </style>
 </head>
 <body>
   <div class="hero">
-    <div class="ghost">👻</div>
+    <div class="pixel-ghost">
+      <div></div><div></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div></div><div></div>
+      <div></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div></div>
+      <div></div><div class="p"></div><div class="e"></div><div class="p"></div><div class="p"></div><div class="e"></div><div class="p"></div><div></div>
+      <div></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div></div>
+      <div></div><div class="p"></div><div class="p"></div><div class="m"></div><div class="m"></div><div class="p"></div><div class="p"></div><div></div>
+      <div></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div></div>
+      <div></div><div class="p"></div><div></div><div class="p"></div><div class="p"></div><div></div><div class="p"></div><div></div>
+      <div></div><div class="p"></div><div></div><div class="p"></div><div class="p"></div><div></div><div class="p"></div><div></div>
+    </div>
     <h1>Clautch</h1>
-    <p>A pixel-art creature lives in your MacBook's notch and reacts to your Claude Code activity in real time. Create rooms, share with your team.</p>
-    <a class="btn" href="https://github.com/sophiie-ai/clautch/releases">Download</a>
+    <p class="tagline">A pixel-art creature lives in your MacBook's notch and reacts to your Claude Code activity in real time. Create rooms and code with your team.</p>
+    <div class="buttons">
+      <a class="btn btn-primary" href="https://github.com/sophiie-ai/clautch/releases/latest">Download for Mac</a>
+      <a class="btn btn-secondary" href="https://github.com/sophiie-ai/clautch">GitHub</a>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <h3>🧠 Claude Code Aware</h3>
+        <p>Creature reacts in real time — thinking, working, sleeping, compacting — driven by Claude Code hooks.</p>
+      </div>
+      <div class="feature">
+        <h3>✨ Visual Effects</h3>
+        <p>Thought bubbles, sparkle particles, floating z's, happy/sad emotions, and a bouncy landing animation.</p>
+      </div>
+      <div class="feature">
+        <h3>👥 Team Rooms</h3>
+        <p>Create a room, share a 6-character code. See your teammates' creatures on your island via CloudKit.</p>
+      </div>
+      <div class="feature">
+        <h3>🎨 Customizable</h3>
+        <p>6 creature types (Ghost, Cat, Robot, Mushroom, Slime, Owl) and 6 color presets to choose from.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    macOS 14.0+ · MacBook with notch · Notarized by Apple ✓<br>
+    Made by <a href="https://sophiie.ai" style="color:#666">Sophiie AI</a>
   </div>
 </body>
 </html>
