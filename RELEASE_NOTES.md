@@ -1,17 +1,9 @@
 ## What's New
 
-### Security
-- **Invite tokens for rooms** — Rooms now require a cryptographic invite token to join. Room codes are shared as `CODE-TOKEN` format (e.g. `HK3WPR-a8Bf2kQ9xLmN3pRsT7wY`). Guessing the 6-character code alone is no longer enough to join a room. Existing rooms without tokens continue to work.
-- **Socket UID verification** — The Unix socket now verifies connecting processes belong to the same user via `getpeereid()`, preventing other local users from sending spoofed events.
-- **Symlink protection** — The hook installer validates that `~/.claude/settings.json` is not a symlink and is owned by the current user before writing.
-- **Hardened entitlements** — Explicitly disabled unsigned executable memory and library validation bypass in release builds.
-
-### Performance
-- **Concurrent CloudKit sync** — Room presence heartbeat and peer fetching now run in parallel, halving the network latency per sync cycle.
-
-### Bug Fixes
-- **Fixed CloudKit in release builds** — Room creation/joining was broken in release builds due to missing iCloud entitlements in the release signing configuration.
-- **Fixed DMG installer** — Hidden system folders (`.background`, `.fseventsd`) no longer appear in the installer window.
+### Features
+- **Reactions** — Send emoji reactions to your room members! Choose from 👋 Wave, 🎉 Celebrate, ❤️ Heart, 🔥 Fire, 👀 Eyes, or 👍 Thumbs Up. Right-click your creature or use the menu bar "Send Reaction" submenu. Reactions float above creatures for 4 seconds and are broadcast to the room in real time.
+- **Walk animation** — Creatures now hop along when wandering to a new position instead of just sliding.
 
 ### Improvements
-- **Updated release tooling** — Release script now supports hand-written release notes via a notes file parameter.
+- **Onboarding** — The name field now auto-focuses when the onboarding window opens, shows a placeholder hint ("What should we call you?"), and supports pressing Enter to continue.
+- **Landing page** — Added a 4-step install guide: Download, Drag to Applications, Launch, and hooks install automatically.
