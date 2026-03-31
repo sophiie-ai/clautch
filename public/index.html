@@ -6,24 +6,30 @@
   <title>Clautch — macOS Notch Companion for Claude Code</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, system-ui, sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; }
-    .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; text-align: center; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: #0a0a0a; color: #fff; height: 100vh; display: flex; flex-direction: column; }
+    .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 1.5rem 2rem 0; text-align: center; }
     .ghost { image-rendering: pixelated; width: 120px; height: 120px; margin-bottom: 2rem; }
-    h1 { font-size: 3.5rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-    .tagline { color: #888; font-size: 1.2rem; line-height: 1.6; max-width: 500px; margin-bottom: 2rem; }
+    h1 { font-size: 3rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+    .tagline { color: #888; font-size: 1.1rem; line-height: 1.5; max-width: 500px; margin-bottom: 1.5rem; }
     .buttons { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
-    a.btn { display: inline-block; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; }
+    a.btn { display: inline-block; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; }
     a.btn-primary { background: #fff; color: #000; }
     a.btn-primary:hover { background: #ddd; }
     a.btn-secondary { background: transparent; color: #888; border: 1px solid #333; }
     a.btn-secondary:hover { border-color: #666; color: #fff; }
-    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; max-width: 800px; margin: 3rem auto 0; padding: 0 2rem; }
-    .feature { background: #111; border: 1px solid #222; border-radius: 12px; padding: 1.5rem; }
-    .feature h3 { font-size: 1rem; margin-bottom: 0.5rem; }
-    .feature p { color: #666; font-size: 0.85rem; line-height: 1.5; }
-    .footer { text-align: center; padding: 3rem 2rem; color: #444; font-size: 0.8rem; }
+    .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; max-width: 860px; margin: 1.5rem auto 0; padding: 0 2rem; }
+    .feature { background: #111; border: 1px solid #222; border-radius: 12px; padding: 1.2rem; }
+    .feature h3 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+    .feature p { color: #666; font-size: 0.8rem; line-height: 1.4; }
+    .footer { text-align: center; padding: 1.2rem 2rem; color: #444; font-size: 0.8rem; flex-shrink: 0; }
     /* Pixel ghost rendered with CSS */
-    .pixel-ghost { display: grid; grid-template-columns: repeat(8, 1fr); width: 120px; height: 120px; margin: 0 auto 2rem; }
+    .pixel-ghost { display: grid; grid-template-columns: repeat(8, 1fr); width: 96px; height: 96px; margin: 0 auto 1.5rem; }
+    @media (max-height: 700px) {
+      h1 { font-size: 2.5rem; }
+      .pixel-ghost { width: 72px; height: 72px; margin-bottom: 1rem; }
+      .features { gap: 0.75rem; }
+      .feature { padding: 1rem; }
+    }
     .pixel-ghost .p { background: #fff; border-radius: 1px; }
     .pixel-ghost .e { background: #222; border-radius: 1px; }
     .pixel-ghost .m { background: #aaa; border-radius: 1px; }
