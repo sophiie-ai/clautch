@@ -43,31 +43,19 @@ struct NotchContentView: View {
         let profile = UserProfile.current
         var creatures: [CreatureDisplay] = []
 
-        let localSessions = stateMachine.sessionStore.activeSessions
-        if !localSessions.isEmpty {
-            for session in localSessions {
-                creatures.append(CreatureDisplay(
-                    id: "local-\(session.id)",
-                    state: session.state,
-                    creatureType: profile?.creatureType ?? .ghost,
-                    colorPreset: profile?.colorPreset ?? .none,
-                    xPosition: session.xPosition,
-                    isLocal: true,
-                    displayName: profile?.displayName ?? "You",
-                    sessionDuration: Date().timeIntervalSince(session.startedAt)
-                ))
-            }
-        } else {
-            creatures.append(CreatureDisplay(
-                id: "local-idle",
-                state: CreatureState(),
-                creatureType: profile?.creatureType ?? .ghost,
-                colorPreset: profile?.colorPreset ?? .none,
-                xPosition: wanderPosition,
-                isLocal: true,
-                displayName: profile?.displayName ?? "You"
-            ))
-        }
+        // One creature per user — use the most active session's state,
+        // or idle if no sessions are running.
+        let effective = stateMachine.sessionStore.effectiveSession
+        creatures.append(CreatureDisplay(
+            id: "local",
+            state: effective?.state ?? CreatureState(),
+            creatureType: profile?.creatureType ?? .ghost,
+            colorPreset: profile?.colorPreset ?? .none,
+            xPosition: wanderPosition,
+            isLocal: true,
+            displayName: profile?.displayName ?? "You",
+            sessionDuration: effective.map { Date().timeIntervalSince($0.startedAt) }
+        ))
 
         if let myId = profile?.peerId {
             let remotePeers = roomManager.peerStore.visiblePeers(excludingPeerId: myId)
