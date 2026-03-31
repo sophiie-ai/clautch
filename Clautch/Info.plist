@@ -16,6 +16,8 @@
     <string>14.0</string>
     <key>SUFeedURL</key>
     <string>https://clautch.app/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>C8RtmEJsbpvs1sd1b/SC5sUqQWx8uub6nsIGJ0a/SgM=</string>
     <key>SUEnableAutomaticChecks</key>
     <true/>
 </dict>

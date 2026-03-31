@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Clautch Updates</title>
+    <link>https://clautch.app/appcast.xml</link>
+    <description>Clautch update feed</description>
+    <language>en</language>
+    <!--
+      Add items here when releasing new versions.
+      Use Sparkle's generate_appcast tool or add manually:
+
+      <item>
+        <title>Version X.Y.Z</title>
+        <sparkle:version>BUILD_NUMBER</sparkle:version>
+        <sparkle:shortVersionString>X.Y.Z</sparkle:shortVersionString>
+        <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        <pubDate>Mon, 01 Apr 2026 00:00:00 +0000</pubDate>
+        <enclosure
+          url="https://github.com/sophiie-ai/clautch/releases/download/vX.Y.Z/Clautch.dmg"
+          length="FILE_SIZE"
+          type="application/octet-stream"
+          sparkle:edSignature="ED_SIGNATURE" />
+      </item>
+    -->
+  </channel>
+</rss>
