@@ -148,6 +148,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hostingView.layer?.backgroundColor = .clear
 
         let hitTestView = NotchHitTestView(hostingView: hostingView)
+        hitTestView.onHoverChanged = { hovering in
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                NotchHoverState.shared.isHovered = hovering
+            }
+        }
         panel.contentView = hitTestView
         panel.orderFrontRegardless()
         self.notchPanel = panel

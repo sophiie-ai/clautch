@@ -28,17 +28,21 @@ extension NSScreen {
         return NSRect(origin: NSPoint(x: x, y: y), size: size)
     }
 
-    /// A window frame sized to contain the notch plus a small area below it
-    /// where creatures can stand on their grass island.
+    /// A window frame for the Dynamic-Island-style panel that extends
+    /// below the notch. The panel is wider than the notch and drops down
+    /// so creatures can walk inside the expanded black area.
     var notchWindowFrame: NSRect? {
         guard let notch = notchFrame else { return nil }
-        let padding: CGFloat = 30     // horizontal padding
-        let grassHeight: CGFloat = 36 // area below notch for grass + creatures
+
+        // The panel extends sideways and downward from the notch.
+        let sideExtension: CGFloat = 60   // extra width beyond notch on each side
+        let dropHeight: CGFloat = 70      // max drop below the notch when expanded
+
         return NSRect(
-            x: notch.origin.x - padding,
-            y: notch.origin.y - grassHeight,
-            width: notch.width + padding * 2,
-            height: notch.height + grassHeight
+            x: notch.origin.x - sideExtension,
+            y: notch.origin.y - dropHeight,
+            width: notch.width + sideExtension * 2,
+            height: notch.height + dropHeight
         )
     }
 }

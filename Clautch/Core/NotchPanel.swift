@@ -29,5 +29,6 @@ final class NotchPanel: NSPanel {
 
         isMovable = false
         isMovableByWindowBackground = false
+        acceptsMouseMovedEvents = true
     }
 }

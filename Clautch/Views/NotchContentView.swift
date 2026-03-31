@@ -1,16 +1,41 @@
 import SwiftUI
 
+/// Shared hover state, set by the AppKit tracking area.
+@Observable
+final class NotchHoverState {
+    static let shared = NotchHoverState()
+    var isHovered = false
+}
+
 /// Root view rendered inside the notch panel.
-/// Combines local sessions and remote peers into a unified creature display.
+/// Minimal by default — shows creature peeking out and grass.
+/// Expands into a Dynamic Island panel on hover.
 struct NotchContentView: View {
     @State private var stateMachine = StateMachine.shared
     @State private var roomManager = RoomManager.shared
+    @State private var hoverState = NotchHoverState.shared
+    @State private var wanderPosition: CGFloat = 0.25
+    @State private var wanderTimer: Timer?
+
+    private var isExpanded: Bool { hoverState.isHovered }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            GrassIslandView(creatures: allCreatures)
+        GrassIslandView(creatures: allCreatures, isExpanded: isExpanded)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .onAppear { startWandering() }
+            .onDisappear { wanderTimer?.invalidate() }
+    }
+
+    // MARK: - Wander
+
+    private func startWandering() {
+        wanderTimer?.invalidate()
+        wanderTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+            let newTarget = CGFloat.random(in: 0.05...0.95)
+            withAnimation(.easeInOut(duration: 2.5)) {
+                wanderPosition = newTarget
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
     }
 
     /// Build unified creature list from local sessions + remote peers.
@@ -18,7 +43,6 @@ struct NotchContentView: View {
         let profile = UserProfile.current
         var creatures: [CreatureDisplay] = []
 
-        // Local sessions
         let localSessions = stateMachine.sessionStore.activeSessions
         if !localSessions.isEmpty {
             for session in localSessions {
@@ -33,19 +57,17 @@ struct NotchContentView: View {
                 ))
             }
         } else {
-            // Always show at least the local creature
             creatures.append(CreatureDisplay(
                 id: "local-idle",
                 state: CreatureState(),
                 creatureType: profile?.creatureType ?? .ghost,
                 colorPreset: profile?.colorPreset ?? .none,
-                xPosition: 0.5,
+                xPosition: wanderPosition,
                 isLocal: true,
                 displayName: profile?.displayName ?? "You"
             ))
         }
 
-        // Remote peers
         if let myId = profile?.peerId {
             let remotePeers = roomManager.peerStore.visiblePeers(excludingPeerId: myId)
             for peer in remotePeers {
