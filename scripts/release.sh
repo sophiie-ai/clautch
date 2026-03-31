@@ -175,7 +175,8 @@ echo "==> Step 7: Committing and pushing"
 cd "$ROOT"
 git add public/appcast.xml
 git commit -m "release: update appcast for $TAG"
-git push
+# Try SSH first, fall back to HTTPS
+git push 2>/dev/null || git push https://github.com/$REPO.git main
 
 # ---------------------------------------------------------------------------
 # Step 8 — Deploy to Vercel
