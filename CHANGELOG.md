@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.11](https://github.com/sophiie-ai/clautch/compare/v0.2.10...v0.2.11) (2026-03-31)
+
+
+### Bug Fixes
+
+* derive build number from version for reliable Sparkle updates ([4770986](https://github.com/sophiie-ai/clautch/commit/4770986baaea941d9cc9be0719df79a1d21e8253))
+
 ## [0.2.10](https://github.com/sophiie-ai/clautch/compare/v0.2.9...v0.2.10) (2026-03-31)
 
 
