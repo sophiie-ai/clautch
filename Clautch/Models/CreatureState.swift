@@ -32,6 +32,17 @@ enum CreatureTask: String, Codable, Sendable {
         }
     }
 
+    /// Human-readable label for display.
+    var displayLabel: String {
+        switch self {
+        case .idle:       return "Idle"
+        case .working:    return "Working"
+        case .thinking:   return "Thinking"
+        case .sleeping:   return "Sleeping"
+        case .compacting: return "Compacting"
+        }
+    }
+
     /// Frames per second for sprite sheet animation.
     var fps: Double {
         switch self {

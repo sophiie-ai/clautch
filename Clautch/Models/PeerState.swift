@@ -35,4 +35,5 @@ struct CreatureDisplay: Identifiable {
     let xPosition: CGFloat
     let isLocal: Bool
     let displayName: String
+    var sessionDuration: TimeInterval?
 }

@@ -53,7 +53,8 @@ struct NotchContentView: View {
                     colorPreset: profile?.colorPreset ?? .none,
                     xPosition: session.xPosition,
                     isLocal: true,
-                    displayName: profile?.displayName ?? "You"
+                    displayName: profile?.displayName ?? "You",
+                    sessionDuration: Date().timeIntervalSince(session.startedAt)
                 ))
             }
         } else {

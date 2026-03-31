@@ -119,19 +119,37 @@ struct GrassIslandView: View {
                 let bottom = notchHeight + dropHeight
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
-                    CreatureSpriteView(
-                        state: creature.state,
-                        creatureType: creature.creatureType,
-                        colorPreset: creature.colorPreset
-                    )
-                    .frame(width: creatureSize, height: creatureSize)
-                    // Squash-stretch on landing
-                    .scaleEffect(
-                        x: 1 + (1 - bounceScale) * 0.5,  // wider when squashed
-                        y: bounceScale,
-                        anchor: .bottom
-                    )
-                    .offset(y: bounceOffset)
+                    VStack(spacing: 2) {
+                        // Task label (expanded only)
+                        if isExpanded && creature.id != "local-idle" {
+                            Text(creature.state.task.displayLabel)
+                                .font(.system(size: 7, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.6))
+                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                        }
+
+                        CreatureSpriteView(
+                            state: creature.state,
+                            creatureType: creature.creatureType,
+                            colorPreset: creature.colorPreset
+                        )
+                        .frame(width: creatureSize, height: creatureSize)
+                        // Squash-stretch on landing
+                        .scaleEffect(
+                            x: 1 + (1 - bounceScale) * 0.5,
+                            y: bounceScale,
+                            anchor: .bottom
+                        )
+                        .offset(y: bounceOffset)
+
+                        // Session duration (expanded only)
+                        if isExpanded, let duration = creature.sessionDuration {
+                            Text(formatDuration(duration))
+                                .font(.system(size: 6, weight: .medium, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.4))
+                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                        }
+                    }
                     .position(
                         x: geo.size.width / 2 + creatureOffset(for: creature, in: geo.size.width),
                         y: bottom - creatureSize / 2 - 8
@@ -140,6 +158,9 @@ struct GrassIslandView: View {
                         color: creature.isLocal ? .white.opacity(0.2) : .clear,
                         radius: creature.isLocal ? 3 : 0
                     )
+                    .help(creature.id == "local-idle"
+                        ? "Idle"
+                        : "\(creature.displayName): \(creature.state.task.displayLabel)")
                 }
             }
         }
@@ -171,6 +192,12 @@ struct GrassIslandView: View {
                 }
             }
         }
+    }
+
+    private func formatDuration(_ interval: TimeInterval) -> String {
+        let m = Int(interval) / 60
+        let s = Int(interval) % 60
+        return m > 0 ? "\(m)m \(s)s" : "\(s)s"
     }
 
     private func creatureOffset(for creature: CreatureDisplay, in width: CGFloat) -> CGFloat {

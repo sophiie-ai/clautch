@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWindow: NSWindow?
     private var roomWindow: NSWindow?
     private var statusItem: NSStatusItem?
+    private var clickOutsideMonitor: Any?
     private let logger = Logger(subsystem: "com.clautch.app", category: "AppDelegate")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -76,6 +77,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.center()
         window.title = "Welcome to Clautch"
+        window.appearance = NSAppearance(named: .darkAqua)
         window.contentView = NSHostingView(rootView: onboarding)
         window.isReleasedWhenClosed = false
         window.makeKeyAndOrderFront(nil)
@@ -158,6 +160,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         panel.contentView = hitTestView
         panel.orderFrontRegardless()
         self.notchPanel = panel
+
+        // Collapse when clicking outside the panel
+        if let monitor = clickOutsideMonitor { NSEvent.removeMonitor(monitor) }
+        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] _ in
+            guard NotchHoverState.shared.isHovered,
+                  let panel = self?.notchPanel else { return }
+            let mouse = NSEvent.mouseLocation
+            if !panel.frame.contains(mouse) {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    NotchHoverState.shared.isHovered = false
+                }
+                NSSound(named: "Tink")?.play()
+            }
+        }
 
         logger.info("Notch panel created")
     }
