@@ -62,7 +62,7 @@ struct RoomView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text(copiedCode ? "Copied!" : "Click to copy")
+                    Text(copiedCode ? "Copied invite link!" : "Click to copy invite")
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                 }
@@ -204,27 +204,23 @@ struct RoomView: View {
             }
             .padding(.horizontal, 20)
 
-            // Join room
+            // Join room — accepts "CODE" or "CODE-TOKEN" invite format
             VStack(spacing: 10) {
-                TextField("Enter room code", text: $joinCode)
+                TextField("Paste invite code", text: $joinCode)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium, design: .monospaced))
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .background(Color.primary.opacity(0.06))
                     .cornerRadius(10)
-                    .textCase(.uppercase)
-                    .onChange(of: joinCode) { _, newValue in
-                        joinCode = String(newValue.uppercased().prefix(6))
-                    }
 
                 Button(action: {
                     isLoading = true
                     errorMessage = nil
                     Task {
                         do {
-                            try await roomManager.joinRoom(code: joinCode)
+                            try await roomManager.joinRoom(shareableCode: joinCode)
                         } catch {
                             errorMessage = error.localizedDescription
                         }
@@ -238,13 +234,13 @@ struct RoomView: View {
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(joinCode.count == 6
+                                .fill(joinCodeValid
                                     ? Color.accentColor
                                     : Color.secondary.opacity(0.3))
                         )
                 }
                 .buttonStyle(.plain)
-                .disabled(joinCode.count != 6 || isLoading)
+                .disabled(!joinCodeValid || isLoading)
             }
             .padding(.horizontal, 20)
 
@@ -287,12 +283,18 @@ struct RoomView: View {
         }
     }
 
+    /// The join input is valid if it contains at least a 6-char code.
+    private var joinCodeValid: Bool {
+        let (code, _) = RoomInfo.parse(shareableCode: joinCode)
+        return code.count == 6
+    }
+
     // MARK: - Actions
 
     private func copyCode() {
-        guard let code = roomManager.currentRoom?.roomCode else { return }
+        guard let room = roomManager.currentRoom else { return }
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(code, forType: .string)
+        NSPasteboard.general.setString(room.shareableCode, forType: .string)
         copiedCode = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             copiedCode = false

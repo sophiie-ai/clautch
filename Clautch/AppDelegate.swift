@@ -375,9 +375,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func copyRoomCode() {
         Task { @MainActor in
-            guard let code = RoomManager.shared.currentRoom?.roomCode else { return }
+            guard let room = RoomManager.shared.currentRoom else { return }
             NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(code, forType: .string)
+            NSPasteboard.general.setString(room.shareableCode, forType: .string)
         }
     }
 

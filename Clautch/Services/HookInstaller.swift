@@ -125,7 +125,30 @@ final class HookInstaller {
     /// Each event type's array can contain multiple matcher groups. We add
     /// one matcher group for Clautch (matcher="" to match all) and leave
     /// any existing user-defined matcher groups untouched.
+    /// Validate that the settings file is safe to write to (not a symlink, owned by us).
+    private func validateSettingsPath() throws {
+        let fm = FileManager.default
+        let path = settingsFile.path
+
+        guard fm.fileExists(atPath: path) else { return } // will be created fresh
+
+        // Reject symlinks — prevents writing to an attacker-controlled path
+        let attrs = try fm.attributesOfItem(atPath: path)
+        if attrs[.type] as? FileAttributeType == .typeSymbolicLink {
+            throw NSError(domain: "HookInstaller", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "settings.json is a symlink — refusing to write"])
+        }
+
+        // Verify the file is owned by the current user
+        if let ownerID = attrs[.ownerAccountID] as? UInt, ownerID != getuid() {
+            throw NSError(domain: "HookInstaller", code: 2,
+                          userInfo: [NSLocalizedDescriptionKey: "settings.json is not owned by current user"])
+        }
+    }
+
     private func registerHooks() throws {
+        try validateSettingsPath()
+
         // Use NSFileCoordinator to safely read-modify-write settings.json,
         // preventing data corruption from concurrent access.
         let coordinator = NSFileCoordinator()

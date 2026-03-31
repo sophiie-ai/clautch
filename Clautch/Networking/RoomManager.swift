@@ -40,13 +40,14 @@ final class RoomManager {
 
         status = .connecting
         let code = RoomInfo.generateCode()
+        let token = RoomInfo.generateInviteToken()
 
         do {
-            // Create room record
-            let roomRecord = try await cloudKit.createRoom(code: code, creatorPeerId: profile.peerId)
+            let roomRecord = try await cloudKit.createRoom(
+                code: code, creatorPeerId: profile.peerId, inviteToken: token
+            )
             roomRecordID = roomRecord.recordID
 
-            // Write our presence
             let state = makePeerState(from: profile)
             let presenceRecord = try await cloudKit.writePresence(
                 existingRecordID: nil,
@@ -57,12 +58,14 @@ final class RoomManager {
 
             currentRoom = RoomInfo(
                 roomCode: code,
+                inviteToken: token,
                 createdAt: Date(),
                 creatorPeerId: profile.peerId,
                 recordID: roomRecord.recordID.recordName
             )
 
             UserDefaults.standard.lastRoomCode = code
+            UserDefaults.standard.lastRoomToken = token
             status = .connected
             startSyncTimer()
             logger.info("Created room: \(code)")
@@ -75,7 +78,13 @@ final class RoomManager {
 
     // MARK: - Join Room
 
-    func joinRoom(code: String) async throws {
+    /// Join a room using a shareable code (CODE-TOKEN or bare CODE for legacy rooms).
+    func joinRoom(shareableCode: String) async throws {
+        let (code, token) = RoomInfo.parse(shareableCode: shareableCode)
+        try await joinRoom(code: code, inviteToken: token)
+    }
+
+    func joinRoom(code: String, inviteToken: String? = nil) async throws {
         guard let profile = UserProfile.current else {
             throw RoomError.noProfile
         }
@@ -88,14 +97,22 @@ final class RoomManager {
         status = .connecting
 
         do {
-            // Find the room
             guard let roomRecord = try await cloudKit.findRoom(code: normalized) else {
                 status = .error("Room not found")
                 throw RoomError.roomNotFound
             }
+
+            // Validate invite token if the room has one
+            let serverToken = roomRecord["inviteToken"] as? String
+            if let serverToken, !serverToken.isEmpty {
+                guard let inviteToken, inviteToken == serverToken else {
+                    status = .error("Invalid invite link")
+                    throw RoomError.invalidToken
+                }
+            }
+
             roomRecordID = roomRecord.recordID
 
-            // Write our presence
             let state = makePeerState(from: profile)
             let presenceRecord = try await cloudKit.writePresence(
                 existingRecordID: nil,
@@ -106,16 +123,17 @@ final class RoomManager {
 
             currentRoom = RoomInfo(
                 roomCode: normalized,
+                inviteToken: serverToken,
                 createdAt: roomRecord["createdAt"] as? Date ?? Date(),
                 creatorPeerId: roomRecord["creatorPeerId"] as? String ?? "",
                 recordID: roomRecord.recordID.recordName
             )
 
             UserDefaults.standard.lastRoomCode = normalized
+            UserDefaults.standard.lastRoomToken = serverToken
             status = .connected
             startSyncTimer()
 
-            // Initial fetch
             try await fetchPeers()
 
             logger.info("Joined room: \(normalized)")
@@ -132,7 +150,6 @@ final class RoomManager {
     func leaveRoom() async {
         stopSyncTimer()
 
-        // Delete our presence
         if let presenceID = myPresenceRecordID {
             try? await cloudKit.deletePresence(recordID: presenceID)
         }
@@ -143,6 +160,7 @@ final class RoomManager {
         status = .disconnected
         peerStore.clear()
         UserDefaults.standard.lastRoomCode = nil
+        UserDefaults.standard.lastRoomToken = nil
 
         logger.info("Left room")
     }
@@ -153,18 +171,19 @@ final class RoomManager {
         guard currentRoom == nil,
               let code = UserDefaults.standard.lastRoomCode else { return }
 
+        let token = UserDefaults.standard.lastRoomToken
         logger.info("Attempting auto-rejoin to room \(code)")
         do {
-            try await joinRoom(code: code)
+            try await joinRoom(code: code, inviteToken: token)
         } catch {
             logger.warning("Auto-rejoin failed: \(error)")
             UserDefaults.standard.lastRoomCode = nil
+            UserDefaults.standard.lastRoomToken = nil
         }
     }
 
     // MARK: - Broadcast State
 
-    /// Called by the StateMachine whenever local creature state changes.
     func broadcastState(task: CreatureTask, emotion: CreatureEmotion) {
         guard let profile = UserProfile.current else { return }
         localState = PeerState(
@@ -182,7 +201,6 @@ final class RoomManager {
 
     private func startSyncTimer() {
         stopSyncTimer()
-        // Sync every 4 seconds: update our presence + fetch peers
         syncTimer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 await self?.syncCycle()
@@ -201,35 +219,40 @@ final class RoomManager {
         guard let room = currentRoom else { return }
         syncCycleCount += 1
 
-        // Capture main-actor-isolated values before concurrent work
         let state = localState
         let presenceID = myPresenceRecordID
         let roomCode = room.roomCode
 
-        // Run heartbeat and peer fetch concurrently to halve network latency
-        if let state {
-            do {
-                let record = try await cloudKit.writePresence(
-                    existingRecordID: presenceID,
-                    roomCode: roomCode,
-                    state: state
-                )
-                myPresenceRecordID = record.recordID
-            } catch {
-                logger.error("Heartbeat failed: \(error.localizedDescription)")
-            }
-        }
+        // Run heartbeat and peer fetch concurrently via nonisolated helpers
+        async let heartbeatRecord: CKRecord? = writeHeartbeat(
+            state: state, presenceID: presenceID, roomCode: roomCode
+        )
+        async let fetchedPeers: [(CKRecord.ID, PeerState)] = fetchPresences(roomCode: roomCode)
 
-        do {
-            try await fetchPeers()
-        } catch {
-            logger.error("Peer fetch failed: \(error.localizedDescription)")
-        }
+        let record = await heartbeatRecord
+        let peers = await fetchedPeers
 
-        // Cleanup stale presences every 5th cycle (~20 seconds)
+        if let record { myPresenceRecordID = record.recordID }
+        peerStore.update(with: peers)
+
         if syncCycleCount % 5 == 0 {
             try? await cloudKit.cleanupStalePresences(roomCode: roomCode)
         }
+    }
+
+    /// nonisolated so async let can run this off the main actor concurrently.
+    private nonisolated func writeHeartbeat(
+        state: PeerState?, presenceID: CKRecord.ID?, roomCode: String
+    ) async -> CKRecord? {
+        guard let state else { return nil }
+        return try? await cloudKit.writePresence(
+            existingRecordID: presenceID, roomCode: roomCode, state: state
+        )
+    }
+
+    /// nonisolated so async let can run this off the main actor concurrently.
+    private nonisolated func fetchPresences(roomCode: String) async -> [(CKRecord.ID, PeerState)] {
+        (try? await cloudKit.fetchPresences(roomCode: roomCode)) ?? []
     }
 
     private func fetchPeers() async throws {
@@ -259,12 +282,14 @@ enum RoomError: LocalizedError {
     case noProfile
     case invalidCode
     case roomNotFound
+    case invalidToken
 
     var errorDescription: String? {
         switch self {
         case .noProfile:    return "Please set up your profile first"
         case .invalidCode:  return "Room code must be 6 characters"
         case .roomNotFound: return "Room not found"
+        case .invalidToken: return "Invalid invite link"
         }
     }
 }

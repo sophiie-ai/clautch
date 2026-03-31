@@ -42,12 +42,13 @@ final class CloudKitService: @unchecked Sendable {
 
     // MARK: - Room Operations
 
-    /// Create a new room record.
-    func createRoom(code: String, creatorPeerId: String) async throws -> CKRecord {
+    /// Create a new room record with an invite token.
+    func createRoom(code: String, creatorPeerId: String, inviteToken: String) async throws -> CKRecord {
         guard let db = publicDB else { throw CloudKitUnavailableError() }
         let record = CKRecord(recordType: Self.roomType)
         record["roomCode"] = code
         record["creatorPeerId"] = creatorPeerId
+        record["inviteToken"] = inviteToken
         record["createdAt"] = Date() as NSDate
 
         let saved = try await db.save(record)

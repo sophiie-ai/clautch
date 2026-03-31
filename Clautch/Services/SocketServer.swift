@@ -123,6 +123,14 @@ final class SocketServer: @unchecked Sendable {
     private func handleClient(_ fd: Int32) {
         defer { Darwin.close(fd) }
 
+        // Verify connecting process belongs to same user (defense-in-depth)
+        var euid: uid_t = 0
+        var egid: gid_t = 0
+        if getpeereid(fd, &euid, &egid) == 0, euid != getuid() {
+            logger.warning("Rejected socket connection from UID \(euid)")
+            return
+        }
+
         // Read timeout
         var tv = timeval(tv_sec: 0, tv_usec: 500_000)
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))

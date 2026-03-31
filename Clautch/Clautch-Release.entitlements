@@ -2,7 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!--
+        App Sandbox is disabled because the app requires:
+        1. Unix socket in $TMPDIR for Claude Code hook communication
+        2. Write access to ~/.claude/hooks/ and ~/.claude/settings.json
+        Mitigations: hardened runtime, socket UID check (getpeereid),
+        per-user TMPDIR, 0600 socket permissions, symlink validation.
+        Future: consider XPC helper for hook installation to enable sandbox.
+    -->
     <key>com.apple.security.app-sandbox</key>
+    <false/>
+    <!-- Hardened runtime restrictions — keep all disabled (secure defaults) -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <false/>
+    <key>com.apple.security.cs.disable-library-validation</key>
     <false/>
 </dict>
 </plist>
