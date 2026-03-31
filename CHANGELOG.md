@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/sophiie-ai/clautch/compare/v0.2.4...v0.2.5) (2026-03-31)
+
+
+### Bug Fixes
+
+* use release entitlements for CI archive (no provisioning profile needed) ([60861a6](https://github.com/sophiie-ai/clautch/commit/60861a6438e2ca7d260530daebae9594836526ab))
+
 ## [0.2.4](https://github.com/sophiie-ai/clautch/compare/v0.2.3...v0.2.4) (2026-03-31)
 
 
