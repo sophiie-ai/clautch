@@ -2,23 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>LSUIElement</key>
-    <true/>
-    <key>CFBundleName</key>
-    <string>Clautch</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.clautch.app</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>SUFeedURL</key>
-    <string>https://clautch.app/appcast.xml</string>
-    <key>SUPublicEDKey</key>
-    <string>C8RtmEJsbpvs1sd1b/SC5sUqQWx8uub6nsIGJ0a/SgM=</string>
-    <key>SUEnableAutomaticChecks</key>
-    <true/>
+	<key>CFBundleIdentifier</key>
+	<string>com.clautch.app</string>
+	<key>CFBundleName</key>
+	<string>Clautch</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.2</string>
+	<key>CFBundleVersion</key>
+	<string>3</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://clautch.app/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>C8RtmEJsbpvs1sd1b/SC5sUqQWx8uub6nsIGJ0a/SgM=</string>
 </dict>
 </plist>
