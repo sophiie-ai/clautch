@@ -111,25 +111,83 @@ codesign --force --sign "$IDENTITY" \
 echo "==> Creating styled DMG"
 rm -f "$DMG_PATH"
 
-# Requires: brew install create-dmg
-if ! command -v create-dmg &>/dev/null; then
-    echo "ERROR: create-dmg not found. Install with: brew install create-dmg"
-    exit 1
+# Use a unique volume name to avoid stale mount conflicts
+VOL_NAME="Install Clautch"
+VOL_PATH="/Volumes/$VOL_NAME"
+TEMP_DMG="$BUILD_DIR/Clautch-temp.dmg"
+
+# Ensure no stale mounts
+if [ -d "$VOL_PATH" ]; then
+    echo "    Ejecting stale volume"
+    hdiutil detach "$VOL_PATH" -force 2>/dev/null || true
+    sleep 1
 fi
 
-create-dmg \
-    --volname "Install Clautch" \
-    --background "$SCRIPT_DIR/dmg-background.png" \
-    --window-pos 200 120 \
-    --window-size 540 380 \
-    --icon-size 128 \
-    --icon "Clautch.app" 150 170 \
-    --hide-extension "Clautch.app" \
-    --app-drop-link 390 170 \
-    --text-size 13 \
-    --no-internet-enable \
-    "$DMG_PATH" \
-    "$APP_PATH"
+# Create a staging directory with the app and Applications alias
+STAGING="$BUILD_DIR/dmg-staging"
+rm -rf "$STAGING"
+mkdir -p "$STAGING"
+cp -a "$APP_PATH" "$STAGING/"
+ln -s /Applications "$STAGING/Applications"
+
+# Create a writable DMG from staging
+hdiutil create -srcfolder "$STAGING" \
+    -volname "$VOL_NAME" \
+    -fs HFS+ \
+    -fsargs "-c c=64,a=16,e=16" \
+    -format UDRW \
+    -size 200m \
+    "$TEMP_DMG"
+
+# Mount it
+MOUNT_OUTPUT=$(hdiutil attach "$TEMP_DMG" -readwrite -noverify -noautoopen)
+DEVICE=$(echo "$MOUNT_OUTPUT" | tail -1 | awk '{print $1}')
+echo "    Mounted at $VOL_PATH (device: $DEVICE)"
+
+# Copy background image and hide the folder
+mkdir -p "$VOL_PATH/.background"
+cp "$SCRIPT_DIR/dmg-background.png" "$VOL_PATH/.background/background.png"
+SetFile -a V "$VOL_PATH/.background"
+
+# Hide the .background file extension on the app
+SetFile -a E "$VOL_PATH/Clautch.app"
+
+# Configure Finder window via AppleScript
+echo "    Configuring Finder window"
+osascript <<APPLESCRIPT
+tell application "Finder"
+    tell disk "$VOL_NAME"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {200, 120, 740, 500}
+        set viewOptions to the icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 128
+        set text size of viewOptions to 13
+        set background picture of viewOptions to file ".background:background.png"
+        set position of item "Clautch.app" of container window to {150, 170}
+        set position of item "Applications" of container window to {390, 170}
+        close
+        open
+        update without registering applications
+        delay 2
+        close
+    end tell
+end tell
+APPLESCRIPT
+
+# Ensure Finder flushes .DS_Store
+sync
+
+# Detach
+hdiutil detach "$DEVICE"
+
+# Convert to compressed read-only DMG
+hdiutil convert "$TEMP_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG_PATH"
+rm -f "$TEMP_DMG"
+rm -rf "$STAGING"
 
 # ---------------------------------------------------------------------------
 # Step 7 — Verify code signature
