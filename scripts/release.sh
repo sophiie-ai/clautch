@@ -126,10 +126,16 @@ echo "==> Step 6: Updating appcast.xml"
 
 PUB_DATE=$(date -R)
 
+# Read build number from Info.plist (CFBundleVersion)
+BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$ROOT/Clautch/Info.plist")
+echo "    Marketing version: $VERSION, Build number: $BUILD_NUMBER"
+
 # Build the new <item> block
+# sparkle:version = build number (compared against CFBundleVersion)
+# sparkle:shortVersionString = marketing version (displayed to user)
 NEW_ITEM="    <item>
       <title>Version $VERSION</title>
-      <sparkle:version>$VERSION</sparkle:version>
+      <sparkle:version>$BUILD_NUMBER</sparkle:version>
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
       <pubDate>$PUB_DATE</pubDate>
