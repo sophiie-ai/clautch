@@ -10,12 +10,12 @@
       <sparkle:version>0.2.1</sparkle:version>
       <sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <pubDate>Tue, 31 Mar 2026 13:53:54 -0500</pubDate>
+      <pubDate>Tue, 31 Mar 2026 14:05:15 -0500</pubDate>
       <enclosure
         url="https://github.com/sophiie-ai/clautch/releases/download/v0.2.1/Clautch.dmg"
-        length="1380287"
+        length="1380264"
         type="application/octet-stream"
-        sparkle:edSignature="ynM7E+CpMqym9uoAM2DdxG9P6IeSgoAXo9AS12wzL9yvWhRVKsBDz/LiC9vuql37hD7xISvRHmbLsRADQ9DhDQ==" />
+        sparkle:edSignature="F7qunFuJeLsNhFH93sDyfhiIaHYN3HT4ET/Oos1g/JtPxxOpPpYGq7snJlrFR+OxFu0XYfKhBsoGmRNvDRtDCQ==" />
     </item>
   </channel>
 </rss>
