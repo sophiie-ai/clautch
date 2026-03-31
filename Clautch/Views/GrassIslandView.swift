@@ -138,7 +138,8 @@ struct GrassIslandView: View {
                         CreatureSpriteView(
                             state: creature.state,
                             creatureType: creature.creatureType,
-                            colorPreset: creature.colorPreset
+                            colorPreset: creature.colorPreset,
+                            isExpanded: isExpanded
                         )
                         .frame(width: creatureSize, height: creatureSize)
                         .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)

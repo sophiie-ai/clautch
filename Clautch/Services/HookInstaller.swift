@@ -18,7 +18,9 @@ final class HookInstaller {
     /// Marker used to identify Clautch-managed hook entries.
     private let clautchMarker = "clautch-hook"
 
-    private var repairTimer: Timer?
+    private var settingsWatcher: DispatchSourceFileSystemObject?
+    private var hookScriptWatcher: DispatchSourceFileSystemObject?
+    private let watchQueue = DispatchQueue(label: "com.clautch.hookWatcher", qos: .utility)
 
     func installIfNeeded() {
         do {
@@ -31,17 +33,39 @@ final class HookInstaller {
         }
     }
 
-    /// Starts periodic checks that repair hooks if they get removed or overwritten.
+    /// Watches the settings file and hook script for modifications, repairing on change.
     func startPeriodicRepair(interval: TimeInterval = 60) {
-        repairTimer?.invalidate()
-        repairTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            self?.repairIfNeeded()
-        }
+        stopPeriodicRepair()
+        watchFile(at: settingsFile, storing: &settingsWatcher)
+        watchFile(at: hookDest, storing: &hookScriptWatcher)
     }
 
     func stopPeriodicRepair() {
-        repairTimer?.invalidate()
-        repairTimer = nil
+        settingsWatcher?.cancel()
+        settingsWatcher = nil
+        hookScriptWatcher?.cancel()
+        hookScriptWatcher = nil
+    }
+
+    private func watchFile(at url: URL, storing source: inout DispatchSourceFileSystemObject?) {
+        let fd = open(url.path, O_EVTONLY)
+        guard fd >= 0 else {
+            logger.warning("Could not open \(url.lastPathComponent) for watching")
+            return
+        }
+        let watcher = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd,
+            eventMask: [.write, .delete, .rename],
+            queue: watchQueue
+        )
+        watcher.setEventHandler { [weak self] in
+            self?.repairIfNeeded()
+        }
+        watcher.setCancelHandler {
+            close(fd)
+        }
+        source = watcher
+        watcher.resume()
     }
 
     /// Checks hook integrity and reinstalls if broken.
@@ -102,57 +126,64 @@ final class HookInstaller {
     /// one matcher group for Clautch (matcher="" to match all) and leave
     /// any existing user-defined matcher groups untouched.
     private func registerHooks() throws {
-        var settings: [String: Any] = [:]
+        // Use NSFileCoordinator to safely read-modify-write settings.json,
+        // preventing data corruption from concurrent access.
+        let coordinator = NSFileCoordinator()
+        var coordinatorError: NSError?
+        var innerError: Error?
 
-        if FileManager.default.fileExists(atPath: settingsFile.path) {
-            let data = try Data(contentsOf: settingsFile)
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                settings = json
+        coordinator.coordinate(writingItemAt: settingsFile, options: .forMerging, error: &coordinatorError) { url in
+            do {
+                var settings: [String: Any] = [:]
+
+                if FileManager.default.fileExists(atPath: url.path) {
+                    let data = try Data(contentsOf: url)
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        settings = json
+                    }
+                }
+
+                var hooks = settings["hooks"] as? [String: Any] ?? [:]
+
+                let events = [
+                    "UserPromptSubmit", "SessionStart", "SessionEnd",
+                    "PreToolUse", "PostToolUse", "Stop",
+                    "PermissionRequest", "PreCompact",
+                ]
+
+                let clautchHookEntry: [String: Any] = [
+                    "type": "command",
+                    "command": "CLAUTCH_SOCKET='\(SocketServer.socketPath)' \(self.hookDest.path)",
+                ]
+
+                let clautchMatcherGroup: [String: Any] = [
+                    "matcher": "",
+                    "hooks": [clautchHookEntry],
+                ]
+
+                for event in events {
+                    var matcherGroups = hooks[event] as? [[String: Any]] ?? []
+                    matcherGroups = self.migrateOldFormat(matcherGroups)
+                    matcherGroups.removeAll { self.isClautchGroup($0) }
+                    matcherGroups.append(clautchMatcherGroup)
+                    hooks[event] = matcherGroups
+                }
+
+                settings["hooks"] = hooks
+
+                let data = try JSONSerialization.data(
+                    withJSONObject: settings,
+                    options: [.prettyPrinted, .sortedKeys]
+                )
+                try data.write(to: url, options: .atomic)
+                self.logger.info("Claude Code settings updated with Clautch hooks")
+            } catch {
+                innerError = error
             }
         }
 
-        var hooks = settings["hooks"] as? [String: Any] ?? [:]
-
-        let events = [
-            "UserPromptSubmit", "SessionStart", "SessionEnd",
-            "PreToolUse", "PostToolUse", "Stop",
-            "PermissionRequest", "PreCompact",
-        ]
-
-        let clautchHookEntry: [String: Any] = [
-            "type": "command",
-            "command": hookDest.path,
-        ]
-
-        let clautchMatcherGroup: [String: Any] = [
-            "matcher": "",
-            "hooks": [clautchHookEntry],
-        ]
-
-        for event in events {
-            var matcherGroups = hooks[event] as? [[String: Any]] ?? []
-
-            // Migrate old-format entries (flat {type, command} without matcher/hooks)
-            matcherGroups = migrateOldFormat(matcherGroups)
-
-            // Remove any existing Clautch matcher groups (we'll re-add a fresh one)
-            matcherGroups.removeAll { group in
-                isClautchGroup(group)
-            }
-
-            // Append our matcher group
-            matcherGroups.append(clautchMatcherGroup)
-            hooks[event] = matcherGroups
-        }
-
-        settings["hooks"] = hooks
-
-        let data = try JSONSerialization.data(
-            withJSONObject: settings,
-            options: [.prettyPrinted, .sortedKeys]
-        )
-        try data.write(to: settingsFile, options: .atomic)
-        logger.info("Claude Code settings updated with Clautch hooks")
+        if let error = coordinatorError { throw error }
+        if let error = innerError { throw error }
     }
 
     /// Check if a matcher group was created by Clautch.
@@ -195,20 +226,22 @@ final class HookInstaller {
     private func inlineHookScript() -> String {
         """
         #!/bin/bash
-        SOCKET="/tmp/clautch.sock"
+        SOCKET="${CLAUTCH_SOCKET:-${TMPDIR}clautch.sock}"
         [ -S "$SOCKET" ] || exit 0
 
         EVENT=$(cat)
         [ -z "$EVENT" ] && exit 0
 
         # Inject session_id from environment if not present in the event
-        if ! echo "$EVENT" | grep -q '"session_id"'; then
+        if ! printf '%s' "$EVENT" | grep -q '"session_id"'; then
             SID="${CLAUDE_SESSION_ID:-unknown}"
-            EVENT=$(echo "$EVENT" | sed 's/^{/{"session_id":"'"$SID"'",/')
+            # Sanitize SID: strip characters that could break JSON
+            SID=$(printf '%s' "$SID" | tr -d '"\\\\/\\n\\r\\t')
+            EVENT=$(printf '%s' "$EVENT" | sed "s/^{/{\\\"session_id\\\":\\\"${SID}\\\",/")
         fi
 
         # Send to Clautch via Unix socket
-        echo "$EVENT" | nc -U "$SOCKET" 2>/dev/null
+        printf '%s' "$EVENT" | nc -U "$SOCKET" 2>/dev/null
         exit 0
         """
     }

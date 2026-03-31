@@ -5,7 +5,7 @@ struct OnboardingView: View {
     var onComplete: (UserProfile) -> Void
 
     @State private var selectedType: CreatureType = .ghost
-    @State private var displayName: String = NSFullUserName().components(separatedBy: " ").first ?? "Player"
+    @State private var displayName: String = ""
     @State private var colorPreset: CreatureColorPreset = .none
     @State private var isHovering: CreatureType?
 

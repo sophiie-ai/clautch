@@ -35,10 +35,22 @@ final class NotificationService {
         guard isEnabled else { return }
         let content = UNMutableNotificationContent()
         content.title = "Tool Error"
-        content.body = "\(toolName ?? "Unknown tool") failed in session \(String(sessionId.prefix(8)))…"
+        // Sanitize: truncate tool name and strip control characters
+        let safeName = sanitize(toolName ?? "Unknown tool", maxLength: 60)
+        content.body = "\(safeName) failed in session \(String(sessionId.prefix(8)))…"
         content.sound = .default
         let id = "error-\(sessionId)-\(Int(Date().timeIntervalSince1970))"
         let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
+    }
+
+    private func sanitize(_ text: String, maxLength: Int) -> String {
+        let cleaned = text.unicodeScalars.filter { scalar in
+            // Remove control characters and invisible formatting
+            let category = scalar.properties.generalCategory
+            return category != .control && category != .format
+        }
+        let result = String(String.UnicodeScalarView(cleaned))
+        return String(result.prefix(maxLength))
     }
 }

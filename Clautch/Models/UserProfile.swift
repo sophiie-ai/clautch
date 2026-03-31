@@ -11,13 +11,23 @@ struct UserProfile: Codable, Sendable {
 
     private static let key = "com.clautch.userProfile"
 
+    /// In-memory cache to avoid re-decoding JSON from UserDefaults on every access.
+    private static var cached: UserProfile?
+    private static var cacheLoaded = false
+
     /// The current user's profile, or `nil` if onboarding hasn't happened.
     static var current: UserProfile? {
         get {
-            guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
-            return try? JSONDecoder().decode(UserProfile.self, from: data)
+            if cacheLoaded { return cached }
+            cacheLoaded = true
+            if let data = UserDefaults.standard.data(forKey: key) {
+                cached = try? JSONDecoder().decode(UserProfile.self, from: data)
+            }
+            return cached
         }
         set {
+            cached = newValue
+            cacheLoaded = true
             if let profile = newValue,
                let data = try? JSONEncoder().encode(profile) {
                 UserDefaults.standard.set(data, forKey: key)

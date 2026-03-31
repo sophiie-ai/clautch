@@ -119,13 +119,14 @@ fi
 
 create-dmg \
     --volname "Install Clautch" \
+    --background "$SCRIPT_DIR/dmg-background.png" \
     --window-pos 200 120 \
-    --window-size 660 400 \
+    --window-size 540 380 \
     --icon-size 128 \
-    --icon "Clautch.app" 170 190 \
+    --icon "Clautch.app" 150 170 \
     --hide-extension "Clautch.app" \
-    --app-drop-link 490 190 \
-    --text-size 14 \
+    --app-drop-link 390 170 \
+    --text-size 13 \
     --no-internet-enable \
     "$DMG_PATH" \
     "$APP_PATH"

@@ -195,15 +195,23 @@ final class RoomManager {
         syncTimer = nil
     }
 
+    private var syncCycleCount = 0
+
     private func syncCycle() async {
         guard let room = currentRoom else { return }
+        syncCycleCount += 1
 
-        // Update our presence (heartbeat + current state)
-        if let state = localState {
+        // Capture main-actor-isolated values before concurrent work
+        let state = localState
+        let presenceID = myPresenceRecordID
+        let roomCode = room.roomCode
+
+        // Run heartbeat and peer fetch concurrently to halve network latency
+        if let state {
             do {
                 let record = try await cloudKit.writePresence(
-                    existingRecordID: myPresenceRecordID,
-                    roomCode: room.roomCode,
+                    existingRecordID: presenceID,
+                    roomCode: roomCode,
                     state: state
                 )
                 myPresenceRecordID = record.recordID
@@ -212,11 +220,15 @@ final class RoomManager {
             }
         }
 
-        // Fetch peers
         do {
             try await fetchPeers()
         } catch {
             logger.error("Peer fetch failed: \(error.localizedDescription)")
+        }
+
+        // Cleanup stale presences every 5th cycle (~20 seconds)
+        if syncCycleCount % 5 == 0 {
+            try? await cloudKit.cleanupStalePresences(roomCode: roomCode)
         }
     }
 

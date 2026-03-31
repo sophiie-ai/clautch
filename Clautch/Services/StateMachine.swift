@@ -10,6 +10,7 @@ final class StateMachine {
 
     let sessionStore = SessionStore()
     private let logger = Logger(subsystem: "com.clautch.app", category: "StateMachine")
+    private var cleanupTimer: Timer?
 
     private init() {
         // Wire up socket events → state transitions
@@ -20,7 +21,7 @@ final class StateMachine {
         }
 
         // Periodic cleanup of stale sessions
-        Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+        cleanupTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.sessionStore.cleanupStale()
             }

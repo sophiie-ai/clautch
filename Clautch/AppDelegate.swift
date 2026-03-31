@@ -95,14 +95,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         window.orderFrontRegardless()
 
-        // Return to accessory when closed via X button
-        NotificationCenter.default.addObserver(
+        // Return to accessory when closed via X button — store token to prevent leaks
+        var token: NSObjectProtocol?
+        token = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
         ) { [weak self] _ in
             self?.onboardingWindow = nil
             NSApp.setActivationPolicy(.accessory)
+            if let token { NotificationCenter.default.removeObserver(token) }
         }
 
         self.onboardingWindow = window
@@ -149,14 +151,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         window.orderFrontRegardless()
 
-        // Return to accessory when closed
-        NotificationCenter.default.addObserver(
+        // Return to accessory when closed — store token to prevent leaks
+        var roomToken: NSObjectProtocol?
+        roomToken = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
         ) { [weak self] _ in
             self?.roomWindow = nil
             NSApp.setActivationPolicy(.accessory)
+            if let roomToken { NotificationCenter.default.removeObserver(roomToken) }
         }
 
         self.roomWindow = window
@@ -227,9 +231,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         startSessionBadgeTimer()
     }
 
+    private var lastBadgeCount = -1
+
     private func startSessionBadgeTimer() {
         sessionBadgeTimer?.invalidate()
-        sessionBadgeTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+        // 5-second interval is sufficient — activeSessions uses a 60s timeout
+        sessionBadgeTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.updateSessionBadge()
             }
@@ -239,6 +246,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     private func updateSessionBadge() {
         let count = StateMachine.shared.sessionStore.activeSessions.count
+        guard count != lastBadgeCount else { return }
+        lastBadgeCount = count
         guard let button = statusItem?.button else { return }
         button.title = count > 0 ? "\(count)" : ""
     }
@@ -313,6 +322,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notifItem.tag = 500
         menu.addItem(notifItem)
 
+        // Reduce Animation toggle
+        let animItem = NSMenuItem(
+            title: "Reduce Animation",
+            action: #selector(toggleReduceAnimation),
+            keyEquivalent: ""
+        )
+        animItem.target = self
+        animItem.tag = 700
+        menu.addItem(animItem)
+
         // Check for Updates
         let updateItem = NSMenuItem(
             title: "Check for Updates…",
@@ -348,6 +367,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Task { @MainActor in
             NotificationService.shared.isEnabled.toggle()
         }
+    }
+
+    @objc private func toggleReduceAnimation() {
+        AnimationSettings.shared.reduceAnimationWhenCollapsed.toggle()
     }
 
     @objc private func copyRoomCode() {
@@ -427,6 +450,9 @@ extension AppDelegate: NSMenuDelegate {
         }
         if let loginItem = menu.item(withTag: 600) {
             loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        }
+        if let animItem = menu.item(withTag: 700) {
+            animItem.state = AnimationSettings.shared.reduceAnimationWhenCollapsed ? .on : .off
         }
     }
 }
