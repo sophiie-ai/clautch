@@ -1,0 +1,229 @@
+name: Build, Sign, Notarize & Publish
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      tag_name:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: brew install xcodegen create-dmg
+
+      - name: Import Code Signing Certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(uuidgen)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "$CERTIFICATE_P12" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security import $RUNNER_TEMP/certificate.p12 \
+            -P "$CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+
+      - name: Install Provisioning Profile
+        env:
+          PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROVISIONING_PROFILE" | base64 --decode \
+            > ~/Library/MobileDevice/Provisioning\ Profiles/clautch.provisionprofile
+
+      - name: Compute build number
+        id: buildnum
+        run: echo "build_number=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Archive
+        env:
+          BUILD_NUMBER: ${{ steps.buildnum.outputs.build_number }}
+        run: |
+          xcodebuild \
+            -scheme Clautch \
+            -configuration Release \
+            -archivePath build/Clautch.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=U2KP726DRL \
+            CODE_SIGN_ENTITLEMENTS=Clautch/Clautch-CloudKit.entitlements \
+            ENABLE_HARDENED_RUNTIME=YES \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+
+      - name: Re-sign for Developer ID distribution
+        run: |
+          IDENTITY="Developer ID Application: Sophiie AI Pty Ltd (U2KP726DRL)"
+          APP="build/Clautch.xcarchive/Products/Applications/Clautch.app"
+          ENTITLEMENTS="Clautch/Clautch-Release.entitlements"
+
+          rm -f "$APP/Contents/embedded.provisionprofile"
+
+          # Re-sign Sparkle framework internals (inside-out)
+          FW="$APP/Contents/Frameworks/Sparkle.framework"
+          if [ -d "$FW" ]; then
+            for BIN in Downloader Installer; do
+              B="$FW/Versions/B/XPCServices/$BIN.xpc/Contents/MacOS/$BIN"
+              [ -f "$B" ] && codesign --force --sign "$IDENTITY" --timestamp --options runtime "$B"
+            done
+            [ -f "$FW/Versions/B/Updater.app/Contents/MacOS/Updater" ] && \
+              codesign --force --sign "$IDENTITY" --timestamp --options runtime "$FW/Versions/B/Updater.app/Contents/MacOS/Updater"
+            [ -f "$FW/Versions/B/Autoupdate" ] && \
+              codesign --force --sign "$IDENTITY" --timestamp --options runtime "$FW/Versions/B/Autoupdate"
+            for XPC in Downloader.xpc Installer.xpc; do
+              [ -d "$FW/Versions/B/XPCServices/$XPC" ] && \
+                codesign --force --sign "$IDENTITY" --timestamp --options runtime "$FW/Versions/B/XPCServices/$XPC"
+            done
+            [ -d "$FW/Versions/B/Updater.app" ] && \
+              codesign --force --sign "$IDENTITY" --timestamp --options runtime "$FW/Versions/B/Updater.app"
+            codesign --force --sign "$IDENTITY" --timestamp --options runtime "$FW"
+          fi
+
+          codesign --force --sign "$IDENTITY" --timestamp --options runtime --entitlements "$ENTITLEMENTS" "$APP"
+          codesign --verify --deep --strict "$APP"
+
+      - name: Create DMG
+        run: |
+          APP="build/Clautch.xcarchive/Products/Applications/Clautch.app"
+
+          # Use create-dmg for reliable headless DMG creation
+          create-dmg \
+            --volname "Install Clautch" \
+            --background "scripts/dmg-background.png" \
+            --window-pos 200 120 \
+            --window-size 540 380 \
+            --icon-size 128 \
+            --icon "Clautch.app" 150 190 \
+            --hide-extension "Clautch.app" \
+            --app-drop-link 390 190 \
+            --text-size 13 \
+            --no-internet-enable \
+            build/Clautch.dmg \
+            "$APP" || true
+
+          # Verify DMG was created
+          [ -f build/Clautch.dmg ] || { echo "ERROR: DMG not created"; exit 1; }
+
+      - name: Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        run: |
+          xcrun notarytool submit build/Clautch.dmg \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id U2KP726DRL \
+            --wait
+          xcrun stapler staple build/Clautch.dmg
+
+      - name: Sign for Sparkle (EdDSA)
+        id: sparkle
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          # Find sign_update from resolved SPM packages
+          SIGN_UPDATE=$(find ~/Library/Developer/Xcode/DerivedData \
+            -name sign_update -path "*/Sparkle/bin/*" 2>/dev/null | head -1)
+
+          if [ -z "$SIGN_UPDATE" ]; then
+            echo "Downloading Sparkle sign_update tool..."
+            curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/2.7.5/Sparkle-2.7.5.tar.xz" \
+              | tar xJ -C /tmp
+            SIGN_UPDATE="/tmp/bin/sign_update"
+          fi
+
+          SPARKLE_OUTPUT=$("$SIGN_UPDATE" build/Clautch.dmg -f <(echo "$SPARKLE_PRIVATE_KEY"))
+          echo "$SPARKLE_OUTPUT"
+
+          SIGNATURE=$(echo "$SPARKLE_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
+          DMG_LENGTH=$(stat -f%z build/Clautch.dmg 2>/dev/null || stat --printf="%s" build/Clautch.dmg)
+
+          echo "signature=$SIGNATURE" >> "$GITHUB_OUTPUT"
+          echo "dmg_length=$DMG_LENGTH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload DMG to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ inputs.tag_name }}" build/Clautch.dmg \
+            --repo ${{ github.repository }} \
+            --clobber
+
+      - name: Update appcast.xml
+        env:
+          BUILD_NUMBER: ${{ steps.buildnum.outputs.build_number }}
+          SIGNATURE: ${{ steps.sparkle.outputs.signature }}
+          DMG_LENGTH: ${{ steps.sparkle.outputs.dmg_length }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          TAG="${{ inputs.tag_name }}"
+          REPO="${{ github.repository }}"
+          PUB_DATE=$(date -R)
+
+          python3 <<PYEOF
+          import re
+          appcast = open('public/appcast.xml').read()
+          new_item = '''    <item>
+                <title>Version $VERSION</title>
+                <sparkle:version>$BUILD_NUMBER</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <pubDate>$PUB_DATE</pubDate>
+                <enclosure
+                  url="https://github.com/$REPO/releases/download/$TAG/Clautch.dmg"
+                  length="$DMG_LENGTH"
+                  type="application/octet-stream"
+                  sparkle:edSignature="$SIGNATURE" />
+              </item>'''
+          appcast = re.sub(
+              r'(<language>en</language>\n).*?(  </channel>)',
+              r'\1' + new_item + r'\n\2',
+              appcast,
+              flags=re.DOTALL
+          )
+          open('public/appcast.xml', 'w').write(appcast)
+          print('appcast.xml updated')
+          PYEOF
+
+      - name: Commit and push appcast
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/appcast.xml
+          git commit -m "release: update appcast for ${{ inputs.tag_name }}" || echo "No changes to commit"
+          git push
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npm install -g vercel
+          vercel --prod --token "$VERCEL_TOKEN" --yes
