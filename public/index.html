@@ -21,6 +21,11 @@
     .feature { background: #111; border: 1px solid #222; border-radius: 12px; padding: 1.2rem; }
     .feature h3 { font-size: 0.9rem; margin-bottom: 0.3rem; }
     .feature p { color: #666; font-size: 0.8rem; line-height: 1.4; }
+    .install { display: flex; gap: 2rem; justify-content: center; max-width: 700px; margin: 1.5rem auto 0; padding: 0 2rem; }
+    .install-step { text-align: center; flex: 1; }
+    .install-step .num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #222; color: #888; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .install-step .label { font-size: 0.8rem; color: #666; line-height: 1.4; }
+    .install-step .label strong { color: #999; }
     .footer { text-align: center; padding: 1.2rem 2rem; color: #444; font-size: 0.8rem; flex-shrink: 0; }
     /* Pixel ghost rendered with CSS */
     .pixel-ghost { display: grid; grid-template-columns: repeat(8, 1fr); width: 96px; height: 96px; margin: 0 auto 1.5rem; }
@@ -69,6 +74,24 @@
       <div class="feature">
         <h3>🎨 Customizable</h3>
         <p>6 creature types (Ghost, Cat, Robot, Mushroom, Slime, Owl) and 6 color presets to choose from.</p>
+      </div>
+    </div>
+    <div class="install">
+      <div class="install-step">
+        <div class="num">1</div>
+        <div class="label"><strong>Download</strong> the DMG and open it</div>
+      </div>
+      <div class="install-step">
+        <div class="num">2</div>
+        <div class="label"><strong>Drag</strong> Clautch to Applications</div>
+      </div>
+      <div class="install-step">
+        <div class="num">3</div>
+        <div class="label"><strong>Launch</strong> and pick your creature</div>
+      </div>
+      <div class="install-step">
+        <div class="num">4</div>
+        <div class="label">Hooks install <strong>automatically</strong> — just use Claude Code</div>
       </div>
     </div>
   </div>

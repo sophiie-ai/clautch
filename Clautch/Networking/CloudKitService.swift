@@ -110,6 +110,10 @@ final class CloudKitService: @unchecked Sendable {
         record["colorPreset"] = state.colorPreset.rawValue
         record["heartbeat"] = Date() as NSDate
         record["isActive"] = 1
+        record["reaction"] = state.reaction?.rawValue ?? ""
+        if let rt = state.reactionTimestamp {
+            record["reactionTimestamp"] = rt as NSDate
+        }
 
         let saved = try await db.save(record)
         return saved
@@ -188,6 +192,8 @@ extension PeerState {
         else { return nil }
 
         let colorRaw = record["colorPreset"] as? String ?? "none"
+        let reactionRaw = record["reaction"] as? String ?? ""
+        let reactionTs = record["reactionTimestamp"] as? Date
 
         self.init(
             peerId: peerId,
@@ -196,7 +202,9 @@ extension PeerState {
             task: CreatureTask(rawValue: taskRaw) ?? .idle,
             emotion: CreatureEmotion(rawValue: emotionRaw) ?? .neutral,
             colorPreset: CreatureColorPreset(rawValue: colorRaw) ?? .none,
-            timestamp: heartbeat
+            timestamp: heartbeat,
+            reaction: reactionRaw.isEmpty ? nil : PeerReaction(rawValue: reactionRaw),
+            reactionTimestamp: reactionTs
         )
     }
 }

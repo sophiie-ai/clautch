@@ -6,9 +6,11 @@ import SwiftUI
 struct GrassIslandView: View {
     let creatures: [CreatureDisplay]
     var isExpanded: Bool = false
+    var isWalking: Bool = false
 
     @State private var bounceScale: CGFloat = 1.0
     @State private var bounceOffset: CGFloat = 0
+    @State private var walkPhase: Double = 0
 
     private var creatureSize: CGFloat {
         switch creatures.count {
@@ -120,6 +122,17 @@ struct GrassIslandView: View {
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
                     VStack(spacing: 2) {
+                        // Floating reaction emoji
+                        if let reaction = creature.reaction {
+                            Text(reaction.emoji)
+                                .font(.system(size: 16))
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.3).combined(with: .opacity).combined(with: .offset(y: 4)),
+                                    removal: .opacity.combined(with: .offset(y: -6))
+                                ))
+                                .id("reaction-\(creature.id)-\(reaction.rawValue)")
+                        }
+
                         // Task + tool label (expanded only)
                         if isExpanded && creature.sessionDuration != nil {
                             VStack(spacing: 1) {
@@ -135,21 +148,29 @@ struct GrassIslandView: View {
                             .transition(.opacity.combined(with: .scale(scale: 0.8)))
                         }
 
-                        CreatureSpriteView(
-                            state: creature.state,
-                            creatureType: creature.creatureType,
-                            colorPreset: creature.colorPreset,
-                            isExpanded: isExpanded
-                        )
-                        .frame(width: creatureSize, height: creatureSize)
-                        .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
-                        // Squash-stretch on landing
-                        .scaleEffect(
-                            x: 1 + (1 - bounceScale) * 0.5,
-                            y: bounceScale,
-                            anchor: .bottom
-                        )
-                        .offset(y: bounceOffset)
+                        TimelineView(.animation(minimumInterval: 1.0 / 12)) { timeline in
+                            let t = timeline.date.timeIntervalSinceReferenceDate
+                            // Walking hop: small vertical bounce at ~4 hops/sec
+                            let walkHop: CGFloat = (isWalking && creature.isLocal)
+                                ? -3 * abs(CGFloat(sin(t * .pi * 4)))
+                                : 0
+
+                            CreatureSpriteView(
+                                state: creature.state,
+                                creatureType: creature.creatureType,
+                                colorPreset: creature.colorPreset,
+                                isExpanded: isExpanded
+                            )
+                            .frame(width: creatureSize, height: creatureSize)
+                            .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
+                            // Squash-stretch on landing
+                            .scaleEffect(
+                                x: 1 + (1 - bounceScale) * 0.5,
+                                y: bounceScale,
+                                anchor: .bottom
+                            )
+                            .offset(y: bounceOffset + walkHop)
+                        }
 
                         // Session duration (expanded only)
                         if isExpanded, let duration = creature.sessionDuration {
@@ -170,6 +191,15 @@ struct GrassIslandView: View {
                     .help(creature.id == "local-idle"
                         ? "Idle"
                         : "\(creature.displayName): \(creature.state.task.displayLabel)")
+                    .contextMenu {
+                        if creature.isLocal {
+                            ForEach(PeerReaction.allCases) { reaction in
+                                Button("\(reaction.emoji)  \(reaction.rawValue.capitalized)") {
+                                    RoomManager.shared.sendReaction(reaction)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

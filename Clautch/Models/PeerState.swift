@@ -1,5 +1,28 @@
 import Foundation
 
+/// Quick reactions peers can send to each other.
+enum PeerReaction: String, Codable, Sendable, CaseIterable, Identifiable {
+    case wave       // 👋
+    case celebrate  // 🎉
+    case heart      // ❤️
+    case fire       // 🔥
+    case eyes       // 👀
+    case thumbsUp   // 👍
+
+    var id: String { rawValue }
+
+    var emoji: String {
+        switch self {
+        case .wave:      return "👋"
+        case .celebrate: return "🎉"
+        case .heart:     return "❤️"
+        case .fire:      return "🔥"
+        case .eyes:      return "👀"
+        case .thumbsUp:  return "👍"
+        }
+    }
+}
+
 /// The state broadcast to other peers — intentionally abstract for privacy.
 /// No file paths, prompts, or code content.
 struct PeerState: Codable, Sendable, Identifiable {
@@ -10,6 +33,8 @@ struct PeerState: Codable, Sendable, Identifiable {
     let emotion: CreatureEmotion
     let colorPreset: CreatureColorPreset
     let timestamp: Date
+    var reaction: PeerReaction?
+    var reactionTimestamp: Date?
 
     var id: String { peerId }
 
@@ -21,6 +46,12 @@ struct PeerState: Codable, Sendable, Identifiable {
     /// Whether this peer should still be shown (active within 5 min).
     var isVisible: Bool {
         Date().timeIntervalSince(timestamp) < 300
+    }
+
+    /// Whether the reaction is still fresh (show for 4 seconds).
+    var hasActiveReaction: Bool {
+        guard let rt = reactionTimestamp else { return false }
+        return Date().timeIntervalSince(rt) < 4
     }
 }
 
@@ -38,4 +69,6 @@ struct CreatureDisplay: Identifiable {
     var sessionDuration: TimeInterval?
     var lastToolName: String?
     var facingRight: Bool = true
+    var reaction: PeerReaction?
+    var reactionActive: Bool = false
 }

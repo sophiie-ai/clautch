@@ -300,6 +300,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         copyCodeItem.tag = 201
         menu.addItem(copyCodeItem)
 
+        // Reactions submenu (only when in a room)
+        let reactItem = NSMenuItem(title: "Send Reaction", action: nil, keyEquivalent: "")
+        reactItem.tag = 250
+        let reactMenu = NSMenu()
+        for reaction in PeerReaction.allCases {
+            let item = NSMenuItem(
+                title: "\(reaction.emoji)  \(reaction.rawValue.capitalized)",
+                action: #selector(sendReaction(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = reaction.rawValue
+            reactMenu.addItem(item)
+        }
+        reactItem.submenu = reactMenu
+        menu.addItem(reactItem)
+
         menu.addItem(.separator())
 
         let changeItem = NSMenuItem(
@@ -373,6 +390,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         AnimationSettings.shared.reduceAnimationWhenCollapsed.toggle()
     }
 
+    @objc private func sendReaction(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let reaction = PeerReaction(rawValue: rawValue) else { return }
+        Task { @MainActor in
+            RoomManager.shared.sendReaction(reaction)
+        }
+    }
+
     @objc private func copyRoomCode() {
         Task { @MainActor in
             guard let room = RoomManager.shared.currentRoom else { return }
@@ -414,6 +439,9 @@ extension AppDelegate: NSMenuDelegate {
         }
         if let copyItem = menu.item(withTag: 201) {
             copyItem.isHidden = RoomManager.shared.currentRoom == nil
+        }
+        if let reactItem = menu.item(withTag: 250) {
+            reactItem.isHidden = RoomManager.shared.currentRoom == nil
         }
 
         // Update sessions

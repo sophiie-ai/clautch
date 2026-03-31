@@ -27,11 +27,12 @@ struct NotchContentView: View {
     @State private var hoverState = NotchHoverState.shared
     @State private var wanderPosition: CGFloat = 0.25
     @State private var wanderTimer: Timer?
+    @State private var isWalking: Bool = false
 
     private var isExpanded: Bool { hoverState.isHovered }
 
     var body: some View {
-        GrassIslandView(creatures: allCreatures, isExpanded: isExpanded)
+        GrassIslandView(creatures: allCreatures, isExpanded: isExpanded, isWalking: isWalking)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .onAppear { startWandering() }
             .onDisappear { wanderTimer?.invalidate() }
@@ -43,8 +44,13 @@ struct NotchContentView: View {
         wanderTimer?.invalidate()
         wanderTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
             let newTarget = CGFloat.random(in: 0.05...0.95)
+            isWalking = true
             withAnimation(.easeInOut(duration: 2.5)) {
                 wanderPosition = newTarget
+            }
+            // Stop walking after the animation completes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                isWalking = false
             }
         }
     }
@@ -57,6 +63,8 @@ struct NotchContentView: View {
         // One creature per user — use the most active session's state,
         // or idle if no sessions are running.
         let effective = stateMachine.sessionStore.effectiveSession
+        let localReaction = roomManager.localState?.reaction
+        let localReactionActive = roomManager.localState?.hasActiveReaction ?? false
         creatures.append(CreatureDisplay(
             id: "local",
             state: effective?.state ?? CreatureState(),
@@ -66,7 +74,9 @@ struct NotchContentView: View {
             isLocal: true,
             displayName: profile?.displayName ?? "You",
             sessionDuration: effective.map { Date().timeIntervalSince($0.startedAt) },
-            lastToolName: effective?.lastToolName
+            lastToolName: effective?.lastToolName,
+            reaction: localReactionActive ? localReaction : nil,
+            reactionActive: localReactionActive
         ))
 
         if let myId = profile?.peerId {
@@ -83,7 +93,9 @@ struct NotchContentView: View {
                     colorPreset: peer.colorPreset,
                     xPosition: roomManager.peerStore.xPosition(for: peer.peerId),
                     isLocal: false,
-                    displayName: peer.displayName
+                    displayName: peer.displayName,
+                    reaction: peer.hasActiveReaction ? peer.reaction : nil,
+                    reactionActive: peer.hasActiveReaction
                 ))
             }
         }

@@ -186,6 +186,9 @@ final class RoomManager {
 
     func broadcastState(task: CreatureTask, emotion: CreatureEmotion) {
         guard let profile = UserProfile.current else { return }
+        // Preserve active reaction when updating state
+        let existingReaction = localState?.reaction
+        let existingReactionTs = localState?.reactionTimestamp
         localState = PeerState(
             peerId: profile.peerId,
             displayName: profile.displayName,
@@ -193,8 +196,36 @@ final class RoomManager {
             task: task,
             emotion: emotion,
             colorPreset: profile.colorPreset,
-            timestamp: Date()
+            timestamp: Date(),
+            reaction: existingReaction,
+            reactionTimestamp: existingReactionTs
         )
+    }
+
+    /// Send a reaction — it will be broadcast on the next sync cycle and auto-clear after 4s.
+    func sendReaction(_ reaction: PeerReaction) {
+        guard var state = localState else { return }
+        state = PeerState(
+            peerId: state.peerId,
+            displayName: state.displayName,
+            creatureType: state.creatureType,
+            task: state.task,
+            emotion: state.emotion,
+            colorPreset: state.colorPreset,
+            timestamp: Date(),
+            reaction: reaction,
+            reactionTimestamp: Date()
+        )
+        localState = state
+
+        // Auto-clear after 4 seconds
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(4))
+            if localState?.reaction == reaction {
+                localState?.reaction = nil
+                localState?.reactionTimestamp = nil
+            }
+        }
     }
 
     // MARK: - Sync Timer

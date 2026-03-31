@@ -8,6 +8,7 @@ struct OnboardingView: View {
     @State private var displayName: String = ""
     @State private var colorPreset: CreatureColorPreset = .none
     @State private var isHovering: CreatureType?
+    @FocusState private var nameFieldFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,7 +52,7 @@ struct OnboardingView: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white.opacity(0.7))
 
-                TextField("Your name", text: $displayName)
+                TextField("What should we call you?", text: $displayName)
                     .textFieldStyle(.plain)
                     .font(.system(size: 14, design: .rounded))
                     .padding(.horizontal, 12)
@@ -60,8 +61,15 @@ struct OnboardingView: View {
                     .cornerRadius(8)
                     .foregroundStyle(.white)
                     .frame(maxWidth: 200)
+                    .focused($nameFieldFocused)
+                    .onSubmit { complete() }
             }
             .padding(.top, 20)
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    nameFieldFocused = true
+                }
+            }
 
             Spacer()
 
