@@ -50,16 +50,13 @@ jobs:
       - name: Compute build number
         id: buildnum
         run: |
-          # Fetch full history so commit count is accurate (squash merges limit depth)
-          git fetch --unshallow 2>/dev/null || true
-          # Use total commit count across all history
-          COUNT=$(git rev-list --count HEAD)
-          # Fallback: if count is suspiciously low, use epoch-based number
-          if [ "$COUNT" -lt 10 ]; then
-            COUNT=$(date +%s | cut -c4-10)
-          fi
-          echo "build_number=$COUNT" >> "$GITHUB_OUTPUT"
-          echo "Build number: $COUNT"
+          # Derive build number from version: 0.2.9 → 209, 1.0.0 → 10000
+          # Always monotonically increasing as versions increase.
+          VERSION="${{ inputs.version }}"
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          BUILD=$((major * 10000 + minor * 100 + patch))
+          echo "build_number=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "Build number: $BUILD (from version $VERSION)"
 
       - name: Generate Xcode project
         run: xcodegen generate
