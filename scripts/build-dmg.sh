@@ -144,22 +144,19 @@ MOUNT_OUTPUT=$(hdiutil attach "$TEMP_DMG" -readwrite -noverify -noautoopen)
 DEVICE=$(echo "$MOUNT_OUTPUT" | tail -1 | awk '{print $1}')
 echo "    Mounted at $VOL_PATH (device: $DEVICE)"
 
-# Copy background image and hide the folder
+# Copy background image
 mkdir -p "$VOL_PATH/.background"
 cp "$SCRIPT_DIR/dmg-background.png" "$VOL_PATH/.background/background.png"
-
-# Hide dotfiles using chflags (modern macOS) + SetFile (legacy fallback)
-chflags hidden "$VOL_PATH/.background"
-SetFile -a V "$VOL_PATH/.background" 2>/dev/null || true
-if [ -d "$VOL_PATH/.fseventsd" ]; then
-    chflags hidden "$VOL_PATH/.fseventsd"
-    SetFile -a V "$VOL_PATH/.fseventsd" 2>/dev/null || true
-fi
 
 # Hide the file extension on the app
 SetFile -a E "$VOL_PATH/Clautch.app" 2>/dev/null || true
 
-# Configure Finder window via AppleScript
+# Disable Spotlight indexing on this volume
+mdutil -i off "$VOL_PATH" 2>/dev/null || true
+
+# Configure Finder window via AppleScript.
+# Key: position .background and .fseventsd off-screen so they are
+# invisible even when Finder's "Show Hidden Files" is enabled.
 echo "    Configuring Finder window"
 osascript <<APPLESCRIPT
 tell application "Finder"
@@ -174,28 +171,50 @@ tell application "Finder"
         set icon size of viewOptions to 128
         set text size of viewOptions to 13
         set background picture of viewOptions to file ".background:background.png"
-        set position of item "Clautch.app" of container window to {150, 170}
-        set position of item "Applications" of container window to {390, 170}
+
+        -- Position visible items
+        set position of item "Clautch.app" of container window to {150, 190}
+        set position of item "Applications" of container window to {390, 190}
+
+        -- Move hidden system items off-screen
+        try
+            set position of item ".background" of container window to {900, 900}
+        end try
+        try
+            set position of item ".fseventsd" of container window to {900, 900}
+        end try
+        try
+            set position of item ".DS_Store" of container window to {900, 900}
+        end try
+        try
+            set position of item ".Trashes" of container window to {900, 900}
+        end try
+
         close
         open
         update without registering applications
-        delay 2
+        delay 3
         close
     end tell
 end tell
 APPLESCRIPT
 
-# Ensure Finder flushes .DS_Store
+# Ensure .DS_Store is flushed to disk
 sync
+sleep 1
 
-# Re-hide dotfiles after AppleScript (Finder can reset flags)
-chflags hidden "$VOL_PATH/.background"
-if [ -d "$VOL_PATH/.fseventsd" ]; then
-    chflags hidden "$VOL_PATH/.fseventsd"
-fi
+# Apply hidden flags (belt-and-suspenders — off-screen position is primary)
+chflags hidden "$VOL_PATH/.background" 2>/dev/null || true
+chflags hidden "$VOL_PATH/.fseventsd" 2>/dev/null || true
+SetFile -a V "$VOL_PATH/.background" 2>/dev/null || true
+SetFile -a V "$VOL_PATH/.fseventsd" 2>/dev/null || true
+
+# Delete .fseventsd — it's useless on a read-only DMG
+rm -rf "$VOL_PATH/.fseventsd"
 
 # Detach
 hdiutil detach "$DEVICE"
+sleep 1
 
 # Convert to compressed read-only DMG
 hdiutil convert "$TEMP_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG_PATH"
