@@ -26,3 +26,4 @@ Pods/
 *.swp
 *.swo
 *~
+.vercel
