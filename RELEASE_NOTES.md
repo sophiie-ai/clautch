@@ -9,5 +9,9 @@
 ### Performance
 - **Concurrent CloudKit sync** — Room presence heartbeat and peer fetching now run in parallel, halving the network latency per sync cycle.
 
+### Bug Fixes
+- **Fixed CloudKit in release builds** — Room creation/joining was broken in release builds due to missing iCloud entitlements in the release signing configuration.
+- **Fixed DMG installer** — Hidden system folders (`.background`, `.fseventsd`) no longer appear in the installer window.
+
 ### Improvements
 - **Updated release tooling** — Release script now supports hand-written release notes via a notes file parameter.
