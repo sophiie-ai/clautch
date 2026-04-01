@@ -70,20 +70,18 @@ struct GrassIslandView: View {
                 )
                 path.addLine(to: CGPoint(x: midX - panelHalf, y: 0))
             } else {
-                // Collapsed: simple notch extension, no rounded corners
-                path.move(to: CGPoint(x: midX - notchHalf, y: 0))
-                path.addLine(to: CGPoint(x: midX + notchHalf, y: 0))
-                path.addLine(to: CGPoint(x: midX + notchHalf, y: bottom))
-                path.addLine(to: CGPoint(x: midX - notchHalf, y: bottom))
-                path.addLine(to: CGPoint(x: midX - notchHalf, y: 0))
+                // Collapsed: transparent — no background at all, just creature overlay
+                // Use a zero-area path so nothing draws
+                path.move(to: CGPoint(x: midX, y: 0))
+                path.addLine(to: CGPoint(x: midX, y: 0))
             }
             path.closeSubpath()
 
             if isExpanded {
                 // 2. Draw scenic background
-                let showLog = AnimationSettings.shared.showEventLog
-                // Grass starts higher — thinner ground area
-                let grassY = showLog ? bottom * 0.35 : bottom * 0.55
+                // Grass line is always at the same position (sky takes ~50% of panel)
+                // 25% shorter grass than before: was 0.35, now grass starts at ~0.42
+                let grassY = bottom * 0.42
 
                 // Sky gradient (fills from top of screen)
                 ctx.clip(to: path)
@@ -139,8 +137,7 @@ struct GrassIslandView: View {
                     )
                 }
             } else {
-                // Collapsed: just black behind the notch, no grass or decorations
-                ctx.fill(path, with: .color(.black))
+                // Collapsed: nothing drawn — transparent background, creature only
             }
         }
         .overlay {
@@ -154,9 +151,9 @@ struct GrassIslandView: View {
                 let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 8
                 let dropHeight = isExpanded ? maxDrop : peekDrop
                 let bottom = notchHeight + dropHeight
-                // Creatures sit on the grass line
+                // Creatures sit on the grass line (consistent regardless of log/status)
                 let grassLineY = isExpanded
-                    ? (showLog ? bottom * 0.35 : bottom * 0.55)
+                    ? bottom * 0.42
                     : notchHeight + dropHeight
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
@@ -415,10 +412,26 @@ struct StatusBarOverlay: View {
 
             Spacer()
 
-            // Session time today
-            Text("Today: \(SessionStats.format(stats.todayTotal))")
+            // Usage: today + week with reset info
+            Text("\(SessionStats.format(stats.todayTotal))")
                 .font(.system(size: 5, weight: .medium, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.4))
+
+            Text("·")
+                .font(.system(size: 5))
+                .foregroundStyle(.white.opacity(0.2))
+
+            Text("Wk: \(SessionStats.format(stats.weekTotal))")
+                .font(.system(size: 5, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.4))
+
+            Text("·")
+                .font(.system(size: 5))
+                .foregroundStyle(.white.opacity(0.2))
+
+            Text("Resets \(SessionStats.weekResetLabel)")
+                .font(.system(size: 4, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.25))
         }
     }
 

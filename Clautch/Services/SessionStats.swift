@@ -84,6 +84,18 @@ final class SessionStats {
         return "\(m)m"
     }
 
+    /// Label showing when the week resets (e.g. "Mon" or "in 2d").
+    static var weekResetLabel: String {
+        let calendar = Calendar.current
+        let today = Date()
+        guard let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end else {
+            return "Mon"
+        }
+        let daysUntil = calendar.dateComponents([.day], from: today, to: weekEnd).day ?? 0
+        if daysUntil <= 1 { return "tomorrow" }
+        return "in \(daysUntil)d"
+    }
+
     // MARK: - Private
 
     private func flushCurrentSession() {
