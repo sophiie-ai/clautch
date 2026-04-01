@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.25](https://github.com/sophiie-ai/clautch/compare/v0.2.24...v0.2.25) (2026-04-01)
+
+
+### Features
+
+* unit tests, friendly errors, creature blinks, ghost cleanup ([af89f87](https://github.com/sophiie-ai/clautch/commit/af89f872a728378dab26140c0f47e3a48e7d260d))
+
 ## [0.2.24](https://github.com/sophiie-ai/clautch/compare/v0.2.23...v0.2.24) (2026-04-01)
 
 
