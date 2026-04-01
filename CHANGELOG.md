@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.20](https://github.com/sophiie-ai/clautch/compare/v0.2.19...v0.2.20) (2026-04-01)
+
+
+### Bug Fixes
+
+* bring Check for Updates window to front ([7fd378e](https://github.com/sophiie-ai/clautch/commit/7fd378e8fd258901475491ddf4b0a6720778f009))
+
 ## [0.2.19](https://github.com/sophiie-ai/clautch/compare/v0.2.18...v0.2.19) (2026-04-01)
 
 
