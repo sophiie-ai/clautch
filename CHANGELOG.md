@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.22](https://github.com/sophiie-ai/clautch/compare/v0.2.21...v0.2.22) (2026-04-01)
+
+
+### Features
+
+* reaction notifications, activity feed, multi-display support ([d641f76](https://github.com/sophiie-ai/clautch/commit/d641f768338f2cd663d04c196ebce6a123954d99))
+
 ## [0.2.21](https://github.com/sophiie-ai/clautch/compare/v0.2.20...v0.2.21) (2026-04-01)
 
 
