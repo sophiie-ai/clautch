@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.24](https://github.com/sophiie-ai/clautch/compare/v0.2.23...v0.2.24) (2026-04-01)
+
+
+### Bug Fixes
+
+* set CFBundleVersion in Info.plist before build, force Sparkle windows to front ([b223e81](https://github.com/sophiie-ai/clautch/commit/b223e811c89cc1df03a88e2627f5ec59778ee319))
+
 ## [0.2.23](https://github.com/sophiie-ai/clautch/compare/v0.2.22...v0.2.23) (2026-04-01)
 
 
