@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.15](https://github.com/sophiie-ai/clautch/compare/v0.2.14...v0.2.15) (2026-04-01)
+
+
+### Bug Fixes
+
+* use CloudKit entitlements for re-sign step to match provisioning profile ([adbe3e6](https://github.com/sophiie-ai/clautch/commit/adbe3e64373720561564d2035c13c3fb4926cc49))
+
 ## [0.2.14](https://github.com/sophiie-ai/clautch/compare/v0.2.13...v0.2.14) (2026-04-01)
 
 
