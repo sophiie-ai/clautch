@@ -123,83 +123,85 @@ struct GrassIslandView: View {
                 let bottom = notchHeight + dropHeight
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
-                    VStack(spacing: 2) {
-                        // Speech bubble
-                        if isExpanded, let chat = creature.chatMessage {
-                            Text(chat)
-                                .font(.system(size: 7, weight: .medium, design: .rounded))
-                                .foregroundStyle(.black)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(.white.opacity(0.9))
-                                )
-                                .transition(.asymmetric(
-                                    insertion: .scale(scale: 0.5).combined(with: .opacity),
-                                    removal: .opacity
-                                ))
-                                .id("chat-\(creature.id)-\(chat)")
-                        }
+                    // Creature sprite at fixed position — overlays float above
+                    TimelineView(.animation(minimumInterval: 1.0 / 12)) { timeline in
+                        let t = timeline.date.timeIntervalSinceReferenceDate
+                        let walkHop: CGFloat = (isWalking && creature.isLocal)
+                            ? -3 * abs(CGFloat(sin(t * .pi * 4)))
+                            : 0
 
-                        // Floating pixel reaction
-                        if let reaction = creature.reaction {
-                            PixelReactionView(reaction: reaction)
-                                .frame(width: 15, height: 15)
-                                .transition(.asymmetric(
-                                    insertion: .scale(scale: 0.3).combined(with: .opacity).combined(with: .offset(y: 4)),
-                                    removal: .opacity.combined(with: .offset(y: -6))
-                                ))
-                                .id("reaction-\(creature.id)-\(reaction.rawValue)")
-                        }
-
-                        // Task + tool label (expanded only)
-                        if isExpanded && creature.sessionDuration != nil {
-                            VStack(spacing: 1) {
-                                Text(creature.state.task.displayLabel)
-                                    .font(.system(size: 7, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.white.opacity(0.6))
-                                if let tool = creature.lastToolName {
-                                    Text(tool)
-                                        .font(.system(size: 6, design: .monospaced))
-                                        .foregroundStyle(.white.opacity(0.35))
-                                }
+                        CreatureSpriteView(
+                            state: creature.state,
+                            creatureType: creature.creatureType,
+                            colorPreset: creature.colorPreset,
+                            accessory: creature.accessory,
+                            isExpanded: isExpanded,
+                            isWalking: isWalking && creature.isLocal
+                        )
+                        .frame(width: creatureSize, height: creatureSize)
+                        .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
+                        .scaleEffect(
+                            x: 1 + (1 - bounceScale) * 0.5,
+                            y: bounceScale,
+                            anchor: .bottom
+                        )
+                        .offset(y: bounceOffset + walkHop)
+                    }
+                    // Floating content above creature (overlays don't affect position)
+                    .overlay(alignment: .top) {
+                        VStack(spacing: 2) {
+                            if isExpanded, let chat = creature.chatMessage {
+                                Text(String(chat.prefix(50)))
+                                    .font(.system(size: 7, weight: .medium, design: .rounded))
+                                    .foregroundStyle(.black)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(.white.opacity(0.9))
+                                    )
+                                    .transition(.asymmetric(
+                                        insertion: .scale(scale: 0.5).combined(with: .opacity),
+                                        removal: .opacity
+                                    ))
+                                    .id("chat-\(creature.id)-\(chat)")
                             }
-                            .transition(.opacity.combined(with: .scale(scale: 0.8)))
+
+                            if let reaction = creature.reaction {
+                                PixelReactionView(reaction: reaction)
+                                    .frame(width: 15, height: 15)
+                                    .transition(.asymmetric(
+                                        insertion: .scale(scale: 0.3).combined(with: .opacity).combined(with: .offset(y: 4)),
+                                        removal: .opacity.combined(with: .offset(y: -6))
+                                    ))
+                                    .id("reaction-\(creature.id)-\(reaction.rawValue)")
+                            }
+
+                            if isExpanded && creature.sessionDuration != nil {
+                                VStack(spacing: 1) {
+                                    Text(creature.state.task.displayLabel)
+                                        .font(.system(size: 7, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.white.opacity(0.6))
+                                    if let tool = creature.lastToolName {
+                                        Text(tool)
+                                            .font(.system(size: 6, design: .monospaced))
+                                            .foregroundStyle(.white.opacity(0.35))
+                                    }
+                                }
+                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                            }
                         }
-
-                        TimelineView(.animation(minimumInterval: 1.0 / 12)) { timeline in
-                            let t = timeline.date.timeIntervalSinceReferenceDate
-                            // Walking hop: small vertical bounce at ~4 hops/sec
-                            let walkHop: CGFloat = (isWalking && creature.isLocal)
-                                ? -3 * abs(CGFloat(sin(t * .pi * 4)))
-                                : 0
-
-                            CreatureSpriteView(
-                                state: creature.state,
-                                creatureType: creature.creatureType,
-                                colorPreset: creature.colorPreset,
-                                accessory: creature.accessory,
-                                isExpanded: isExpanded,
-                                isWalking: isWalking && creature.isLocal
-                            )
-                            .frame(width: creatureSize, height: creatureSize)
-                            .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
-                            // Squash-stretch on landing
-                            .scaleEffect(
-                                x: 1 + (1 - bounceScale) * 0.5,
-                                y: bounceScale,
-                                anchor: .bottom
-                            )
-                            .offset(y: bounceOffset + walkHop)
-                        }
-
-                        // Session duration (expanded only)
+                        .offset(y: -4) // nudge above creature top edge
+                        .fixedSize()
+                    }
+                    // Duration below creature
+                    .overlay(alignment: .bottom) {
                         if isExpanded, let duration = creature.sessionDuration {
                             Text(formatDuration(duration))
                                 .font(.system(size: 6, weight: .medium, design: .monospaced))
                                 .foregroundStyle(.white.opacity(0.4))
                                 .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                                .offset(y: 10)
                         }
                     }
                     .position(

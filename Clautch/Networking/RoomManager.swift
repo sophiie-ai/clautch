@@ -220,7 +220,7 @@ final class RoomManager {
     /// Send a chat message — broadcast on next sync, auto-clear after 8s.
     func sendChat(_ message: String) {
         guard var state = ensureLocalState() else { return }
-        let trimmed = String(message.prefix(60))
+        let trimmed = String(message.prefix(50))
         guard !trimmed.isEmpty else { return }
         state = PeerState(
             peerId: state.peerId,
