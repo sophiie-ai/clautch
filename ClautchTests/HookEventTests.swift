@@ -3,7 +3,50 @@ import XCTest
 
 final class HookEventTests: XCTestCase {
 
-    func testDecodeBasicEvent() throws {
+    // MARK: - Claude Code format (hook_event_name, PascalCase)
+
+    func testDecodeClaudeCodeFormat() throws {
+        let json = """
+        {"session_id": "abc123", "hook_event_name": "PreToolUse", "tool_name": "Bash"}
+        """.data(using: .utf8)!
+
+        let event = try JSONDecoder().decode(HookEvent.self, from: json)
+        XCTAssertEqual(event.sessionId, "abc123")
+        XCTAssertEqual(event.eventType, .preToolUse)
+        XCTAssertEqual(event.toolName, "Bash")
+    }
+
+    func testDecodePostToolUseWithResponse() throws {
+        let json = """
+        {"session_id": "abc", "hook_event_name": "PostToolUse", "tool_name": "Read", "tool_response": {"stdout": "file contents", "stderr": "", "interrupted": false}}
+        """.data(using: .utf8)!
+
+        let event = try JSONDecoder().decode(HookEvent.self, from: json)
+        XCTAssertEqual(event.eventType, .postToolUse)
+        XCTAssertEqual(event.status, "success")
+    }
+
+    func testDecodePostToolUseInterrupted() throws {
+        let json = """
+        {"session_id": "abc", "hook_event_name": "PostToolUse", "tool_name": "Bash", "tool_response": {"stdout": "", "stderr": "killed", "interrupted": true}}
+        """.data(using: .utf8)!
+
+        let event = try JSONDecoder().decode(HookEvent.self, from: json)
+        XCTAssertEqual(event.status, "error")
+    }
+
+    func testDecodeStopEvent() throws {
+        let json = """
+        {"session_id": "abc", "hook_event_name": "Stop", "stop_hook_active": false}
+        """.data(using: .utf8)!
+
+        let event = try JSONDecoder().decode(HookEvent.self, from: json)
+        XCTAssertEqual(event.eventType, .stop)
+    }
+
+    // MARK: - Legacy format (event_type, snake_case)
+
+    func testDecodeLegacyFormat() throws {
         let json = """
         {"session_id": "abc123", "event_type": "session_start"}
         """.data(using: .utf8)!
@@ -11,11 +54,9 @@ final class HookEventTests: XCTestCase {
         let event = try JSONDecoder().decode(HookEvent.self, from: json)
         XCTAssertEqual(event.sessionId, "abc123")
         XCTAssertEqual(event.eventType, .sessionStart)
-        XCTAssertNil(event.toolName)
-        XCTAssertNil(event.status)
     }
 
-    func testDecodeToolEvent() throws {
+    func testDecodeLegacyToolEvent() throws {
         let json = """
         {"session_id": "abc", "event_type": "post_tool_use", "tool_name": "Read", "status": "success"}
         """.data(using: .utf8)!
@@ -28,12 +69,11 @@ final class HookEventTests: XCTestCase {
 
     func testDecodeMissingSessionId() throws {
         let json = """
-        {"event_type": "stop"}
+        {"hook_event_name": "Stop"}
         """.data(using: .utf8)!
 
         let event = try JSONDecoder().decode(HookEvent.self, from: json)
         XCTAssertEqual(event.eventType, .stop)
-        // sessionId should get a UUID fallback
         XCTAssertFalse(event.sessionId.isEmpty)
     }
 
