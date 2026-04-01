@@ -142,10 +142,10 @@ struct GrassIslandView: View {
                                 .id("chat-\(creature.id)-\(chat)")
                         }
 
-                        // Floating reaction emoji
+                        // Floating pixel reaction
                         if let reaction = creature.reaction {
-                            Text(reaction.emoji)
-                                .font(.system(size: 16))
+                            PixelReactionView(reaction: reaction)
+                                .frame(width: 15, height: 15)
                                 .transition(.asymmetric(
                                     insertion: .scale(scale: 0.3).combined(with: .opacity).combined(with: .offset(y: 4)),
                                     removal: .opacity.combined(with: .offset(y: -6))
@@ -271,6 +271,32 @@ struct GrassIslandView: View {
               let notch = screen.notchSize,
               let win = screen.notchWindowFrame else { return totalWidth * 0.7 }
         return notch.width * totalWidth / win.width
+    }
+}
+
+/// Renders a reaction as a tiny pixel art sprite.
+struct PixelReactionView: View {
+    let reaction: PeerReaction
+
+    var body: some View {
+        Canvas { ctx, size in
+            let grid = reaction.pixels
+            let rows = grid.count
+            let cols = grid.first?.count ?? 5
+            let px = min(size.width / CGFloat(cols), size.height / CGFloat(rows))
+
+            for (r, row) in grid.enumerated() {
+                for (c, cell) in row.enumerated() {
+                    guard cell != 0 else { continue }
+                    let rect = CGRect(
+                        x: CGFloat(c) * px, y: CGFloat(r) * px,
+                        width: px + 0.5, height: px + 0.5
+                    )
+                    let color = cell == 1 ? reaction.primaryColor : reaction.secondaryColor
+                    ctx.fill(Path(rect), with: .color(color))
+                }
+            }
+        }
     }
 }
 

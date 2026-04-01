@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Quick reactions peers can send to each other.
 enum PeerReaction: String, Codable, Sendable, CaseIterable, Identifiable {
@@ -19,6 +20,82 @@ enum PeerReaction: String, Codable, Sendable, CaseIterable, Identifiable {
         case .fire:      return "🔥"
         case .eyes:      return "👀"
         case .thumbsUp:  return "👍"
+        }
+    }
+
+    /// 5×5 pixel art for the reaction. 0=clear, 1=primary, 2=secondary.
+    var pixels: [[Int]] {
+        switch self {
+        case .wave:
+            return [
+                [0,1,0,1,0],
+                [1,1,1,1,1],
+                [0,1,1,1,0],
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+            ]
+        case .celebrate:
+            return [
+                [1,0,1,0,1],
+                [0,2,2,2,0],
+                [1,2,2,2,1],
+                [0,2,2,2,0],
+                [1,0,1,0,1],
+            ]
+        case .heart:
+            return [
+                [0,1,0,1,0],
+                [1,1,1,1,1],
+                [1,1,1,1,1],
+                [0,1,1,1,0],
+                [0,0,1,0,0],
+            ]
+        case .fire:
+            return [
+                [0,0,2,0,0],
+                [0,2,1,0,0],
+                [0,1,1,1,0],
+                [1,1,1,1,1],
+                [0,1,1,1,0],
+            ]
+        case .eyes:
+            return [
+                [0,0,0,0,0],
+                [1,1,0,1,1],
+                [2,1,0,2,1],
+                [1,1,0,1,1],
+                [0,0,0,0,0],
+            ]
+        case .thumbsUp:
+            return [
+                [0,0,1,1,0],
+                [0,1,1,1,0],
+                [1,1,1,1,0],
+                [1,1,1,1,0],
+                [0,1,1,0,0],
+            ]
+        }
+    }
+
+    var primaryColor: Color {
+        switch self {
+        case .wave:      return Color(red: 1.0, green: 0.85, blue: 0.5)
+        case .celebrate: return Color(red: 1.0, green: 0.85, blue: 0.1)
+        case .heart:     return Color(red: 1.0, green: 0.25, blue: 0.35)
+        case .fire:      return Color(red: 1.0, green: 0.5, blue: 0.0)
+        case .eyes:      return Color.white
+        case .thumbsUp:  return Color(red: 1.0, green: 0.85, blue: 0.5)
+        }
+    }
+
+    var secondaryColor: Color {
+        switch self {
+        case .wave:      return Color(red: 1.0, green: 0.7, blue: 0.3)
+        case .celebrate: return Color.white
+        case .heart:     return Color(red: 1.0, green: 0.5, blue: 0.6)
+        case .fire:      return Color(red: 1.0, green: 0.9, blue: 0.2)
+        case .eyes:      return Color(red: 0.2, green: 0.2, blue: 0.2)
+        case .thumbsUp:  return Color(red: 1.0, green: 0.7, blue: 0.3)
         }
     }
 }
