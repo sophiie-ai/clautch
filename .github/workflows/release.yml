@@ -47,6 +47,17 @@ jobs:
 
           security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
 
+      - name: Install Provisioning Profile
+        env:
+          PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROVISIONING_PROFILE" | base64 --decode \
+            > ~/Library/MobileDevice/Provisioning\ Profiles/clautch.provisionprofile
+          # Also place it where the app can embed it
+          mkdir -p build
+          echo "$PROVISIONING_PROFILE" | base64 --decode > build/embedded.provisionprofile
+
       - name: Compute build number
         id: buildnum
         run: |
@@ -84,7 +95,8 @@ jobs:
           APP="build/Clautch.xcarchive/Products/Applications/Clautch.app"
           ENTITLEMENTS="Clautch/Clautch-Release.entitlements"
 
-          rm -f "$APP/Contents/embedded.provisionprofile"
+          # Embed provisioning profile for CloudKit entitlements
+          cp build/embedded.provisionprofile "$APP/Contents/embedded.provisionprofile"
 
           # Re-sign Sparkle framework internals (inside-out)
           FW="$APP/Contents/Frameworks/Sparkle.framework"
