@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.17](https://github.com/sophiie-ai/clautch/compare/v0.2.16...v0.2.17) (2026-04-01)
+
+
+### Bug Fixes
+
+* initialize localState on room join and before sending reactions/chat ([16398b9](https://github.com/sophiie-ai/clautch/commit/16398b9626453e64cca94e03b19444dbfd0d43ea))
+
 ## [0.2.16](https://github.com/sophiie-ai/clautch/compare/v0.2.15...v0.2.16) (2026-04-01)
 
 
