@@ -267,7 +267,6 @@ struct GrassIslandView: View {
                 EventLogOverlay()
                     .padding(.horizontal, 20)
                     .padding(.bottom, AnimationSettings.shared.showStatusBar ? 22 : 8)
-                    .clipped()
                     .transition(.opacity.combined(with: .offset(y: 10)))
             }
         }
@@ -280,6 +279,8 @@ struct GrassIslandView: View {
                     .transition(.opacity)
             }
         }
+        // Clip everything to the panel shape
+        .clipShape(PanelClipShape(isExpanded: isExpanded, notchHalf: notchHalfForClip, panelHalf: panelHalfForClip, notchHeight: notchHeightForClip, cr: isExpanded ? 18 : 6))
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
         .onChange(of: isExpanded) { _, expanded in
             if expanded {
@@ -317,11 +318,64 @@ struct GrassIslandView: View {
         return -usable / 2 + creature.xPosition * usable
     }
 
+    // Pre-computed values for the clip shape
+    private var notchHeightForClip: CGFloat {
+        NSScreen.screens.first(where: { $0.hasNotch })?.safeAreaInsets.top ?? 32
+    }
+    private var notchHalfForClip: CGFloat {
+        guard let screen = NSScreen.screens.first(where: { $0.hasNotch }),
+              let notch = screen.notchSize,
+              let win = screen.notchWindowFrame else { return 0 }
+        return (notch.width * win.width / win.width) / 2
+    }
+    private var panelHalfForClip: CGFloat {
+        guard let screen = NSScreen.screens.first(where: { $0.hasNotch }),
+              let notch = screen.notchSize,
+              let win = screen.notchWindowFrame else { return 100 }
+        let notchHalf = (notch.width * win.width / win.width) / 2
+        return min(win.width / 2 - 2, notchHalf + 50)
+    }
+
     private func notchWidthInWindow(totalWidth: CGFloat) -> CGFloat {
         guard let screen = NSScreen.screens.first(where: { $0.hasNotch }),
               let notch = screen.notchSize,
               let win = screen.notchWindowFrame else { return totalWidth * 0.7 }
         return notch.width * totalWidth / win.width
+    }
+}
+
+// MARK: - Panel Clip Shape
+
+struct PanelClipShape: Shape {
+    let isExpanded: Bool
+    let notchHalf: CGFloat
+    let panelHalf: CGFloat
+    let notchHeight: CGFloat
+    let cr: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let midX = rect.midX
+        let bottom = rect.maxY
+
+        var path = Path()
+        if isExpanded {
+            path.move(to: CGPoint(x: midX - panelHalf, y: 0))
+            path.addLine(to: CGPoint(x: midX + panelHalf, y: 0))
+            path.addLine(to: CGPoint(x: midX + panelHalf, y: bottom - cr))
+            path.addQuadCurve(
+                to: CGPoint(x: midX + panelHalf - cr, y: bottom),
+                control: CGPoint(x: midX + panelHalf, y: bottom))
+            path.addLine(to: CGPoint(x: midX - panelHalf + cr, y: bottom))
+            path.addQuadCurve(
+                to: CGPoint(x: midX - panelHalf, y: bottom - cr),
+                control: CGPoint(x: midX - panelHalf, y: bottom))
+            path.addLine(to: CGPoint(x: midX - panelHalf, y: 0))
+        } else {
+            // Collapsed: just a rect covering the notch bump area
+            path.addRect(rect)
+        }
+        path.closeSubpath()
+        return path
     }
 }
 
