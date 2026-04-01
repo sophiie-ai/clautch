@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.18](https://github.com/sophiie-ai/clautch/compare/v0.2.17...v0.2.18) (2026-04-01)
+
+
+### Features
+
+* pixel art reactions instead of emoji overlays ([6234c3c](https://github.com/sophiie-ai/clautch/commit/6234c3c3f1e79027cbac0821e12ed5ed290ca5ea))
+
 ## [0.2.17](https://github.com/sophiie-ai/clautch/compare/v0.2.16...v0.2.17) (2026-04-01)
 
 
