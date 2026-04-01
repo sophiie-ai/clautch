@@ -3,32 +3,12 @@
 <plist version="1.0">
 <dict>
     <!--
-        App Sandbox is disabled because the app requires:
-        1. Unix socket in $TMPDIR for Claude Code hook communication
-        2. Write access to ~/.claude/hooks/ and ~/.claude/settings.json
-        Mitigations: hardened runtime, socket UID check (getpeereid),
-        per-user TMPDIR, 0600 socket permissions, symlink validation.
-
-        iCloud entitlements are included here for the codesign re-sign step.
-        The archive step uses separate entitlements without iCloud to avoid
-        xcodebuild's provisioning profile requirement. codesign embeds these
-        entitlements directly without that check.
+        No iCloud entitlements here — Developer ID signing without a
+        provisioning profile cannot include them (Gatekeeper rejects it).
+        CloudKitService initializes CKContainer directly and handles
+        errors gracefully if CloudKit is unavailable.
     -->
     <key>com.apple.security.app-sandbox</key>
-    <false/>
-    <!-- CloudKit for room/presence sync -->
-    <key>com.apple.developer.icloud-container-identifiers</key>
-    <array>
-        <string>iCloud.com.clautch.app</string>
-    </array>
-    <key>com.apple.developer.icloud-services</key>
-    <array>
-        <string>CloudKit</string>
-    </array>
-    <!-- Hardened runtime restrictions — keep all disabled (secure defaults) -->
-    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-    <false/>
-    <key>com.apple.security.cs.disable-library-validation</key>
     <false/>
 </dict>
 </plist>
