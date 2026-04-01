@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.19](https://github.com/sophiie-ai/clautch/compare/v0.2.18...v0.2.19) (2026-04-01)
+
+
+### Bug Fixes
+
+* stable creature positioning with overlay-based chat and reactions ([11723e4](https://github.com/sophiie-ai/clautch/commit/11723e4091129cf64002aa7cda7edb4d5710bbbf))
+
 ## [0.2.18](https://github.com/sophiie-ai/clautch/compare/v0.2.17...v0.2.18) (2026-04-01)
 
 
