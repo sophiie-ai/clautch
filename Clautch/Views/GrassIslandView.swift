@@ -12,6 +12,7 @@ struct GrassIslandView: View {
     @State private var bounceOffset: CGFloat = 0
 
     private var creatureSize: CGFloat {
+        if !isExpanded { return 20 } // smaller when collapsed
         switch creatures.count {
         case 0...3: return 32
         case 4:     return 28
@@ -36,7 +37,8 @@ struct GrassIslandView: View {
             let fullDrop = size.height - notchHeight
             let showLog = AnimationSettings.shared.showEventLog
             // Use less vertical space when event log is disabled
-            let maxDrop = showLog ? fullDrop : min(fullDrop, 70)
+            let showStatus = AnimationSettings.shared.showStatusBar
+            let maxDrop = showLog ? fullDrop : min(fullDrop, showStatus ? 85 : 70)
             let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
             let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 16
             let dropHeight = isExpanded ? maxDrop : peekDrop
@@ -68,29 +70,11 @@ struct GrassIslandView: View {
                 )
                 path.addLine(to: CGPoint(x: midX - panelHalf, y: 0))
             } else {
-                // Collapsed: notch-hugging bump
+                // Collapsed: simple notch extension, no rounded corners
                 path.move(to: CGPoint(x: midX - notchHalf, y: 0))
                 path.addLine(to: CGPoint(x: midX + notchHalf, y: 0))
-                path.addLine(to: CGPoint(x: midX + notchHalf, y: notchHeight))
-                path.addQuadCurve(
-                    to: CGPoint(x: midX + panelHalf, y: notchHeight + 4),
-                    control: CGPoint(x: midX + panelHalf, y: notchHeight)
-                )
-                path.addLine(to: CGPoint(x: midX + panelHalf, y: bottom - cr))
-                path.addQuadCurve(
-                    to: CGPoint(x: midX + panelHalf - cr, y: bottom),
-                    control: CGPoint(x: midX + panelHalf, y: bottom)
-                )
-                path.addLine(to: CGPoint(x: midX - panelHalf + cr, y: bottom))
-                path.addQuadCurve(
-                    to: CGPoint(x: midX - panelHalf, y: bottom - cr),
-                    control: CGPoint(x: midX - panelHalf, y: bottom)
-                )
-                path.addLine(to: CGPoint(x: midX - panelHalf, y: notchHeight + 4))
-                path.addQuadCurve(
-                    to: CGPoint(x: midX - notchHalf, y: notchHeight),
-                    control: CGPoint(x: midX - panelHalf, y: notchHeight)
-                )
+                path.addLine(to: CGPoint(x: midX + notchHalf, y: bottom))
+                path.addLine(to: CGPoint(x: midX - notchHalf, y: bottom))
                 path.addLine(to: CGPoint(x: midX - notchHalf, y: 0))
             }
             path.closeSubpath()
@@ -98,7 +82,8 @@ struct GrassIslandView: View {
             if isExpanded {
                 // 2. Draw scenic background
                 let showLog = AnimationSettings.shared.showEventLog
-                let grassY = showLog ? bottom * 0.4 : bottom * 0.65
+                // Grass starts higher — thinner ground area
+                let grassY = showLog ? bottom * 0.35 : bottom * 0.55
 
                 // Sky gradient (fills from top of screen)
                 ctx.clip(to: path)
@@ -142,7 +127,7 @@ struct GrassIslandView: View {
 
                 // Dark section below for event log
                 if showLog {
-                    let logY = grassY + 20
+                    let logY = grassY + 12
                     ctx.fill(
                         Path(CGRect(x: midX - panelHalf, y: logY, width: panelHalf * 2, height: bottom - logY)),
                         with: .color(Color.black.opacity(0.85))
@@ -154,24 +139,8 @@ struct GrassIslandView: View {
                     )
                 }
             } else {
-                // Collapsed: simple black
+                // Collapsed: just black behind the notch, no grass or decorations
                 ctx.fill(path, with: .color(.black))
-
-                // Small grass strip
-                let grassWidth = panelHalf * 2 - 16
-                let grassX = midX - grassWidth / 2
-                let bottom = notchHeight + (AnimationSettings.shared.hideWhenCollapsed ? 0 : 16)
-                ctx.fill(Path(CGRect(x: grassX, y: bottom - 5, width: grassWidth, height: 5)),
-                         with: .color(grassDark))
-                var rng = StableRNG(seed: 42)
-                let bladeCount = Int(grassWidth / 3)
-                for i in 0..<bladeCount {
-                    let bx = grassX + CGFloat(i) * 3 + CGFloat.random(in: -1...1, using: &rng)
-                    let h = CGFloat.random(in: 3...8, using: &rng)
-                    let rect = CGRect(x: bx, y: bottom - h, width: 2, height: h)
-                    let opacity = Double.random(in: 0.5...1.0, using: &rng)
-                    ctx.fill(Path(rect), with: .color(grassGreen.opacity(opacity)))
-                }
             }
         }
         .overlay {
@@ -179,14 +148,15 @@ struct GrassIslandView: View {
             GeometryReader { geo in
                 let fullDrop = geo.size.height - notchHeight
                 let showLog = AnimationSettings.shared.showEventLog
-                let maxDrop = showLog ? fullDrop : min(fullDrop, 70)
+                let showStatus = AnimationSettings.shared.showStatusBar
+            let maxDrop = showLog ? fullDrop : min(fullDrop, showStatus ? 85 : 70)
                 let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
                 let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 8
                 let dropHeight = isExpanded ? maxDrop : peekDrop
                 let bottom = notchHeight + dropHeight
                 // Creatures sit on the grass line
                 let grassLineY = isExpanded
-                    ? (showLog ? bottom * 0.4 : bottom * 0.65)
+                    ? (showLog ? bottom * 0.35 : bottom * 0.55)
                     : notchHeight + dropHeight
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
@@ -249,7 +219,7 @@ struct GrassIslandView: View {
                                     .transition(.opacity)
                             }
                         }
-                        .offset(y: -4)
+                        .offset(y: -10)
                         .fixedSize()
                     }
                     .position(
@@ -276,7 +246,7 @@ struct GrassIslandView: View {
         .overlay(alignment: .bottom) {
             if AnimationSettings.shared.showEventLog && isExpanded {
                 EventLogOverlay()
-                    .padding(.horizontal, 30)
+                    .padding(.horizontal, 40)
                     .padding(.bottom, AnimationSettings.shared.showStatusBar ? 24 : 10)
                     .transition(.opacity.combined(with: .offset(y: 10)))
             }
@@ -285,7 +255,7 @@ struct GrassIslandView: View {
         .overlay(alignment: .bottom) {
             if AnimationSettings.shared.showStatusBar && isExpanded {
                 StatusBarOverlay()
-                    .padding(.horizontal, 26)
+                    .padding(.horizontal, 36)
                     .padding(.bottom, 8)
                     .transition(.opacity)
             }
