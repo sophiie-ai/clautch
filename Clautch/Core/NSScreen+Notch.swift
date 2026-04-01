@@ -35,8 +35,8 @@ extension NSScreen {
         guard let notch = notchFrame else { return nil }
 
         // The panel extends sideways and downward from the notch.
-        let sideExtension: CGFloat = 60   // extra width beyond notch on each side
-        let dropHeight: CGFloat = 70      // max drop below the notch when expanded
+        let sideExtension: CGFloat = 80   // extra width beyond notch on each side
+        let dropHeight: CGFloat = 160     // max drop below the notch when expanded
 
         return NSRect(
             x: notch.origin.x - sideExtension,

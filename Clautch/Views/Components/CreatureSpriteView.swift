@@ -23,10 +23,25 @@ final class AnimationSettings {
         didSet { UserDefaults.standard.set(isPaused, forKey: Self.pauseKey) }
     }
 
+    /// Show status bar at the bottom of the expanded panel.
+    private static let statusBarKey = "com.clautch.showStatusBar"
+    var showStatusBar: Bool = true {
+        didSet { UserDefaults.standard.set(showStatusBar, forKey: Self.statusBarKey) }
+    }
+
+    /// Show event log in the expanded panel.
+    private static let eventLogKey = "com.clautch.showEventLog"
+    var showEventLog: Bool = true {
+        didSet { UserDefaults.standard.set(showEventLog, forKey: Self.eventLogKey) }
+    }
+
     init() {
         self.reduceAnimationWhenCollapsed = UserDefaults.standard.bool(forKey: Self.reduceKey)
         self.hideWhenCollapsed = UserDefaults.standard.bool(forKey: Self.hideKey)
         self.isPaused = UserDefaults.standard.bool(forKey: Self.pauseKey)
+        // Default to true for new settings
+        self.showStatusBar = UserDefaults.standard.object(forKey: Self.statusBarKey) as? Bool ?? true
+        self.showEventLog = UserDefaults.standard.object(forKey: Self.eventLogKey) as? Bool ?? true
     }
 }
 

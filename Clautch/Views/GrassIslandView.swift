@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Renders a Dynamic-Island-style panel extending from the notch.
 /// Collapsed: small bump with creature head peeking out.
-/// Expanded on hover: full panel with creature on grass.
+/// Expanded: scenic panel with sky, grass, creatures, event log, status bar.
 struct GrassIslandView: View {
     let creatures: [CreatureDisplay]
     var isExpanded: Bool = false
@@ -10,7 +10,6 @@ struct GrassIslandView: View {
 
     @State private var bounceScale: CGFloat = 1.0
     @State private var bounceOffset: CGFloat = 0
-    @State private var walkPhase: Double = 0
 
     private var creatureSize: CGFloat {
         switch creatures.count {
@@ -21,9 +20,16 @@ struct GrassIslandView: View {
         }
     }
 
+    private let skyTop = Color(red: 0.15, green: 0.25, blue: 0.45)
+    private let skyBottom = Color(red: 0.25, green: 0.45, blue: 0.55)
+    private let grassGreen = Color(red: 0.2, green: 0.5, blue: 0.25)
+    private let grassDark = Color(red: 0.12, green: 0.35, blue: 0.15)
+
     var body: some View {
         let screen = NSScreen.screens.first(where: { $0.hasNotch })
         let notchHeight = screen?.safeAreaInsets.top ?? 32
+        let showLog = AnimationSettings.shared.showEventLog && isExpanded
+        let showStatus = AnimationSettings.shared.showStatusBar && isExpanded
 
         Canvas { ctx, size in
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
@@ -33,27 +39,24 @@ struct GrassIslandView: View {
             let dropHeight = isExpanded ? maxDrop : peekDrop
             let midX = size.width / 2
             let notchHalf = notchWidth / 2
-            let expandedPanelHalf = min(size.width / 2 - 2, notchHalf + 30)
-            // Collapsed: notch width + horizontal padding. Expanded: wider panel.
+            let expandedPanelHalf = min(size.width / 2 - 2, notchHalf + 50)
             let panelHalf = isExpanded ? expandedPanelHalf : notchHalf + 20
             let bottom = notchHeight + dropHeight
             let r: CGFloat = isExpanded ? 18 : 6
             let cr = min(r, dropHeight / 2)
 
-            // 1. Draw island shape
+            // 1. Clip path for the island shape
             var path = Path()
             path.move(to: CGPoint(x: midX - notchHalf, y: 0))
             path.addLine(to: CGPoint(x: midX + notchHalf, y: 0))
 
             if isExpanded {
-                // Expanded: curves from notch out to wider panel
                 path.addCurve(
                     to: CGPoint(x: midX + panelHalf, y: notchHeight + cr),
                     control1: CGPoint(x: midX + notchHalf, y: notchHeight),
                     control2: CGPoint(x: midX + panelHalf, y: notchHeight)
                 )
             } else {
-                // Collapsed: straight down from notch, then angle out to panel width
                 path.addLine(to: CGPoint(x: midX + notchHalf, y: notchHeight))
                 path.addQuadCurve(
                     to: CGPoint(x: midX + panelHalf, y: notchHeight + 4),
@@ -87,43 +90,96 @@ struct GrassIslandView: View {
                 )
                 path.addLine(to: CGPoint(x: midX - notchHalf, y: 0))
             }
-
             path.closeSubpath()
-            ctx.fill(path, with: .color(.black))
 
-            // 2. Draw grass at bottom of island
-            let grassY = bottom - 10
-            let grassWidth = panelHalf * 2 - 16
-            let grassX = midX - grassWidth / 2
-            let darkGreen = Color(red: 0.18, green: 0.5, blue: 0.22)
-            let green = Color(red: 0.25, green: 0.65, blue: 0.3)
-            ctx.fill(Path(CGRect(x: grassX, y: bottom - 5, width: grassWidth, height: 5)),
-                     with: .color(darkGreen))
-            var rng = StableRNG(seed: 42)
-            let bladeCount = Int(grassWidth / 3)
-            for i in 0..<bladeCount {
-                let bx = grassX + CGFloat(i) * 3 + CGFloat.random(in: -1...1, using: &rng)
-                let h = CGFloat.random(in: 3...8, using: &rng)
-                let rect = CGRect(x: bx, y: bottom - h, width: 2, height: h)
-                let opacity = Double.random(in: 0.5...1.0, using: &rng)
-                ctx.fill(Path(rect), with: .color(green.opacity(opacity)))
+            if isExpanded {
+                // 2. Draw scenic background
+                let grassY = notchHeight + (bottom - notchHeight) * 0.45
+                let panelRect = CGRect(x: midX - panelHalf, y: notchHeight, width: panelHalf * 2, height: bottom - notchHeight)
+
+                // Sky gradient
+                ctx.clip(to: path)
+                let skyGradient = Gradient(colors: [skyTop, skyBottom])
+                ctx.fill(
+                    Path(CGRect(x: midX - panelHalf, y: notchHeight, width: panelHalf * 2, height: grassY - notchHeight)),
+                    with: .linearGradient(skyGradient, startPoint: CGPoint(x: midX, y: notchHeight), endPoint: CGPoint(x: midX, y: grassY))
+                )
+
+                // Stars (tiny dots in sky)
+                var starRng = StableRNG(seed: 77)
+                for _ in 0..<8 {
+                    let sx = midX - panelHalf + CGFloat.random(in: 0...(panelHalf * 2), using: &starRng)
+                    let sy = notchHeight + CGFloat.random(in: 5...(grassY - notchHeight - 5), using: &starRng)
+                    let alpha = Double.random(in: 0.3...0.7, using: &starRng)
+                    ctx.fill(Path(CGRect(x: sx, y: sy, width: 1, height: 1)), with: .color(.white.opacity(alpha)))
+                }
+
+                // Ground
+                ctx.fill(
+                    Path(CGRect(x: midX - panelHalf, y: grassY, width: panelHalf * 2, height: bottom - grassY)),
+                    with: .color(grassDark)
+                )
+
+                // Grass blades
+                var rng = StableRNG(seed: 42)
+                let grassWidth = panelHalf * 2 - 8
+                let grassX = midX - grassWidth / 2
+                let bladeCount = Int(grassWidth / 2.5)
+                for i in 0..<bladeCount {
+                    let bx = grassX + CGFloat(i) * 2.5 + CGFloat.random(in: -1...1, using: &rng)
+                    let h = CGFloat.random(in: 4...10, using: &rng)
+                    let rect = CGRect(x: bx, y: grassY - h + 2, width: 1.5, height: h)
+                    let opacity = Double.random(in: 0.4...0.9, using: &rng)
+                    ctx.fill(Path(rect), with: .color(grassGreen.opacity(opacity)))
+                }
+
+                // Dark section below for event log
+                if showLog {
+                    let logY = grassY + 20
+                    ctx.fill(
+                        Path(CGRect(x: midX - panelHalf, y: logY, width: panelHalf * 2, height: bottom - logY)),
+                        with: .color(Color.black.opacity(0.85))
+                    )
+                    // Divider line
+                    ctx.fill(
+                        Path(CGRect(x: midX - panelHalf + 8, y: logY, width: panelHalf * 2 - 16, height: 0.5)),
+                        with: .color(.white.opacity(0.1))
+                    )
+                }
+            } else {
+                // Collapsed: simple black
+                ctx.fill(path, with: .color(.black))
+
+                // Small grass strip
+                let grassWidth = panelHalf * 2 - 16
+                let grassX = midX - grassWidth / 2
+                let bottom = notchHeight + (AnimationSettings.shared.hideWhenCollapsed ? 0 : 16)
+                ctx.fill(Path(CGRect(x: grassX, y: bottom - 5, width: grassWidth, height: 5)),
+                         with: .color(grassDark))
+                var rng = StableRNG(seed: 42)
+                let bladeCount = Int(grassWidth / 3)
+                for i in 0..<bladeCount {
+                    let bx = grassX + CGFloat(i) * 3 + CGFloat.random(in: -1...1, using: &rng)
+                    let h = CGFloat.random(in: 3...8, using: &rng)
+                    let rect = CGRect(x: bx, y: bottom - h, width: 2, height: h)
+                    let opacity = Double.random(in: 0.5...1.0, using: &rng)
+                    ctx.fill(Path(rect), with: .color(grassGreen.opacity(opacity)))
+                }
             }
-
-            // 3. Draw creatures
-            // We can't draw SwiftUI views in Canvas, so draw simple pixel eyes
-            // as a placeholder. The real creature is overlaid separately.
         }
         .overlay {
-            // SwiftUI creature sprites positioned absolutely
+            // SwiftUI creature sprites
             GeometryReader { geo in
                 let maxDrop = geo.size.height - notchHeight
                 let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
                 let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 8
                 let dropHeight = isExpanded ? maxDrop : peekDrop
-                let bottom = notchHeight + dropHeight
+                // Creatures sit on the grass line (45% of expanded area)
+                let grassLineY = isExpanded
+                    ? notchHeight + (geo.size.height - notchHeight) * 0.45
+                    : notchHeight + dropHeight
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
-                    // Creature sprite at fixed position — overlays float above
                     TimelineView(.animation(minimumInterval: 1.0 / 12)) { timeline in
                         let t = timeline.date.timeIntervalSinceReferenceDate
                         let walkHop: CGFloat = (isWalking && creature.isLocal)
@@ -147,7 +203,6 @@ struct GrassIslandView: View {
                         )
                         .offset(y: bounceOffset + walkHop)
                     }
-                    // Floating content above creature (overlays don't affect position)
                     .overlay(alignment: .top) {
                         VStack(spacing: 2) {
                             if isExpanded, let chat = creature.chatMessage {
@@ -177,44 +232,24 @@ struct GrassIslandView: View {
                                     .id("reaction-\(creature.id)-\(reaction.rawValue)")
                             }
 
-                            if isExpanded && creature.sessionDuration != nil {
-                                VStack(spacing: 1) {
-                                    Text(creature.state.task.displayLabel)
-                                        .font(.system(size: 7, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(.white.opacity(0.6))
-                                    if let tool = creature.lastToolName {
-                                        Text(tool)
-                                            .font(.system(size: 6, design: .monospaced))
-                                            .foregroundStyle(.white.opacity(0.35))
-                                    }
-                                }
-                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                            if isExpanded && creature.isLocal {
+                                Text(creature.state.task.displayLabel)
+                                    .font(.system(size: 7, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.7))
+                                    .transition(.opacity)
                             }
                         }
-                        .offset(y: -4) // nudge above creature top edge
+                        .offset(y: -4)
                         .fixedSize()
-                    }
-                    // Duration below creature
-                    .overlay(alignment: .bottom) {
-                        if isExpanded, let duration = creature.sessionDuration {
-                            Text(formatDuration(duration))
-                                .font(.system(size: 6, weight: .medium, design: .monospaced))
-                                .foregroundStyle(.white.opacity(0.4))
-                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                                .offset(y: 10)
-                        }
                     }
                     .position(
                         x: geo.size.width / 2 + creatureOffset(for: creature, in: geo.size.width),
-                        y: bottom - creatureSize / 2 - 8
+                        y: grassLineY - creatureSize / 2 - 4
                     )
                     .shadow(
-                        color: creature.isLocal ? .white.opacity(0.2) : .clear,
+                        color: creature.isLocal ? .white.opacity(0.15) : .clear,
                         radius: creature.isLocal ? 3 : 0
                     )
-                    .help(creature.id == "local-idle"
-                        ? "Idle"
-                        : "\(creature.displayName): \(creature.state.task.displayLabel)")
                     .contextMenu {
                         if creature.isLocal {
                             ForEach(PeerReaction.allCases) { reaction in
@@ -227,13 +262,22 @@ struct GrassIslandView: View {
                 }
             }
         }
-        // Activity feed (expanded only, bottom-right)
-        .overlay(alignment: .bottomTrailing) {
-            if isExpanded {
-                ActivityFeedView()
-                    .padding(.trailing, 8)
+        // Event log overlay (bottom section)
+        .overlay(alignment: .bottom) {
+            if AnimationSettings.shared.showEventLog && isExpanded {
+                EventLogOverlay()
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, AnimationSettings.shared.showStatusBar ? 22 : 6)
+                    .transition(.opacity.combined(with: .offset(y: 10)))
+            }
+        }
+        // Status bar overlay (very bottom)
+        .overlay(alignment: .bottom) {
+            if AnimationSettings.shared.showStatusBar && isExpanded {
+                StatusBarOverlay()
+                    .padding(.horizontal, 10)
                     .padding(.bottom, 4)
-                    .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .bottomTrailing)))
+                    .transition(.opacity)
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
@@ -247,16 +291,12 @@ struct GrassIslandView: View {
         }
     }
 
-    /// Squash on impact, then spring back with overshoot.
     private func triggerLandingBounce() {
-        // Wait for the panel expansion to mostly finish
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            // Squash: compress vertically, shift down
             withAnimation(.easeIn(duration: 0.08)) {
                 bounceScale = 0.7
                 bounceOffset = 4
             }
-            // Spring back with overshoot
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.35)) {
                     bounceScale = 1.0
@@ -285,30 +325,104 @@ struct GrassIslandView: View {
     }
 }
 
-/// Mini activity feed shown in the expanded panel.
-struct ActivityFeedView: View {
+// MARK: - Event Log Overlay
+
+struct EventLogOverlay: View {
     @State private var feed = ActivityFeed.shared
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 1) {
-            ForEach(feed.items.prefix(5)) { item in
-                HStack(spacing: 3) {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(feed.items.prefix(4)) { item in
+                HStack(spacing: 4) {
                     Text(item.icon)
-                        .font(.system(size: 5))
+                        .font(.system(size: 6))
                     Text(item.text)
-                        .font(.system(size: 5, design: .monospaced))
+                        .font(.system(size: 6, design: .monospaced))
                         .lineLimit(1)
+                    Spacer()
                     Text(item.timeAgo)
-                        .font(.system(size: 4))
+                        .font(.system(size: 5))
                         .foregroundStyle(.white.opacity(0.3))
                 }
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(.white.opacity(0.55))
             }
         }
     }
 }
 
-/// Renders a reaction as a tiny pixel art sprite.
+// MARK: - Status Bar Overlay
+
+struct StatusBarOverlay: View {
+    @State private var stateMachine = StateMachine.shared
+    @State private var stats = SessionStats.shared
+
+    var body: some View {
+        HStack(spacing: 6) {
+            // Current task indicator
+            let task = stateMachine.sessionStore.effectiveSession?.state.task ?? .idle
+            let emotion = stateMachine.sessionStore.effectiveSession?.state.emotion ?? .neutral
+
+            HStack(spacing: 3) {
+                Circle()
+                    .fill(taskColor(task))
+                    .frame(width: 4, height: 4)
+                Text(task.displayLabel)
+                    .font(.system(size: 6, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+
+            // Emotion
+            if emotion != .neutral {
+                Text(emotionLabel(emotion))
+                    .font(.system(size: 5, weight: .medium))
+                    .foregroundStyle(emotionColor(emotion).opacity(0.7))
+            }
+
+            Spacer()
+
+            // Session time today
+            Text("Today: \(SessionStats.format(stats.todayTotal))")
+                .font(.system(size: 5, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+    }
+
+    private func taskColor(_ task: CreatureTask) -> Color {
+        switch task {
+        case .idle:       return .gray
+        case .working:    return .cyan
+        case .thinking:   return .yellow
+        case .sleeping:   return .purple
+        case .compacting: return .red
+        }
+    }
+
+    private func emotionLabel(_ emotion: CreatureEmotion) -> String {
+        switch emotion {
+        case .happy:      return "happy"
+        case .sad:        return "sad"
+        case .frustrated: return "frustrated"
+        case .excited:    return "excited!"
+        case .confused:   return "confused"
+        case .tired:      return "tired"
+        case .neutral:    return ""
+        }
+    }
+
+    private func emotionColor(_ emotion: CreatureEmotion) -> Color {
+        switch emotion {
+        case .happy, .excited: return .green
+        case .sad:             return .blue
+        case .frustrated:      return .red
+        case .confused:        return .yellow
+        case .tired:           return .purple
+        case .neutral:         return .gray
+        }
+    }
+}
+
+// MARK: - Pixel Reaction View
+
 struct PixelReactionView: View {
     let reaction: PeerReaction
 
@@ -333,6 +447,8 @@ struct PixelReactionView: View {
         }
     }
 }
+
+// MARK: - Stable RNG
 
 private struct StableRNG: RandomNumberGenerator {
     private var state: UInt64

@@ -396,6 +396,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(hideItem)
         }
 
+        // Status Bar toggle
+        let statusBarItem = NSMenuItem(
+            title: "Status Bar",
+            action: #selector(toggleStatusBar),
+            keyEquivalent: ""
+        )
+        statusBarItem.target = self
+        statusBarItem.tag = 760
+        menu.addItem(statusBarItem)
+
+        // Event Log toggle
+        let eventLogItem = NSMenuItem(
+            title: "Event Log",
+            action: #selector(toggleEventLog),
+            keyEquivalent: ""
+        )
+        eventLogItem.target = self
+        eventLogItem.tag = 770
+        menu.addItem(eventLogItem)
+
         // Pause toggle — hides panel and stops processing
         let pauseItem = NSMenuItem(
             title: "Pause Clautch",
@@ -487,6 +507,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleHideWhenCollapsed() {
         AnimationSettings.shared.hideWhenCollapsed.toggle()
+    }
+
+    @objc private func toggleStatusBar() {
+        AnimationSettings.shared.showStatusBar.toggle()
+    }
+
+    @objc private func toggleEventLog() {
+        AnimationSettings.shared.showEventLog.toggle()
     }
 
     @objc private func selectDisplay(_ sender: NSMenuItem) {
@@ -620,6 +648,12 @@ extension AppDelegate: NSMenuDelegate {
         }
         if let hideItem = menu.item(withTag: 750) {
             hideItem.state = AnimationSettings.shared.hideWhenCollapsed ? .on : .off
+        }
+        if let statusItem = menu.item(withTag: 760) {
+            statusItem.state = AnimationSettings.shared.showStatusBar ? .on : .off
+        }
+        if let eventLogItem = menu.item(withTag: 770) {
+            eventLogItem.state = AnimationSettings.shared.showEventLog ? .on : .off
         }
         if let pauseItem = menu.item(withTag: 800) {
             pauseItem.state = AnimationSettings.shared.isPaused ? .on : .off
