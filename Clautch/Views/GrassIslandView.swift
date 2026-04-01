@@ -275,7 +275,7 @@ struct GrassIslandView: View {
                     if showLog {
                         EventLogOverlay()
                             .frame(width: contentWidth, height: logH, alignment: .top)
-                            .padding(.vertical, 4)
+                            .padding(.top, 2)
                             .position(x: geo.size.width / 2, y: logTop + logH / 2)
                             .transition(.opacity.combined(with: .offset(y: 10)))
                     }
