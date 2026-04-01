@@ -6,15 +6,36 @@ import os
 final class CloudKitService: @unchecked Sendable {
     static let shared = CloudKitService()
 
-    /// Container is lazily initialized. Since the app runs without sandbox,
-    /// CKContainer can be created directly. CloudKit availability is verified
-    /// at runtime via accountStatus() — no entitlement check needed.
-    private(set) lazy var container: CKContainer = {
-        CKContainer(identifier: "iCloud.com.clautch.app")
+    /// Container is lazily initialized. Returns nil if iCloud entitlements
+    /// are not present in the code-signed binary (e.g. CI-built releases
+    /// without a provisioning profile). Using CloudKit without entitlements
+    /// causes an uncatchable SIGTRAP.
+    private(set) lazy var container: CKContainer? = {
+        // Check code-signing entitlements via SecTask
+        if let task = SecTaskCreateFromSelf(nil),
+           let value = SecTaskCopyValueForEntitlement(
+               task, "com.apple.developer.icloud-container-identifiers" as CFString, nil
+           ),
+           let ids = value as? [String],
+           ids.contains("iCloud.com.clautch.app") {
+            return CKContainer(identifier: "iCloud.com.clautch.app")
+        }
+        // Check embedded provisioning profile (covers Developer ID builds)
+        if let profileURL = Bundle.main.url(forResource: "embedded", withExtension: "provisionprofile"),
+           let profileData = try? Data(contentsOf: profileURL),
+           let profileString = String(data: profileData, encoding: .ascii),
+           profileString.contains("iCloud.com.clautch.app") {
+            return CKContainer(identifier: "iCloud.com.clautch.app")
+        }
+        logger.warning("CloudKit not available — iCloud entitlements not found in signed binary")
+        return nil
     }()
 
-    private var publicDB: CKDatabase { container.publicCloudDatabase }
+    private var publicDB: CKDatabase? { container?.publicCloudDatabase }
     private let logger = Logger(subsystem: "com.clautch.app", category: "CloudKit")
+
+    /// Whether CloudKit is available (entitlements present).
+    var isAvailable: Bool { container != nil }
 
     // Record type names
     static let roomType = "ClautchRoom"
@@ -22,24 +43,24 @@ final class CloudKitService: @unchecked Sendable {
 
     // MARK: - Room Operations
 
-    /// Create a new room record with an invite token.
     func createRoom(code: String, creatorPeerId: String, inviteToken: String) async throws -> CKRecord {
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
         let record = CKRecord(recordType: Self.roomType)
         record["roomCode"] = code
         record["creatorPeerId"] = creatorPeerId
         record["inviteToken"] = inviteToken
         record["createdAt"] = Date() as NSDate
 
-        let saved = try await publicDB.save(record)
+        let saved = try await db.save(record)
         logger.info("Room created: \(code)")
         return saved
     }
 
-    /// Find a room by code.
     func findRoom(code: String) async throws -> CKRecord? {
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
         let predicate = NSPredicate(format: "roomCode == %@", code)
         let query = CKQuery(recordType: Self.roomType, predicate: predicate)
-        let (results, _) = try await publicDB.records(matching: query, resultsLimit: 1)
+        let (results, _) = try await db.records(matching: query, resultsLimit: 1)
 
         for (_, result) in results {
             if let record = try? result.get() {
@@ -49,24 +70,24 @@ final class CloudKitService: @unchecked Sendable {
         return nil
     }
 
-    /// Delete a room record.
     func deleteRoom(recordID: CKRecord.ID) async throws {
-        try await publicDB.deleteRecord(withID: recordID)
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
+        try await db.deleteRecord(withID: recordID)
         logger.info("Room deleted")
     }
 
     // MARK: - Presence Operations
 
-    /// Write or update a presence record.
     func writePresence(
         existingRecordID: CKRecord.ID?,
         roomCode: String,
         state: PeerState
     ) async throws -> CKRecord {
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
         let record: CKRecord
         if let existingID = existingRecordID {
             do {
-                record = try await publicDB.record(for: existingID)
+                record = try await db.record(for: existingID)
             } catch {
                 record = CKRecord(recordType: Self.presenceType)
             }
@@ -93,16 +114,16 @@ final class CloudKitService: @unchecked Sendable {
             record["chatTimestamp"] = ct as NSDate
         }
 
-        return try await publicDB.save(record)
+        return try await db.save(record)
     }
 
-    /// Fetch all presence records for a room.
     func fetchPresences(roomCode: String) async throws -> [(CKRecord.ID, PeerState)] {
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
         let predicate = NSPredicate(format: "roomCode == %@", roomCode)
         let query = CKQuery(recordType: Self.presenceType, predicate: predicate)
         query.sortDescriptors = [NSSortDescriptor(key: "heartbeat", ascending: false)]
 
-        let (results, _) = try await publicDB.records(matching: query, resultsLimit: 20)
+        let (results, _) = try await db.records(matching: query, resultsLimit: 20)
 
         var peers: [(CKRecord.ID, PeerState)] = []
         for (id, result) in results {
@@ -113,30 +134,30 @@ final class CloudKitService: @unchecked Sendable {
         return peers
     }
 
-    /// Delete a presence record.
     func deletePresence(recordID: CKRecord.ID) async throws {
-        try await publicDB.deleteRecord(withID: recordID)
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
+        try await db.deleteRecord(withID: recordID)
         logger.info("Presence deleted")
     }
 
-    /// Clean up stale presences (heartbeat older than 10 minutes).
     func cleanupStalePresences(roomCode: String) async throws {
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
         let cutoff = Date().addingTimeInterval(-600) as NSDate
         let predicate = NSPredicate(
             format: "roomCode == %@ AND heartbeat < %@", roomCode, cutoff
         )
         let query = CKQuery(recordType: Self.presenceType, predicate: predicate)
-        let (results, _) = try await publicDB.records(matching: query, resultsLimit: 50)
+        let (results, _) = try await db.records(matching: query, resultsLimit: 50)
 
         for (id, _) in results {
-            _ = try? await publicDB.deleteRecord(withID: id)
+            _ = try? await db.deleteRecord(withID: id)
         }
     }
 
     // MARK: - Account Check
 
-    /// Check if CloudKit is available.
     func checkAvailability() async -> Bool {
+        guard let container else { return false }
         do {
             let status = try await container.accountStatus()
             return status == .available
@@ -144,6 +165,13 @@ final class CloudKitService: @unchecked Sendable {
             logger.error("CloudKit account check failed: \(error)")
             return false
         }
+    }
+}
+
+/// Thrown when CloudKit operations are attempted without iCloud entitlements.
+struct CloudKitUnavailableError: LocalizedError {
+    var errorDescription: String? {
+        "Room features require a locally-built version. CI-built releases don't include iCloud entitlements yet."
     }
 }
 

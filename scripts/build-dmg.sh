@@ -54,10 +54,9 @@ if [ ! -d "$APP_PATH" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Step 4 — Remove embedded provisioning profile
+# Step 4 — Keep embedded provisioning profile for CloudKit entitlements
 # ---------------------------------------------------------------------------
-echo "==> Removing embedded.provisionprofile"
-rm -f "$APP_PATH/Contents/embedded.provisionprofile"
+echo "==> Keeping embedded.provisionprofile (needed for CloudKit)"
 
 # ---------------------------------------------------------------------------
 # Step 5 — Re-sign Sparkle framework internals (inside-out)
