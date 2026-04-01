@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.29](https://github.com/sophiie-ai/clautch/compare/v0.2.28...v0.2.29) (2026-04-01)
+
+
+### Bug Fixes
+
+* clip all content to panel shape, event log stays inside bounds ([a804811](https://github.com/sophiie-ai/clautch/commit/a8048111fc1642ffbc32907d971eade88af36a24))
+
 ## [0.2.28](https://github.com/sophiie-ai/clautch/compare/v0.2.27...v0.2.28) (2026-04-01)
 
 
