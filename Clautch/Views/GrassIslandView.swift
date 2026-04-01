@@ -33,7 +33,10 @@ struct GrassIslandView: View {
 
         Canvas { ctx, size in
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
-            let maxDrop = size.height - notchHeight
+            let fullDrop = size.height - notchHeight
+            let showLog = AnimationSettings.shared.showEventLog
+            // Use less vertical space when event log is disabled
+            let maxDrop = showLog ? fullDrop : min(fullDrop, 70)
             let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
             let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 16
             let dropHeight = isExpanded ? maxDrop : peekDrop
@@ -169,13 +172,16 @@ struct GrassIslandView: View {
         .overlay {
             // SwiftUI creature sprites
             GeometryReader { geo in
-                let maxDrop = geo.size.height - notchHeight
+                let fullDrop = geo.size.height - notchHeight
+                let showLog = AnimationSettings.shared.showEventLog
+                let maxDrop = showLog ? fullDrop : min(fullDrop, 70)
                 let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
                 let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 8
                 let dropHeight = isExpanded ? maxDrop : peekDrop
-                // Creatures sit on the grass line (40% of total height)
+                let bottom = notchHeight + dropHeight
+                // Creatures sit on the grass line
                 let grassLineY = isExpanded
-                    ? geo.size.height * 0.4
+                    ? (showLog ? bottom * 0.4 : bottom * 0.65)
                     : notchHeight + dropHeight
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
@@ -265,8 +271,8 @@ struct GrassIslandView: View {
         .overlay(alignment: .bottom) {
             if AnimationSettings.shared.showEventLog && isExpanded {
                 EventLogOverlay()
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, AnimationSettings.shared.showStatusBar ? 22 : 8)
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, AnimationSettings.shared.showStatusBar ? 24 : 10)
                     .transition(.opacity.combined(with: .offset(y: 10)))
             }
         }
@@ -274,8 +280,8 @@ struct GrassIslandView: View {
         .overlay(alignment: .bottom) {
             if AnimationSettings.shared.showStatusBar && isExpanded {
                 StatusBarOverlay()
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 5)
+                    .padding(.horizontal, 26)
+                    .padding(.bottom, 8)
                     .transition(.opacity)
             }
         }
