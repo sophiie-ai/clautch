@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.12](https://github.com/sophiie-ai/clautch/compare/v0.2.11...v0.2.12) (2026-04-01)
+
+
+### Bug Fixes
+
+* remove iCloud entitlements from release signing, init CloudKit directly ([1fec81a](https://github.com/sophiie-ai/clautch/commit/1fec81a44e93fabf6f3e60cf70a61d1f42a0b6a0))
+
 ## [0.2.11](https://github.com/sophiie-ai/clautch/compare/v0.2.10...v0.2.11) (2026-03-31)
 
 
