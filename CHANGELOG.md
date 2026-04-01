@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.31](https://github.com/sophiie-ai/clautch/compare/v0.2.30...v0.2.31) (2026-04-01)
+
+
+### Bug Fixes
+
+* prevent crash when event log disabled (invalid star range) ([a010d1c](https://github.com/sophiie-ai/clautch/commit/a010d1c9230a7fcc11282e30c44a3ad8e4a5f54a))
+
 ## [0.2.30](https://github.com/sophiie-ai/clautch/compare/v0.2.29...v0.2.30) (2026-04-01)
 
 
