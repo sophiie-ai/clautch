@@ -6,16 +6,16 @@
     <description>Clautch update feed</description>
     <language>en</language>
     <item>
-      <title>Version 0.2.13</title>
-      <sparkle:version>213</sparkle:version>
-      <sparkle:shortVersionString>0.2.13</sparkle:shortVersionString>
+      <title>Version 0.2.14</title>
+      <sparkle:version>214</sparkle:version>
+      <sparkle:shortVersionString>0.2.14</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <pubDate>Wed, 01 Apr 2026 01:03:37 +0000</pubDate>
+      <pubDate>Wed, 01 Apr 2026 01:33:42 +0000</pubDate>
       <enclosure
-        url="https://github.com/sophiie-ai/clautch/releases/download/v0.2.13/Clautch.dmg"
-        length="1196282"
+        url="https://github.com/sophiie-ai/clautch/releases/download/v0.2.14/Clautch.dmg"
+        length="1206813"
         type="application/octet-stream"
-        sparkle:edSignature="sswLQjgydAJoVcIgDTXFZd5T6ZD4/6EDqc07rbzXQZGa3SHKyinkf4uFbXHv6B9rKDFKSV9xcn0skVSuyO/zAA==" />
+        sparkle:edSignature="uJLHQEhv51tZqCPkcw+OQa82TiHSZOEoMkCjSal3EQwxUHwP+1E2bO196RDSiTd+9UKCcCOhTKRekjjTCMW0Aw==" />
     </item>
   </channel>
 </rss>
