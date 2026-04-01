@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.14](https://github.com/sophiie-ai/clautch/compare/v0.2.13...v0.2.14) (2026-04-01)
+
+
+### Bug Fixes
+
+* embed provisioning profile in CI builds for CloudKit support ([cba399d](https://github.com/sophiie-ai/clautch/commit/cba399d066f1edfca5133aeb361ab1f3b3723de7))
+
 ## [0.2.13](https://github.com/sophiie-ai/clautch/compare/v0.2.12...v0.2.13) (2026-04-01)
 
 
