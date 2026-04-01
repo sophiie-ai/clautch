@@ -57,11 +57,15 @@ enum CreatureTask: String, Codable, Sendable {
 
 // MARK: - Emotion
 
-/// The creature's emotional state.
+/// The creature's emotional state — derived from Claude Code event patterns.
 enum CreatureEmotion: String, Codable, Sendable {
     case neutral
-    case happy
-    case sad
+    case happy       // successful completions, tools working
+    case sad         // single error
+    case frustrated  // multiple consecutive errors
+    case excited     // rapid successful tool use
+    case confused    // permission requests, retries
+    case tired       // long session, after compacting
 }
 
 // MARK: - Composite State

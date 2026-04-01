@@ -109,9 +109,12 @@ private struct CreatureColors: Equatable {
         self.eye = task == .sleeping ? baseBody : .black
 
         self.mouth = switch emotion {
-        case .happy:   Color(red: 0.1, green: 0.9, blue: 0.2)
-        case .sad:     Color(red: 0.3, green: 0.4, blue: 0.9)
-        case .neutral: baseBody.opacity(0.7)
+        case .happy, .excited: Color(red: 0.1, green: 0.9, blue: 0.2)
+        case .sad:             Color(red: 0.3, green: 0.4, blue: 0.9)
+        case .frustrated:      Color(red: 0.9, green: 0.2, blue: 0.1)
+        case .confused:        Color(red: 0.8, green: 0.6, blue: 0.2)
+        case .tired:           Color(red: 0.5, green: 0.5, blue: 0.6)
+        case .neutral:         baseBody.opacity(0.7)
         }
 
         self.highlight = Color.white.opacity(0.6)
@@ -306,6 +309,74 @@ struct PixelCreatureView: View {
                         width: px * 0.6, height: px * 0.8
                     )),
                     with: .color(Color(red: 0.4, green: 0.6, blue: 1.0).opacity(alpha))
+                )
+            }
+        }
+
+        // Frustrated: angry steam puffs rising from top
+        if emotion == .frustrated {
+            let puffs: [(dx: CGFloat, delay: Double)] = [(-2, 0.0), (2, 0.5), (0, 1.0)]
+            for puff in puffs {
+                let cycle = (t * 1.5 + puff.delay).truncatingRemainder(dividingBy: 2.0)
+                let progress = cycle / 2.0
+                let alpha = (1.0 - progress) * 0.6
+                let yOff = progress * 8
+                let s: CGFloat = 2 + progress * 1.5
+                ctx.fill(
+                    Path(ellipseIn: CGRect(
+                        x: size.width / 2 + puff.dx * 3 - s / 2,
+                        y: 2 - yOff,
+                        width: s, height: s
+                    )),
+                    with: .color(Color.red.opacity(alpha))
+                )
+            }
+        }
+
+        // Excited: bouncing stars around creature
+        if emotion == .excited {
+            let stars: [(dx: CGFloat, dy: CGFloat, d: Double)] = [
+                (4, -2, 0.0), (-4, 0, 0.3), (3, 3, 0.6), (-3, -3, 0.9),
+            ]
+            for star in stars {
+                let cycle = (t * 4 + star.d).truncatingRemainder(dividingBy: 1.0)
+                let alpha = cycle < 0.5 ? cycle * 2 : (1 - cycle) * 2
+                let s: CGFloat = 2
+                ctx.fill(
+                    Path(CGRect(
+                        x: size.width / 2 + star.dx * 2 - s / 2,
+                        y: size.height / 2 + star.dy * 2 - s / 2,
+                        width: s, height: s
+                    )),
+                    with: .color(.yellow.opacity(alpha * 0.9))
+                )
+            }
+        }
+
+        // Confused: spinning "?" above head
+        if emotion == .confused {
+            let bob = sin(t * 3) * 2
+            let resolved = ctx.resolve(
+                Text("?")
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundColor(.yellow.opacity(0.8))
+            )
+            ctx.draw(resolved, at: CGPoint(x: size.width / 2 + 5, y: 4 + bob))
+        }
+
+        // Tired: droopy eyes effect (slower blink) + sweat drop
+        if emotion == .tired {
+            let sweatCycle = t.truncatingRemainder(dividingBy: 3.0)
+            let progress = sweatCycle / 3.0
+            let alpha = 1.0 - progress
+            if alpha > 0.2 {
+                let dropY = 2 * px + progress * 4 * px
+                ctx.fill(
+                    Path(ellipseIn: CGRect(
+                        x: size.width - 3, y: dropY,
+                        width: px * 0.5, height: px * 0.7
+                    )),
+                    with: .color(Color(red: 0.5, green: 0.7, blue: 1.0).opacity(alpha * 0.6))
                 )
             }
         }

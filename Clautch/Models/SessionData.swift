@@ -10,6 +10,17 @@ final class SessionData: Identifiable {
     let startedAt: Date       = Date()
     var lastToolName: String?
 
+    // MARK: - Sentiment Tracking
+
+    /// Consecutive error count (resets on success).
+    private var errorStreak: Int = 0
+
+    /// Recent tool timestamps for velocity detection.
+    private var recentToolTimes: [Date] = []
+
+    /// Number of permission requests in this session.
+    private var permissionRequestCount: Int = 0
+
     private var emotionResetTask: Task<Void, Never>?
 
     init(id: String) {
@@ -17,7 +28,7 @@ final class SessionData: Identifiable {
         self.xPosition = CGFloat.random(in: 0.2...0.8)
     }
 
-    /// Map a hook event to a creature task transition.
+    /// Map a hook event to a creature task transition with sentiment analysis.
     func applyEvent(_ event: HookEvent) {
         state.lastActivity = Date()
 
@@ -25,33 +36,72 @@ final class SessionData: Identifiable {
         case .sessionStart:
             state.task = .idle
             state.emotion = .neutral
+            errorStreak = 0
+
         case .promptSubmit:
             state.task = .thinking
+
         case .preToolUse:
             state.task = .working
             lastToolName = event.toolName
+            recentToolTimes.append(Date())
+            // Keep only last 10
+            if recentToolTimes.count > 10 {
+                recentToolTimes.removeFirst()
+            }
+
         case .postToolUse:
             state.task = .thinking
             lastToolName = event.toolName
-            // Trigger emotion based on tool result
+
             if let status = event.status {
                 if status == "success" {
-                    setEmotionTemporarily(.happy)
+                    errorStreak = 0
+                    // Check tool velocity: 5+ tools in last 30 seconds = excited
+                    let recentCount = recentToolTimes.filter {
+                        Date().timeIntervalSince($0) < 30
+                    }.count
+                    if recentCount >= 5 {
+                        setEmotionTemporarily(.excited)
+                    } else {
+                        setEmotionTemporarily(.happy)
+                    }
                 } else if status == "error" || status == "failure" {
-                    setEmotionTemporarily(.sad)
+                    errorStreak += 1
+                    if errorStreak >= 3 {
+                        setEmotionTemporarily(.frustrated, duration: 8.0)
+                    } else {
+                        setEmotionTemporarily(.sad)
+                    }
                 }
             }
+
         case .stop:
             state.task = .idle
-            setEmotionTemporarily(.happy, duration: 3.0)
+            errorStreak = 0
+            // Long session (>30 min) = tired, otherwise happy
+            let sessionLength = Date().timeIntervalSince(startedAt)
+            if sessionLength > 1800 {
+                setEmotionTemporarily(.tired, duration: 5.0)
+            } else {
+                setEmotionTemporarily(.happy, duration: 3.0)
+            }
+
         case .sessionEnd:
             state.task = .sleeping
             state.emotion = .neutral
+            errorStreak = 0
+
         case .preCompact:
             state.task = .compacting
-            setEmotionTemporarily(.sad, duration: 8.0)
+            setEmotionTemporarily(.tired, duration: 8.0)
+
         case .permissionRequest:
             state.task = .thinking
+            permissionRequestCount += 1
+            if permissionRequestCount >= 3 {
+                setEmotionTemporarily(.confused, duration: 4.0)
+            }
         }
     }
 
