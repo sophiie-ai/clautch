@@ -433,56 +433,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Menu Actions
 
-    private var updateWindowObserver: Any?
+    private var updateCheckTimer: Timer?
 
     @objc private func checkForUpdates() {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         updaterController.checkForUpdates(nil)
 
-        // Watch for any new window to appear and bring it to front,
-        // then return to accessory when ALL Sparkle windows close.
-        updateWindowObserver.map { NotificationCenter.default.removeObserver($0) }
-        updateWindowObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didBecomeKeyNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let window = notification.object as? NSWindow,
-                  window.title.contains("Software Update") ||
-                  window.title.contains("Update") ||
-                  window.title.contains("Clautch") ||
-                  window.className.contains("SPU") else { return }
+        // Poll every 0.5s to find and bring Sparkle windows to front.
+        // Sparkle creates windows asynchronously, so we can't predict when.
+        var attempts = 0
+        updateCheckTimer?.invalidate()
+        updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] timer in
+            attempts += 1
 
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-            window.orderFrontRegardless()
+            // Find any window not owned by us (Sparkle windows)
+            let sparkleWindows = NSApp.windows.filter { window in
+                window != self?.notchPanel &&
+                window != self?.onboardingWindow &&
+                window != self?.roomWindow &&
+                window.isVisible &&
+                window.title != ""
+            }
 
-            // Watch for this window to close
-            var closeToken: NSObjectProtocol?
-            closeToken = NotificationCenter.default.addObserver(
-                forName: NSWindow.willCloseNotification,
-                object: window,
-                queue: .main
-            ) { _ in
-                if let closeToken { NotificationCenter.default.removeObserver(closeToken) }
-                // Return to accessory if no managed windows are open
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    if self?.onboardingWindow == nil && self?.roomWindow == nil {
-                        NSApp.setActivationPolicy(.accessory)
-                    }
+            for window in sparkleWindows {
+                NSApp.setActivationPolicy(.regular)
+                NSApp.activate(ignoringOtherApps: true)
+                window.level = .floating
+                window.orderFrontRegardless()
+                window.level = .normal
+            }
+
+            // Stop after 30s or when no Sparkle windows remain after finding some
+            if attempts > 60 {
+                timer.invalidate()
+                self?.updateCheckTimer = nil
+                if self?.onboardingWindow == nil && self?.roomWindow == nil {
+                    NSApp.setActivationPolicy(.accessory)
                 }
-            }
-        }
-
-        // Cleanup observer after 60s in case no update window appears (e.g. already up to date)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
-            if let obs = self?.updateWindowObserver {
-                NotificationCenter.default.removeObserver(obs)
-                self?.updateWindowObserver = nil
-            }
-            if self?.onboardingWindow == nil && self?.roomWindow == nil {
-                NSApp.setActivationPolicy(.accessory)
             }
         }
     }

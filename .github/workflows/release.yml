@@ -72,6 +72,13 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Update build number in Info.plist
+        env:
+          BUILD_NUMBER: ${{ steps.buildnum.outputs.build_number }}
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Clautch/Info.plist
+          echo "Set CFBundleVersion to $BUILD_NUMBER"
+
       - name: Archive
         env:
           BUILD_NUMBER: ${{ steps.buildnum.outputs.build_number }}
