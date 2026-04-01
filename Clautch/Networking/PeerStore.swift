@@ -32,11 +32,35 @@ final class PeerStore {
     }
 
     /// Update the store with fresh data from CloudKit.
+    /// Detects new reactions and chat messages from peers and posts notifications.
     func update(with fetchedPeers: [(CKRecord.ID, PeerState)]) {
+        let myId = UserProfile.current?.peerId
+
         var newPeers: [String: PeerState] = [:]
         var newRecordIDs: [String: CKRecord.ID] = [:]
 
         for (recordID, peer) in fetchedPeers {
+            // Detect new reactions/chats from other peers
+            if peer.peerId != myId {
+                let oldPeer = peers[peer.peerId]
+
+                // New reaction that wasn't there before
+                if let reaction = peer.reaction, peer.hasActiveReaction,
+                   oldPeer?.reaction != reaction {
+                    NotificationService.shared.postReactionReceived(
+                        from: peer.displayName, reaction: reaction
+                    )
+                }
+
+                // New chat message
+                if let chat = peer.chatMessage, peer.hasActiveChat,
+                   oldPeer?.chatMessage != chat {
+                    NotificationService.shared.postChatReceived(
+                        from: peer.displayName, message: chat
+                    )
+                }
+            }
+
             newPeers[peer.peerId] = peer
             newRecordIDs[peer.peerId] = recordID
         }

@@ -227,6 +227,15 @@ struct GrassIslandView: View {
                 }
             }
         }
+        // Activity feed (expanded only, bottom-right)
+        .overlay(alignment: .bottomTrailing) {
+            if isExpanded {
+                ActivityFeedView()
+                    .padding(.trailing, 8)
+                    .padding(.bottom, 4)
+                    .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .bottomTrailing)))
+            }
+        }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
         .onChange(of: isExpanded) { _, expanded in
             if expanded {
@@ -273,6 +282,29 @@ struct GrassIslandView: View {
               let notch = screen.notchSize,
               let win = screen.notchWindowFrame else { return totalWidth * 0.7 }
         return notch.width * totalWidth / win.width
+    }
+}
+
+/// Mini activity feed shown in the expanded panel.
+struct ActivityFeedView: View {
+    @State private var feed = ActivityFeed.shared
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            ForEach(feed.items.prefix(5)) { item in
+                HStack(spacing: 3) {
+                    Text(item.icon)
+                        .font(.system(size: 5))
+                    Text(item.text)
+                        .font(.system(size: 5, design: .monospaced))
+                        .lineLimit(1)
+                    Text(item.timeAgo)
+                        .font(.system(size: 4))
+                        .foregroundStyle(.white.opacity(0.3))
+                }
+                .foregroundStyle(.white.opacity(0.5))
+            }
+        }
     }
 }
 

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0A377F6A4CD2FE55E3A818B7 /* PeerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4390BDECDDDCC6FCE400ED40 /* PeerState.swift */; };
+		1103AA7B710E2F26C6D029CB /* ActivityFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72DA42A6EC862A03CE4FAB8E /* ActivityFeed.swift */; };
 		112DADB586E7D2057D166849 /* CloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD912A5F01994C9E24785F8F /* CloudKitService.swift */; };
 		142CCCB57341EA96272F042E /* BobAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A24772089DC4C3D8257AFED /* BobAnimation.swift */; };
 		2CFF3A5C1D6EF61293E2D228 /* RoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53EC35E5F3EE5039009E917 /* RoomView.swift */; };
@@ -52,6 +53,7 @@
 		5D4F2183AEE158387C85D7A8 /* Clautch-CloudKit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Clautch-CloudKit.entitlements"; sourceTree = "<group>"; };
 		668377B4E6CDB23F75C0607F /* StateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateMachine.swift; sourceTree = "<group>"; };
 		67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		72DA42A6EC862A03CE4FAB8E /* ActivityFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityFeed.swift; sourceTree = "<group>"; };
 		7A24772089DC4C3D8257AFED /* BobAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BobAnimation.swift; sourceTree = "<group>"; };
 		7A6999253CA6EA31609F60BB /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		7B1A8940C490CCD0E8772503 /* NSScreen+Notch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Notch.swift"; sourceTree = "<group>"; };
@@ -140,6 +142,7 @@
 		D17C7272A33B03661318A599 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				72DA42A6EC862A03CE4FAB8E /* ActivityFeed.swift */,
 				F91B03F44A420102018F1805 /* HookInstaller.swift */,
 				67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */,
 				1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */,
@@ -267,6 +270,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1103AA7B710E2F26C6D029CB /* ActivityFeed.swift in Sources */,
 				E5F8490C42AFBCD2AC7C8219 /* AppDelegate.swift in Sources */,
 				142CCCB57341EA96272F042E /* BobAnimation.swift in Sources */,
 				A98C74683BA1820EE7406713 /* ClautchApp.swift in Sources */,
@@ -434,7 +438,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.7;
+				MARKETING_VERSION = 0.2.21;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};
@@ -455,7 +459,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.7;
+				MARKETING_VERSION = 0.2.21;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};

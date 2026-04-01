@@ -169,12 +169,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Notch Panel
 
+    private static let preferredScreenKey = "com.clautch.preferredScreen"
+
+    /// Find the preferred screen: user's saved choice, or first screen with a notch.
+    private func preferredScreen() -> NSScreen? {
+        let screens = NSScreen.screens.filter { $0.hasNotch }
+        if let savedId = UserDefaults.standard.string(forKey: Self.preferredScreenKey),
+           let match = screens.first(where: { $0.localizedName == savedId }) {
+            return match
+        }
+        return screens.first
+    }
+
     private func setupNotchPanel() {
         NSApp.setActivationPolicy(.accessory)
 
-        // Check all screens for a notch — NSScreen.main may point to an
-        // external display when the app launches in accessory mode.
-        guard let screen = NSScreen.screens.first(where: { $0.hasNotch }) else {
+        guard let screen = preferredScreen() else {
             logger.info("No notch detected on any screen")
             return
         }
@@ -346,8 +356,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(notifItem)
 
         // Notch-specific options (only shown when a notch is detected)
-        let hasNotch = NSScreen.screens.contains { $0.hasNotch }
+        let notchScreens = NSScreen.screens.filter { $0.hasNotch }
+        let hasNotch = !notchScreens.isEmpty
         if hasNotch {
+            // Display picker (only if multiple notch screens)
+            if notchScreens.count > 1 {
+                let displayItem = NSMenuItem(title: "Display", action: nil, keyEquivalent: "")
+                displayItem.tag = 850
+                let displayMenu = NSMenu()
+                for screen in notchScreens {
+                    let item = NSMenuItem(
+                        title: screen.localizedName,
+                        action: #selector(selectDisplay(_:)),
+                        keyEquivalent: ""
+                    )
+                    item.target = self
+                    item.representedObject = screen.localizedName
+                    displayMenu.addItem(item)
+                }
+                displayItem.submenu = displayMenu
+                menu.addItem(displayItem)
+            }
             let animItem = NSMenuItem(
                 title: "Reduce Animation",
                 action: #selector(toggleReduceAnimation),
@@ -429,6 +458,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleHideWhenCollapsed() {
         AnimationSettings.shared.hideWhenCollapsed.toggle()
+    }
+
+    @objc private func selectDisplay(_ sender: NSMenuItem) {
+        guard let screenName = sender.representedObject as? String else { return }
+        UserDefaults.standard.set(screenName, forKey: Self.preferredScreenKey)
+        // Recreate the panel on the new screen
+        notchPanel?.close()
+        notchPanel = nil
+        setupNotchPanel()
     }
 
     @objc private func togglePause() {
@@ -556,6 +594,14 @@ extension AppDelegate: NSMenuDelegate {
         }
         if let pauseItem = menu.item(withTag: 800) {
             pauseItem.state = AnimationSettings.shared.isPaused ? .on : .off
+        }
+        // Update display picker checkmarks
+        if let displayItem = menu.item(withTag: 850),
+           let displayMenu = displayItem.submenu {
+            let current = preferredScreen()?.localizedName
+            for item in displayMenu.items {
+                item.state = (item.representedObject as? String) == current ? .on : .off
+            }
         }
     }
 }

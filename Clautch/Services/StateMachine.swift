@@ -50,6 +50,25 @@ final class StateMachine {
             break
         }
 
+        // Activity feed
+        let shortId = String(event.sessionId.prefix(6))
+        switch event.eventType {
+        case .sessionStart:
+            ActivityFeed.shared.add(icon: "▶", text: "Session started (\(shortId))")
+        case .preToolUse:
+            if let tool = event.toolName {
+                ActivityFeed.shared.add(icon: "⚡", text: tool)
+            }
+        case .stop:
+            ActivityFeed.shared.add(icon: "✓", text: "Session complete")
+        case .sessionEnd:
+            ActivityFeed.shared.add(icon: "💤", text: "Session ended")
+        case .preCompact:
+            ActivityFeed.shared.add(icon: "!", text: "Compacting context")
+        default:
+            break
+        }
+
         // Broadcast effective state to the room
         broadcastCurrentState()
 

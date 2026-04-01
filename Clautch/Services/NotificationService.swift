@@ -44,6 +44,28 @@ final class NotificationService {
         UNUserNotificationCenter.current().add(request)
     }
 
+    func postReactionReceived(from peerName: String, reaction: PeerReaction) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "\(peerName) reacted"
+        content.body = "\(reaction.emoji) \(reaction.rawValue.capitalized)"
+        content.sound = .default
+        let id = "reaction-\(peerName)-\(Int(Date().timeIntervalSince1970))"
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    func postChatReceived(from peerName: String, message: String) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = peerName
+        content.body = sanitize(message, maxLength: 50)
+        content.sound = .default
+        let id = "chat-\(peerName)-\(Int(Date().timeIntervalSince1970))"
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
+    }
+
     private func sanitize(_ text: String, maxLength: Int) -> String {
         let cleaned = text.unicodeScalars.filter { scalar in
             // Remove control characters and invisible formatting
