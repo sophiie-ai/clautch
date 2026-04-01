@@ -433,14 +433,55 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Menu Actions
 
+    private var updateWindowObserver: Any?
+
     @objc private func checkForUpdates() {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         updaterController.checkForUpdates(nil)
-        // Return to accessory after a delay (Sparkle will show its window)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            // Only go back to accessory if no other windows are open
-            if self.onboardingWindow == nil && self.roomWindow == nil {
+
+        // Watch for any new window to appear and bring it to front,
+        // then return to accessory when ALL Sparkle windows close.
+        updateWindowObserver.map { NotificationCenter.default.removeObserver($0) }
+        updateWindowObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let window = notification.object as? NSWindow,
+                  window.title.contains("Software Update") ||
+                  window.title.contains("Update") ||
+                  window.title.contains("Clautch") ||
+                  window.className.contains("SPU") else { return }
+
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            window.orderFrontRegardless()
+
+            // Watch for this window to close
+            var closeToken: NSObjectProtocol?
+            closeToken = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification,
+                object: window,
+                queue: .main
+            ) { _ in
+                if let closeToken { NotificationCenter.default.removeObserver(closeToken) }
+                // Return to accessory if no managed windows are open
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    if self?.onboardingWindow == nil && self?.roomWindow == nil {
+                        NSApp.setActivationPolicy(.accessory)
+                    }
+                }
+            }
+        }
+
+        // Cleanup observer after 60s in case no update window appears (e.g. already up to date)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
+            if let obs = self?.updateWindowObserver {
+                NotificationCenter.default.removeObserver(obs)
+                self?.updateWindowObserver = nil
+            }
+            if self?.onboardingWindow == nil && self?.roomWindow == nil {
                 NSApp.setActivationPolicy(.accessory)
             }
         }
