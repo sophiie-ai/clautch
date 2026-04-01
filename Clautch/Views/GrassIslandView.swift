@@ -97,7 +97,8 @@ struct GrassIslandView: View {
 
             if isExpanded {
                 // 2. Draw scenic background
-                let grassY = (bottom) * 0.4
+                let showLog = AnimationSettings.shared.showEventLog
+                let grassY = showLog ? bottom * 0.4 : bottom * 0.65
 
                 // Sky gradient (fills from top of screen)
                 ctx.clip(to: path)
@@ -107,13 +108,17 @@ struct GrassIslandView: View {
                     with: .linearGradient(skyGradient, startPoint: CGPoint(x: midX, y: 0), endPoint: CGPoint(x: midX, y: grassY))
                 )
 
-                // Stars (tiny dots in sky)
-                var starRng = StableRNG(seed: 77)
-                for _ in 0..<12 {
-                    let sx = midX - panelHalf + CGFloat.random(in: 0...(panelHalf * 2), using: &starRng)
-                    let sy = CGFloat.random(in: notchHeight + 5...grassY - 5, using: &starRng)
-                    let alpha = Double.random(in: 0.3...0.7, using: &starRng)
-                    ctx.fill(Path(CGRect(x: sx, y: sy, width: 1, height: 1)), with: .color(.white.opacity(alpha)))
+                // Stars (tiny dots in sky) — only if enough sky area
+                let skyTop_y = notchHeight + 5
+                let skyBottom_y = grassY - 5
+                if skyBottom_y > skyTop_y + 2 {
+                    var starRng = StableRNG(seed: 77)
+                    for _ in 0..<(showLog ? 12 : 6) {
+                        let sx = midX - panelHalf + CGFloat.random(in: 0...(panelHalf * 2), using: &starRng)
+                        let sy = CGFloat.random(in: skyTop_y...skyBottom_y, using: &starRng)
+                        let alpha = Double.random(in: 0.3...0.7, using: &starRng)
+                        ctx.fill(Path(CGRect(x: sx, y: sy, width: 1, height: 1)), with: .color(.white.opacity(alpha)))
+                    }
                 }
 
                 // Ground
