@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.26](https://github.com/sophiie-ai/clautch/compare/v0.2.25...v0.2.26) (2026-04-01)
+
+
+### Features
+
+* sentiment analysis with 7 emotion states driven by event patterns ([2bdd918](https://github.com/sophiie-ai/clautch/commit/2bdd9188d775c07cba95ff4e129a63e2b09e12f9))
+
 ## [0.2.25](https://github.com/sophiie-ai/clautch/compare/v0.2.24...v0.2.25) (2026-04-01)
 
 
