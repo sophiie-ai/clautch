@@ -45,3 +45,19 @@ targets:
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: U2KP726DRL
+
+  ClautchTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: ClautchTests
+    dependencies:
+      - target: Clautch
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Clautch.app/Contents/MacOS/Clautch
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: U2KP726DRL

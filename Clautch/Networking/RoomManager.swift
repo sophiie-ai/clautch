@@ -72,8 +72,9 @@ final class RoomManager {
             logger.info("Created room: \(code)")
             return code
         } catch {
-            status = .error(error.localizedDescription)
-            throw error
+            let friendly = RoomError.from(error)
+            status = .error(friendly.localizedDescription ?? error.localizedDescription)
+            throw friendly
         }
     }
 
@@ -141,8 +142,9 @@ final class RoomManager {
         } catch let error as RoomError {
             throw error
         } catch {
-            status = .error(error.localizedDescription)
-            throw error
+            let friendly = RoomError.from(error)
+            status = .error(friendly.localizedDescription ?? error.localizedDescription)
+            throw friendly
         }
     }
 
@@ -363,13 +365,46 @@ enum RoomError: LocalizedError {
     case invalidCode
     case roomNotFound
     case invalidToken
+    case cloudKitUnavailable
+    case networkError
+    case notSignedIn
+    case serverError(String)
 
     var errorDescription: String? {
         switch self {
-        case .noProfile:    return "Please set up your profile first"
-        case .invalidCode:  return "Room code must be 6 characters"
-        case .roomNotFound: return "Room not found"
-        case .invalidToken: return "Invalid invite link"
+        case .noProfile:         return "Please set up your profile first"
+        case .invalidCode:       return "Room code must be 6 characters"
+        case .roomNotFound:      return "Room not found"
+        case .invalidToken:      return "Invalid invite link"
+        case .cloudKitUnavailable: return "iCloud is not available. Sign in to iCloud in System Settings to use rooms."
+        case .networkError:      return "Network error. Check your internet connection and try again."
+        case .notSignedIn:       return "Please sign in to iCloud in System Settings to use rooms."
+        case .serverError(let detail): return "Server error: \(detail)"
         }
+    }
+
+    /// Map a raw error to a user-friendly RoomError.
+    static func from(_ error: Error) -> RoomError {
+        if let roomError = error as? RoomError { return roomError }
+        if let ckError = error as? CKError {
+            switch ckError.code {
+            case .networkUnavailable, .networkFailure:
+                return .networkError
+            case .notAuthenticated:
+                return .notSignedIn
+            case .permissionFailure:
+                return .serverError("Permission denied. Try signing out and back into iCloud.")
+            case .quotaExceeded:
+                return .serverError("iCloud storage is full.")
+            case .serverResponseLost, .serviceUnavailable:
+                return .networkError
+            default:
+                return .serverError(ckError.localizedDescription)
+            }
+        }
+        if let unavailable = error as? CloudKitUnavailableError {
+            return .cloudKitUnavailable
+        }
+        return .serverError(error.localizedDescription)
     }
 }

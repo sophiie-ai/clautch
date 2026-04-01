@@ -139,8 +139,17 @@ struct PixelCreatureView: View {
         return frames[frame % frames.count]
     }
 
+    /// Whether the creature is blinking at this moment.
+    private var isBlinking: Bool {
+        // Blink every ~3.5 seconds for 0.15 seconds (pseudorandom per creature type)
+        let period = 3.5 + Double(type.rawValue.count) * 0.3
+        let cycle = time.truncatingRemainder(dividingBy: period)
+        return cycle < 0.15
+    }
+
     var body: some View {
         let colors = self.colors
+        let blinking = isBlinking && task != .sleeping
         Canvas { ctx, size in
             let grid = self.grid
             guard !grid.isEmpty else { return }
@@ -158,7 +167,7 @@ struct PixelCreatureView: View {
                     )
                     let color: Color = switch cell {
                     case 1: colors.body
-                    case 2: colors.eye
+                    case 2: blinking ? colors.body : colors.eye  // blink: eyes match body
                     case 3: colors.mouth
                     case 4: colors.accent
                     case 5: colors.highlight
