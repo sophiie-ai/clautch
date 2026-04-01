@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.27](https://github.com/sophiie-ai/clautch/compare/v0.2.26...v0.2.27) (2026-04-01)
+
+
+### Features
+
+* scenic panel redesign with sky, event log, and status bar ([f31ed36](https://github.com/sophiie-ai/clautch/commit/f31ed362111af0458f5ddbd72a1773ae8eeb74fc))
+
 ## [0.2.26](https://github.com/sophiie-ai/clautch/compare/v0.2.25...v0.2.26) (2026-04-01)
 
 
