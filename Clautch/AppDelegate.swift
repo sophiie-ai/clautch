@@ -391,7 +391,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Menu Actions
 
     @objc private func checkForUpdates() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
         updaterController.checkForUpdates(nil)
+        // Return to accessory after a delay (Sparkle will show its window)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Only go back to accessory if no other windows are open
+            if self.onboardingWindow == nil && self.roomWindow == nil {
+                NSApp.setActivationPolicy(.accessory)
+            }
+        }
     }
 
     @objc private func toggleNotifications() {
