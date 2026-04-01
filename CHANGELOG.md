@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.30](https://github.com/sophiie-ai/clautch/compare/v0.2.29...v0.2.30) (2026-04-01)
+
+
+### Bug Fixes
+
+* smaller panel when event log disabled, better content padding ([e50b2ce](https://github.com/sophiie-ai/clautch/commit/e50b2cec8caae48ede81cb5361cba8ff472776fc))
+
 ## [0.2.29](https://github.com/sophiie-ai/clautch/compare/v0.2.28...v0.2.29) (2026-04-01)
 
 
