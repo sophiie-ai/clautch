@@ -137,7 +137,7 @@ struct GrassIslandView: View {
                     )
                     if showLog {
                         ctx.fill(
-                            Path(CGRect(x: midX - panelHalf + 8, y: darkY, width: panelHalf * 2 - 16, height: 0.5)),
+                            Path(CGRect(x: midX - panelHalf + 8, y: darkY, width: panelHalf * 2 - 16, height: 1)),
                             with: .color(.white.opacity(0.1))
                         )
                     }
@@ -398,14 +398,12 @@ struct EventLogOverlay: View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(feed.items.prefix(4)) { item in
                 HStack(spacing: 4) {
-                    Text(item.icon)
-                        .font(.system(size: 6))
                     Text(item.text)
-                        .font(.system(size: 6, design: .monospaced))
+                        .font(.system(size: 7, design: .monospaced))
                         .lineLimit(1)
                     Spacer()
                     Text(item.timeAgo)
-                        .font(.system(size: 5))
+                        .font(.system(size: 6))
                         .foregroundStyle(.white.opacity(0.3))
                 }
                 .foregroundStyle(.white.opacity(0.55))
@@ -463,7 +461,7 @@ struct StatusBarOverlay: View {
 
             Text("Resets \(SessionStats.weekResetLabel)")
                 .font(.system(size: 7, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.25))
+                .foregroundStyle(.white.opacity(0.3))
         }
     }
 
