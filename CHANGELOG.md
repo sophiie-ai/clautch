@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.34](https://github.com/sophiie-ai/clautch/compare/v0.2.33...v0.2.34) (2026-04-01)
+
+
+### Features
+
+* rework expanded panel layout for consistent proportions ([760fd9e](https://github.com/sophiie-ai/clautch/commit/760fd9efc0712118c4a70281a8d91f85aac9b658))
+
+
+### Bug Fixes
+
+* refine expanded panel overlay styles ([4e772b2](https://github.com/sophiie-ai/clautch/commit/4e772b20f22ac45e2cc5a53dd4fd926fff72e5ba))
+* use 2px top padding on event log overlay ([7b0cc45](https://github.com/sophiie-ai/clautch/commit/7b0cc45e6739b347af886e598d4a78979e6b61f6))
+
 ## [0.2.33](https://github.com/sophiie-ai/clautch/compare/v0.2.32...v0.2.33) (2026-04-01)
 
 
