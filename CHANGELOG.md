@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.16](https://github.com/sophiie-ai/clautch/compare/v0.2.15...v0.2.16) (2026-04-01)
+
+
+### Bug Fixes
+
+* add application-identifier and team-identifier to CloudKit entitlements ([63e610f](https://github.com/sophiie-ai/clautch/commit/63e610f0abed82c4f3f1d692046e8db83afd8cc3))
+
 ## [0.2.15](https://github.com/sophiie-ai/clautch/compare/v0.2.14...v0.2.15) (2026-04-01)
 
 
