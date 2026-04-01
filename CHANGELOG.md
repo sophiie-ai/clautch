@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.33](https://github.com/sophiie-ai/clautch/compare/v0.2.32...v0.2.33) (2026-04-01)
+
+
+### Features
+
+* transparent collapsed, consistent grass, week usage in status bar ([e5315dd](https://github.com/sophiie-ai/clautch/commit/e5315ddace5f1398c388a50f44d0318285588262))
+
 ## [0.2.32](https://github.com/sophiie-ai/clautch/compare/v0.2.31...v0.2.32) (2026-04-01)
 
 
