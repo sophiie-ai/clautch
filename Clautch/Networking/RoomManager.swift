@@ -67,6 +67,7 @@ final class RoomManager {
             UserDefaults.standard.lastRoomCode = code
             UserDefaults.standard.lastRoomToken = token
             status = .connected
+            ensureLocalState()
             startSyncTimer()
             logger.info("Created room: \(code)")
             return code
@@ -184,6 +185,15 @@ final class RoomManager {
 
     // MARK: - Broadcast State
 
+    /// Ensure localState exists, creating from profile if needed.
+    @discardableResult
+    private func ensureLocalState() -> PeerState? {
+        if localState != nil { return localState }
+        guard let profile = UserProfile.current else { return nil }
+        localState = makePeerState(from: profile)
+        return localState
+    }
+
     func broadcastState(task: CreatureTask, emotion: CreatureEmotion) {
         guard let profile = UserProfile.current else { return }
         // Preserve active reaction and chat when updating state
@@ -209,7 +219,7 @@ final class RoomManager {
 
     /// Send a chat message — broadcast on next sync, auto-clear after 8s.
     func sendChat(_ message: String) {
-        guard var state = localState else { return }
+        guard var state = ensureLocalState() else { return }
         let trimmed = String(message.prefix(60))
         guard !trimmed.isEmpty else { return }
         state = PeerState(
@@ -239,7 +249,7 @@ final class RoomManager {
 
     /// Send a reaction — it will be broadcast on the next sync cycle and auto-clear after 4s.
     func sendReaction(_ reaction: PeerReaction) {
-        guard var state = localState else { return }
+        guard var state = ensureLocalState() else { return }
         state = PeerState(
             peerId: state.peerId,
             displayName: state.displayName,
