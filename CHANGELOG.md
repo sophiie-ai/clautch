@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.23](https://github.com/sophiie-ai/clautch/compare/v0.2.22...v0.2.23) (2026-04-01)
+
+
+### Bug Fixes
+
+* keep Sparkle update windows in front throughout entire flow ([768bbc5](https://github.com/sophiie-ai/clautch/commit/768bbc52977eb2bebd3cf275dafaa886107a6ccf))
+
 ## [0.2.22](https://github.com/sophiie-ai/clautch/compare/v0.2.21...v0.2.22) (2026-04-01)
 
 
