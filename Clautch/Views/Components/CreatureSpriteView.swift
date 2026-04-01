@@ -5,16 +5,21 @@ import SwiftUI
 final class AnimationSettings {
     static let shared = AnimationSettings()
 
-    private static let persistenceKey = "com.clautch.reduceAnimation"
+    private static let reduceKey = "com.clautch.reduceAnimation"
+    private static let hideKey = "com.clautch.hideWhenCollapsed"
 
     var reduceAnimationWhenCollapsed: Bool = false {
-        didSet {
-            UserDefaults.standard.set(reduceAnimationWhenCollapsed, forKey: Self.persistenceKey)
-        }
+        didSet { UserDefaults.standard.set(reduceAnimationWhenCollapsed, forKey: Self.reduceKey) }
+    }
+
+    /// When enabled, nothing is shown below the notch until the user clicks on it.
+    var hideWhenCollapsed: Bool = false {
+        didSet { UserDefaults.standard.set(hideWhenCollapsed, forKey: Self.hideKey) }
     }
 
     init() {
-        self.reduceAnimationWhenCollapsed = UserDefaults.standard.bool(forKey: Self.persistenceKey)
+        self.reduceAnimationWhenCollapsed = UserDefaults.standard.bool(forKey: Self.reduceKey)
+        self.hideWhenCollapsed = UserDefaults.standard.bool(forKey: Self.hideKey)
     }
 }
 

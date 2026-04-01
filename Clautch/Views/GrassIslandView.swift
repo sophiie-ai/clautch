@@ -28,7 +28,8 @@ struct GrassIslandView: View {
         Canvas { ctx, size in
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
             let maxDrop = size.height - notchHeight
-            let peekDrop: CGFloat = 16
+            let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
+            let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 16
             let dropHeight = isExpanded ? maxDrop : peekDrop
             let midX = size.width / 2
             let notchHalf = notchWidth / 2
@@ -116,7 +117,8 @@ struct GrassIslandView: View {
             // SwiftUI creature sprites positioned absolutely
             GeometryReader { geo in
                 let maxDrop = geo.size.height - notchHeight
-                let peekDrop: CGFloat = 8
+                let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
+                let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 8
                 let dropHeight = isExpanded ? maxDrop : peekDrop
                 let bottom = notchHeight + dropHeight
 

@@ -353,6 +353,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         animItem.tag = 700
         menu.addItem(animItem)
 
+        // Hide When Collapsed toggle
+        let hideItem = NSMenuItem(
+            title: "Hide When Collapsed",
+            action: #selector(toggleHideWhenCollapsed),
+            keyEquivalent: ""
+        )
+        hideItem.target = self
+        hideItem.tag = 750
+        menu.addItem(hideItem)
+
         // Check for Updates
         let updateItem = NSMenuItem(
             title: "Check for Updates…",
@@ -392,6 +402,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleReduceAnimation() {
         AnimationSettings.shared.reduceAnimationWhenCollapsed.toggle()
+    }
+
+    @objc private func toggleHideWhenCollapsed() {
+        AnimationSettings.shared.hideWhenCollapsed.toggle()
     }
 
     @objc private func sendReaction(_ sender: NSMenuItem) {
@@ -492,6 +506,9 @@ extension AppDelegate: NSMenuDelegate {
         }
         if let animItem = menu.item(withTag: 700) {
             animItem.state = AnimationSettings.shared.reduceAnimationWhenCollapsed ? .on : .off
+        }
+        if let hideItem = menu.item(withTag: 750) {
+            hideItem.state = AnimationSettings.shared.hideWhenCollapsed ? .on : .off
         }
     }
 }
