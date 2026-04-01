@@ -17,9 +17,16 @@ final class AnimationSettings {
         didSet { UserDefaults.standard.set(hideWhenCollapsed, forKey: Self.hideKey) }
     }
 
+    /// When enabled, the notch panel is hidden and all processing is paused to save CPU.
+    private static let pauseKey = "com.clautch.paused"
+    var isPaused: Bool = false {
+        didSet { UserDefaults.standard.set(isPaused, forKey: Self.pauseKey) }
+    }
+
     init() {
         self.reduceAnimationWhenCollapsed = UserDefaults.standard.bool(forKey: Self.reduceKey)
         self.hideWhenCollapsed = UserDefaults.standard.bool(forKey: Self.hideKey)
+        self.isPaused = UserDefaults.standard.bool(forKey: Self.pauseKey)
     }
 }
 

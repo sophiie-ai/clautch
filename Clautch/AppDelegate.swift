@@ -19,10 +19,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Initialize state machine (sets up socket event callback)
         _ = StateMachine.shared
 
-        // Install Claude Code hooks and start socket server
+        // Install Claude Code hooks
         HookInstaller.shared.installIfNeeded()
         HookInstaller.shared.startPeriodicRepair()
-        SocketServer.shared.start()
 
         // Request notification permission
         NotificationService.shared.requestPermissionIfNeeded()
@@ -30,14 +29,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Setup menu bar
         setupStatusItem()
 
-        // Show onboarding or go straight to notch panel
-        if UserProfile.hasProfile {
+        // If paused, only show menu bar — skip panel and socket
+        if AnimationSettings.shared.isPaused {
+            logger.info("Clautch launched in paused mode")
+        } else if UserProfile.hasProfile {
+            SocketServer.shared.start()
             setupNotchPanel()
-            // Auto-rejoin last room
             Task {
                 await RoomManager.shared.autoRejoinIfNeeded()
             }
         } else {
+            SocketServer.shared.start()
             showOnboarding()
         }
 
@@ -343,25 +345,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notifItem.tag = 500
         menu.addItem(notifItem)
 
-        // Reduce Animation toggle
-        let animItem = NSMenuItem(
-            title: "Reduce Animation",
-            action: #selector(toggleReduceAnimation),
-            keyEquivalent: ""
-        )
-        animItem.target = self
-        animItem.tag = 700
-        menu.addItem(animItem)
+        // Notch-specific options (only shown when a notch is detected)
+        let hasNotch = NSScreen.screens.contains { $0.hasNotch }
+        if hasNotch {
+            let animItem = NSMenuItem(
+                title: "Reduce Animation",
+                action: #selector(toggleReduceAnimation),
+                keyEquivalent: ""
+            )
+            animItem.target = self
+            animItem.tag = 700
+            menu.addItem(animItem)
 
-        // Hide When Collapsed toggle
-        let hideItem = NSMenuItem(
-            title: "Hide When Collapsed",
-            action: #selector(toggleHideWhenCollapsed),
+            let hideItem = NSMenuItem(
+                title: "Hide When Collapsed",
+                action: #selector(toggleHideWhenCollapsed),
+                keyEquivalent: ""
+            )
+            hideItem.target = self
+            hideItem.tag = 750
+            menu.addItem(hideItem)
+        }
+
+        // Pause toggle — hides panel and stops processing
+        let pauseItem = NSMenuItem(
+            title: "Pause Clautch",
+            action: #selector(togglePause),
             keyEquivalent: ""
         )
-        hideItem.target = self
-        hideItem.tag = 750
-        menu.addItem(hideItem)
+        pauseItem.target = self
+        pauseItem.tag = 800
+        menu.addItem(pauseItem)
 
         // Check for Updates
         let updateItem = NSMenuItem(
@@ -415,6 +429,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleHideWhenCollapsed() {
         AnimationSettings.shared.hideWhenCollapsed.toggle()
+    }
+
+    @objc private func togglePause() {
+        let pausing = !AnimationSettings.shared.isPaused
+        AnimationSettings.shared.isPaused = pausing
+
+        if pausing {
+            notchPanel?.close()
+            notchPanel = nil
+            SocketServer.shared.stop()
+            sessionBadgeTimer?.invalidate()
+            Task { @MainActor in
+                SessionStats.shared.stopTracking()
+            }
+            logger.info("Clautch paused")
+        } else {
+            SocketServer.shared.start()
+            setupNotchPanel()
+            startSessionBadgeTimer()
+            logger.info("Clautch resumed")
+        }
     }
 
     @objc private func sendReaction(_ sender: NSMenuItem) {
@@ -518,6 +553,9 @@ extension AppDelegate: NSMenuDelegate {
         }
         if let hideItem = menu.item(withTag: 750) {
             hideItem.state = AnimationSettings.shared.hideWhenCollapsed ? .on : .off
+        }
+        if let pauseItem = menu.item(withTag: 800) {
+            pauseItem.state = AnimationSettings.shared.isPaused ? .on : .off
         }
     }
 }
