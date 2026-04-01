@@ -12,12 +12,12 @@ struct GrassIslandView: View {
     @State private var bounceOffset: CGFloat = 0
 
     private var creatureSize: CGFloat {
-        if !isExpanded { return 20 } // smaller when collapsed
+        if !isExpanded { return 9 } // smaller when collapsed
         switch creatures.count {
-        case 0...3: return 32
-        case 4:     return 28
-        case 5:     return 24
-        default:    return 20
+        case 0...3: return 15
+        case 4:     return 13
+        case 5:     return 11
+        default:    return 9
         }
     }
 
@@ -36,9 +36,15 @@ struct GrassIslandView: View {
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
             let fullDrop = size.height - notchHeight
             let showLog = AnimationSettings.shared.showEventLog
-            // Use less vertical space when event log is disabled
             let showStatus = AnimationSettings.shared.showStatusBar
-            let maxDrop = showLog ? fullDrop : min(fullDrop, showStatus ? 85 : 70)
+            // Layout constants — ground is always the same height
+            let groundH: CGFloat = 7
+            let logSpace: CGFloat = showLog ? 56 : 0
+            let statusSpace: CGFloat = showStatus ? 8 : 0
+            let scenePad: CGFloat = 2
+            let minSky: CGFloat = 38
+            let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
+            let maxDrop = min(fullDrop, neededDrop)
             let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
             let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 16
             let dropHeight = isExpanded ? maxDrop : peekDrop
@@ -47,7 +53,7 @@ struct GrassIslandView: View {
             let expandedPanelHalf = min(size.width / 2 - 2, notchHalf + 50)
             let panelHalf = isExpanded ? expandedPanelHalf : notchHalf + 20
             let bottom = notchHeight + dropHeight
-            let r: CGFloat = isExpanded ? 18 : 6
+            let r: CGFloat = isExpanded ? 8 : 6
             let cr = min(r, dropHeight / 2)
 
             // 1. Clip path for the island shape
@@ -79,9 +85,8 @@ struct GrassIslandView: View {
 
             if isExpanded {
                 // 2. Draw scenic background
-                // Grass line is always at the same position (sky takes ~50% of panel)
-                // 25% shorter grass than before: was 0.35, now grass starts at ~0.42
-                let grassY = bottom * 0.42
+                // grassY calculated bottom-up so ground height is always constant
+                let grassY = bottom - groundH - logSpace - statusSpace - scenePad
 
                 // Sky gradient (fills from top of screen)
                 ctx.clip(to: path)
@@ -104,7 +109,7 @@ struct GrassIslandView: View {
                     }
                 }
 
-                // Ground
+                // Ground — fixed height
                 ctx.fill(
                     Path(CGRect(x: midX - panelHalf, y: grassY, width: panelHalf * 2, height: bottom - grassY)),
                     with: .color(grassDark)
@@ -123,18 +128,19 @@ struct GrassIslandView: View {
                     ctx.fill(Path(rect), with: .color(grassGreen.opacity(opacity)))
                 }
 
-                // Dark section below for event log
-                if showLog {
-                    let logY = grassY + 12
+                // Dark section below ground for event log + status bar
+                if showLog || showStatus {
+                    let darkY = grassY + groundH
                     ctx.fill(
-                        Path(CGRect(x: midX - panelHalf, y: logY, width: panelHalf * 2, height: bottom - logY)),
+                        Path(CGRect(x: midX - panelHalf, y: darkY, width: panelHalf * 2, height: bottom - darkY)),
                         with: .color(Color.black.opacity(0.85))
                     )
-                    // Divider line
-                    ctx.fill(
-                        Path(CGRect(x: midX - panelHalf + 8, y: logY, width: panelHalf * 2 - 16, height: 0.5)),
-                        with: .color(.white.opacity(0.1))
-                    )
+                    if showLog {
+                        ctx.fill(
+                            Path(CGRect(x: midX - panelHalf + 8, y: darkY, width: panelHalf * 2 - 16, height: 0.5)),
+                            with: .color(.white.opacity(0.1))
+                        )
+                    }
                 }
             } else {
                 // Collapsed: nothing drawn — transparent background, creature only
@@ -146,14 +152,19 @@ struct GrassIslandView: View {
                 let fullDrop = geo.size.height - notchHeight
                 let showLog = AnimationSettings.shared.showEventLog
                 let showStatus = AnimationSettings.shared.showStatusBar
-            let maxDrop = showLog ? fullDrop : min(fullDrop, showStatus ? 85 : 70)
+                let groundH: CGFloat = 7
+                let logSpace: CGFloat = showLog ? 56 : 0
+                let statusSpace: CGFloat = showStatus ? 8 : 0
+                let scenePad: CGFloat = 2
+                let minSky: CGFloat = 38
+                let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
+                let maxDrop = min(fullDrop, neededDrop)
                 let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
                 let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 8
                 let dropHeight = isExpanded ? maxDrop : peekDrop
                 let bottom = notchHeight + dropHeight
-                // Creatures sit on the grass line (consistent regardless of log/status)
                 let grassLineY = isExpanded
-                    ? bottom * 0.42
+                    ? bottom - groundH - logSpace - statusSpace - scenePad
                     : notchHeight + dropHeight
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
@@ -216,7 +227,7 @@ struct GrassIslandView: View {
                                     .transition(.opacity)
                             }
                         }
-                        .offset(y: -10)
+                        .offset(y: -18)
                         .fixedSize()
                     }
                     .position(
@@ -239,26 +250,47 @@ struct GrassIslandView: View {
                 }
             }
         }
-        // Event log overlay (bottom section)
-        .overlay(alignment: .bottom) {
-            if AnimationSettings.shared.showEventLog && isExpanded {
-                EventLogOverlay()
-                    .padding(.horizontal, 40)
-                    .padding(.bottom, AnimationSettings.shared.showStatusBar ? 24 : 10)
-                    .transition(.opacity.combined(with: .offset(y: 10)))
-            }
-        }
-        // Status bar overlay (very bottom)
-        .overlay(alignment: .bottom) {
-            if AnimationSettings.shared.showStatusBar && isExpanded {
-                StatusBarOverlay()
-                    .padding(.horizontal, 36)
-                    .padding(.bottom, 8)
-                    .transition(.opacity)
+        // Event log + status bar overlays (positioned within visible panel)
+        .overlay {
+            if (AnimationSettings.shared.showEventLog || AnimationSettings.shared.showStatusBar) && isExpanded {
+                GeometryReader { geo in
+                    let nh = NSScreen.screens.first(where: { $0.hasNotch })?.safeAreaInsets.top ?? 32
+                    let showLog = AnimationSettings.shared.showEventLog
+                    let showStatus = AnimationSettings.shared.showStatusBar
+                    let groundH: CGFloat = 7
+                    let logH: CGFloat = 56
+                    let logSpace: CGFloat = showLog ? logH : 0
+                    let statusSpace: CGFloat = showStatus ? 8 : 0
+                    let scenePad: CGFloat = 2
+                    let minSky: CGFloat = 38
+                    let fullDrop = geo.size.height - nh
+                    let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
+                    let maxDrop = min(fullDrop, neededDrop)
+                    let bottom = nh + maxDrop
+                    let grassY = bottom - groundH - logSpace - statusSpace - scenePad
+                    let logTop = grassY + groundH
+
+                    let contentWidth = geo.size.width - 72 // 36px padding each side
+
+                    if showLog {
+                        EventLogOverlay()
+                            .frame(width: contentWidth, height: logH, alignment: .top)
+                            .padding(.vertical, 4)
+                            .position(x: geo.size.width / 2, y: logTop + logH / 2)
+                            .transition(.opacity.combined(with: .offset(y: 10)))
+                    }
+
+                    if showStatus {
+                        StatusBarOverlay()
+                            .frame(width: contentWidth)
+                            .position(x: geo.size.width / 2, y: bottom - scenePad - statusSpace / 2)
+                            .transition(.opacity)
+                    }
+                }
             }
         }
         // Clip everything to the panel shape
-        .clipShape(PanelClipShape(isExpanded: isExpanded, notchHalf: notchHalfForClip, panelHalf: panelHalfForClip, notchHeight: notchHeightForClip, cr: isExpanded ? 18 : 6))
+        .clipShape(PanelClipShape(isExpanded: isExpanded, notchHalf: notchHalfForClip, panelHalf: panelHalfForClip, notchHeight: notchHeightForClip, cr: isExpanded ? 8 : 6))
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
         .onChange(of: isExpanded) { _, expanded in
             if expanded {
@@ -414,23 +446,23 @@ struct StatusBarOverlay: View {
 
             // Usage: today + week with reset info
             Text("\(SessionStats.format(stats.todayTotal))")
-                .font(.system(size: 5, weight: .medium, design: .monospaced))
+                .font(.system(size: 7, weight: .medium, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.4))
 
             Text("·")
-                .font(.system(size: 5))
+                .font(.system(size: 7))
                 .foregroundStyle(.white.opacity(0.2))
 
             Text("Wk: \(SessionStats.format(stats.weekTotal))")
-                .font(.system(size: 5, weight: .medium, design: .monospaced))
+                .font(.system(size: 7, weight: .medium, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.4))
 
             Text("·")
-                .font(.system(size: 5))
+                .font(.system(size: 7))
                 .foregroundStyle(.white.opacity(0.2))
 
             Text("Resets \(SessionStats.weekResetLabel)")
-                .font(.system(size: 4, design: .monospaced))
+                .font(.system(size: 7, weight: .medium, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.25))
         }
     }
