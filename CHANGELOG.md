@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.32](https://github.com/sophiie-ai/clautch/compare/v0.2.31...v0.2.32) (2026-04-01)
+
+
+### Bug Fixes
+
+* collapsed cleanup, thinner grass, better padding, status bar visibility ([f7dad0e](https://github.com/sophiie-ai/clautch/commit/f7dad0e9b9c3c3610a60f1f6406164e85dec94df))
+
 ## [0.2.31](https://github.com/sophiie-ai/clautch/compare/v0.2.30...v0.2.31) (2026-04-01)
 
 
