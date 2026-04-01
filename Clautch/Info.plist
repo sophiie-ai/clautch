@@ -7,7 +7,7 @@
 	<key>CFBundleName</key>
 	<string>Clautch</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.2.27</string> <!-- x-release-please-version -->
+	<string>0.2.28</string> <!-- x-release-please-version -->
 	<key>CFBundleVersion</key>
 	<string>6</string>
 	<key>LSMinimumSystemVersion</key>

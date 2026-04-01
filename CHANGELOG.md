@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.28](https://github.com/sophiie-ai/clautch/compare/v0.2.27...v0.2.28) (2026-04-01)
+
+
+### Bug Fixes
+
+* decode Claude Code's actual hook format (hook_event_name + tool_response) ([fe414dd](https://github.com/sophiie-ai/clautch/commit/fe414dda1cc69f131a03b5f6d8d5902034997d73))
+* panel extends to screen top, fix event log overflow, wider panel ([eb5e384](https://github.com/sophiie-ai/clautch/commit/eb5e3846be2e552bb57fd04a1e3108e279317dd2))
+
 ## [0.2.27](https://github.com/sophiie-ai/clautch/compare/v0.2.26...v0.2.27) (2026-04-01)
 
 
