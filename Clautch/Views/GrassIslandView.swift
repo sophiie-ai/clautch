@@ -47,42 +47,42 @@ struct GrassIslandView: View {
 
             // 1. Clip path for the island shape
             var path = Path()
-            path.move(to: CGPoint(x: midX - notchHalf, y: 0))
-            path.addLine(to: CGPoint(x: midX + notchHalf, y: 0))
 
             if isExpanded {
-                path.addCurve(
-                    to: CGPoint(x: midX + panelHalf, y: notchHeight + cr),
-                    control1: CGPoint(x: midX + notchHalf, y: notchHeight),
-                    control2: CGPoint(x: midX + panelHalf, y: notchHeight)
+                // Expanded: full rectangle from top edge, no top rounded corners
+                // Straight across the top, including behind the notch
+                path.move(to: CGPoint(x: midX - panelHalf, y: 0))
+                path.addLine(to: CGPoint(x: midX + panelHalf, y: 0))
+                path.addLine(to: CGPoint(x: midX + panelHalf, y: bottom - cr))
+                path.addQuadCurve(
+                    to: CGPoint(x: midX + panelHalf - cr, y: bottom),
+                    control: CGPoint(x: midX + panelHalf, y: bottom)
                 )
+                path.addLine(to: CGPoint(x: midX - panelHalf + cr, y: bottom))
+                path.addQuadCurve(
+                    to: CGPoint(x: midX - panelHalf, y: bottom - cr),
+                    control: CGPoint(x: midX - panelHalf, y: bottom)
+                )
+                path.addLine(to: CGPoint(x: midX - panelHalf, y: 0))
             } else {
+                // Collapsed: notch-hugging bump
+                path.move(to: CGPoint(x: midX - notchHalf, y: 0))
+                path.addLine(to: CGPoint(x: midX + notchHalf, y: 0))
                 path.addLine(to: CGPoint(x: midX + notchHalf, y: notchHeight))
                 path.addQuadCurve(
                     to: CGPoint(x: midX + panelHalf, y: notchHeight + 4),
                     control: CGPoint(x: midX + panelHalf, y: notchHeight)
                 )
-            }
-
-            path.addLine(to: CGPoint(x: midX + panelHalf, y: bottom - cr))
-            path.addQuadCurve(
-                to: CGPoint(x: midX + panelHalf - cr, y: bottom),
-                control: CGPoint(x: midX + panelHalf, y: bottom)
-            )
-            path.addLine(to: CGPoint(x: midX - panelHalf + cr, y: bottom))
-            path.addQuadCurve(
-                to: CGPoint(x: midX - panelHalf, y: bottom - cr),
-                control: CGPoint(x: midX - panelHalf, y: bottom)
-            )
-
-            if isExpanded {
-                path.addLine(to: CGPoint(x: midX - panelHalf, y: notchHeight + cr))
-                path.addCurve(
-                    to: CGPoint(x: midX - notchHalf, y: 0),
-                    control1: CGPoint(x: midX - panelHalf, y: notchHeight),
-                    control2: CGPoint(x: midX - notchHalf, y: notchHeight)
+                path.addLine(to: CGPoint(x: midX + panelHalf, y: bottom - cr))
+                path.addQuadCurve(
+                    to: CGPoint(x: midX + panelHalf - cr, y: bottom),
+                    control: CGPoint(x: midX + panelHalf, y: bottom)
                 )
-            } else {
+                path.addLine(to: CGPoint(x: midX - panelHalf + cr, y: bottom))
+                path.addQuadCurve(
+                    to: CGPoint(x: midX - panelHalf, y: bottom - cr),
+                    control: CGPoint(x: midX - panelHalf, y: bottom)
+                )
                 path.addLine(to: CGPoint(x: midX - panelHalf, y: notchHeight + 4))
                 path.addQuadCurve(
                     to: CGPoint(x: midX - notchHalf, y: notchHeight),
@@ -94,22 +94,21 @@ struct GrassIslandView: View {
 
             if isExpanded {
                 // 2. Draw scenic background
-                let grassY = notchHeight + (bottom - notchHeight) * 0.45
-                let panelRect = CGRect(x: midX - panelHalf, y: notchHeight, width: panelHalf * 2, height: bottom - notchHeight)
+                let grassY = (bottom) * 0.4
 
-                // Sky gradient
+                // Sky gradient (fills from top of screen)
                 ctx.clip(to: path)
                 let skyGradient = Gradient(colors: [skyTop, skyBottom])
                 ctx.fill(
-                    Path(CGRect(x: midX - panelHalf, y: notchHeight, width: panelHalf * 2, height: grassY - notchHeight)),
-                    with: .linearGradient(skyGradient, startPoint: CGPoint(x: midX, y: notchHeight), endPoint: CGPoint(x: midX, y: grassY))
+                    Path(CGRect(x: midX - panelHalf, y: 0, width: panelHalf * 2, height: grassY)),
+                    with: .linearGradient(skyGradient, startPoint: CGPoint(x: midX, y: 0), endPoint: CGPoint(x: midX, y: grassY))
                 )
 
                 // Stars (tiny dots in sky)
                 var starRng = StableRNG(seed: 77)
-                for _ in 0..<8 {
+                for _ in 0..<12 {
                     let sx = midX - panelHalf + CGFloat.random(in: 0...(panelHalf * 2), using: &starRng)
-                    let sy = notchHeight + CGFloat.random(in: 5...(grassY - notchHeight - 5), using: &starRng)
+                    let sy = CGFloat.random(in: notchHeight + 5...grassY - 5, using: &starRng)
                     let alpha = Double.random(in: 0.3...0.7, using: &starRng)
                     ctx.fill(Path(CGRect(x: sx, y: sy, width: 1, height: 1)), with: .color(.white.opacity(alpha)))
                 }
@@ -174,9 +173,9 @@ struct GrassIslandView: View {
                 let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
                 let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 8
                 let dropHeight = isExpanded ? maxDrop : peekDrop
-                // Creatures sit on the grass line (45% of expanded area)
+                // Creatures sit on the grass line (40% of total height)
                 let grassLineY = isExpanded
-                    ? notchHeight + (geo.size.height - notchHeight) * 0.45
+                    ? geo.size.height * 0.4
                     : notchHeight + dropHeight
 
                 ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
@@ -266,8 +265,9 @@ struct GrassIslandView: View {
         .overlay(alignment: .bottom) {
             if AnimationSettings.shared.showEventLog && isExpanded {
                 EventLogOverlay()
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, AnimationSettings.shared.showStatusBar ? 22 : 6)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, AnimationSettings.shared.showStatusBar ? 22 : 8)
+                    .clipped()
                     .transition(.opacity.combined(with: .offset(y: 10)))
             }
         }
@@ -275,8 +275,8 @@ struct GrassIslandView: View {
         .overlay(alignment: .bottom) {
             if AnimationSettings.shared.showStatusBar && isExpanded {
                 StatusBarOverlay()
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 4)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 5)
                     .transition(.opacity)
             }
         }
