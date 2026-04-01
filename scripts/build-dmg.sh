@@ -98,12 +98,12 @@ else
     echo "WARNING: Sparkle.framework not found — skipping Sparkle re-signing"
 fi
 
-# 5f — Re-sign the main app with release entitlements
-echo "==> Re-signing main app with release entitlements"
+# 5f — Re-sign the main app with CloudKit entitlements (must match provisioning profile)
+echo "==> Re-signing main app with CloudKit entitlements"
 codesign --force --sign "$IDENTITY" \
     --timestamp \
     --options runtime \
-    --entitlements "$ENTITLEMENTS" \
+    --entitlements "$CLOUDKIT_ENTITLEMENTS" \
     "$APP_PATH"
 
 # ---------------------------------------------------------------------------

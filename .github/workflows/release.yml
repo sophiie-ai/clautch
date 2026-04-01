@@ -93,9 +93,10 @@ jobs:
         run: |
           IDENTITY="Developer ID Application: Sophiie AI Pty Ltd (U2KP726DRL)"
           APP="build/Clautch.xcarchive/Products/Applications/Clautch.app"
-          ENTITLEMENTS="Clautch/Clautch-Release.entitlements"
+          # Use CloudKit entitlements so code signature matches provisioning profile
+          ENTITLEMENTS="Clautch/Clautch-CloudKit.entitlements"
 
-          # Embed provisioning profile for CloudKit entitlements
+          # Embed provisioning profile for CloudKit/Gatekeeper
           cp build/embedded.provisionprofile "$APP/Contents/embedded.provisionprofile"
 
           # Re-sign Sparkle framework internals (inside-out)
