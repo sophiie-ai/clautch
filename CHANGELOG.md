@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.21](https://github.com/sophiie-ai/clautch/compare/v0.2.20...v0.2.21) (2026-04-01)
+
+
+### Features
+
+* pause mode to stop all processing, hide notch items on non-notch Macs ([4de76e2](https://github.com/sophiie-ai/clautch/commit/4de76e27e061f95017b0ce2804acbdf8a4455eef))
+
 ## [0.2.20](https://github.com/sophiie-ai/clautch/compare/v0.2.19...v0.2.20) (2026-04-01)
 
 
