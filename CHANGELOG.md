@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.13](https://github.com/sophiie-ai/clautch/compare/v0.2.12...v0.2.13) (2026-04-01)
+
+
+### Features
+
+* add Hide When Collapsed menu option to fully hide notch panel ([08f0f5f](https://github.com/sophiie-ai/clautch/commit/08f0f5fa1f3a341dee7bade58da69705759da28e))
+
+
+### Bug Fixes
+
+* prevent CloudKit SIGTRAP crash, keep provisioning profile for iCloud ([643eeec](https://github.com/sophiie-ai/clautch/commit/643eeecc7dd4587be8ede5a8d4b04de9ee88e433))
+
 ## [0.2.12](https://github.com/sophiie-ai/clautch/compare/v0.2.11...v0.2.12) (2026-04-01)
 
 
