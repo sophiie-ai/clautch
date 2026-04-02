@@ -229,6 +229,17 @@ echo "==> Verifying code signature"
 codesign --verify --deep --strict "$APP_PATH"
 echo "    Code signature OK"
 
+# ---------------------------------------------------------------------------
+# Step 8 — Create ZIP for Sparkle auto-updates (no mount, no desktop icon)
+# ---------------------------------------------------------------------------
+echo "==> Creating ZIP for Sparkle updates"
+ZIP_PATH="$BUILD_DIR/$APP_NAME.zip"
+rm -f "$ZIP_PATH"
+ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+echo "    ZIP created at: $ZIP_PATH ($(du -h "$ZIP_PATH" | cut -f1))"
+
 echo ""
 echo "==> DMG created at: $DMG_PATH"
 echo "    Size: $(du -h "$DMG_PATH" | cut -f1)"
+echo "==> ZIP created at: $ZIP_PATH"
+echo "    Size: $(du -h "$ZIP_PATH" | cut -f1)"

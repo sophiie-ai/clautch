@@ -17,6 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$ROOT/build"
 DMG_PATH="$BUILD_DIR/Clautch.dmg"
+ZIP_PATH="$BUILD_DIR/Clautch.zip"
 APPCAST="$ROOT/public/appcast.xml"
 REPO="sophiie-ai/clautch"
 TAG="v$VERSION"
@@ -34,6 +35,10 @@ echo "==> Step 1: Building DMG"
 
 if [ ! -f "$DMG_PATH" ]; then
     echo "ERROR: DMG not found at $DMG_PATH"
+    exit 1
+fi
+if [ ! -f "$ZIP_PATH" ]; then
+    echo "ERROR: ZIP not found at $ZIP_PATH"
     exit 1
 fi
 
@@ -57,7 +62,7 @@ xcrun stapler staple "$DMG_PATH"
 # Step 4 — Sign for Sparkle (EdDSA)
 # ---------------------------------------------------------------------------
 echo ""
-echo "==> Step 4: Signing for Sparkle updates"
+echo "==> Step 4: Signing ZIP for Sparkle updates"
 
 SIGN_UPDATE=""
 # Search DerivedData for the Sparkle sign_update tool
@@ -73,13 +78,13 @@ if [ -z "$SIGN_UPDATE" ]; then
     exit 1
 fi
 
-SPARKLE_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH")
+SPARKLE_OUTPUT=$("$SIGN_UPDATE" "$ZIP_PATH")
 echo "    $SPARKLE_OUTPUT"
 
 # Parse signature and length from sign_update output
 # Output format: sparkle:edSignature="..." length="..."
 SIGNATURE=$(echo "$SPARKLE_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
-DMG_LENGTH=$(stat -f%z "$DMG_PATH")
+ZIP_LENGTH=$(stat -f%z "$ZIP_PATH")
 
 if [ -z "$SIGNATURE" ]; then
     echo "ERROR: Failed to extract Sparkle signature"
@@ -87,7 +92,7 @@ if [ -z "$SIGNATURE" ]; then
 fi
 
 echo "    Signature: $SIGNATURE"
-echo "    Length: $DMG_LENGTH bytes"
+echo "    Length: $ZIP_LENGTH bytes"
 
 # ---------------------------------------------------------------------------
 # Step 5 — GitHub release
@@ -106,13 +111,13 @@ if [ -n "$NOTES_FILE" ] && [ -f "$NOTES_FILE" ]; then
         --repo "$REPO" \
         --title "Clautch $TAG" \
         --notes-file "$NOTES_FILE" \
-        "$DMG_PATH"
+        "$DMG_PATH" "$ZIP_PATH"
 else
     gh release create "$TAG" \
         --repo "$REPO" \
         --title "Clautch $TAG" \
         --generate-notes \
-        "$DMG_PATH"
+        "$DMG_PATH" "$ZIP_PATH"
     echo "    WARNING: No release notes file provided — used auto-generated notes"
 fi
 
@@ -140,8 +145,8 @@ NEW_ITEM="    <item>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
       <pubDate>$PUB_DATE</pubDate>
       <enclosure
-        url=\"https://github.com/$REPO/releases/download/$TAG/Clautch.dmg\"
-        length=\"$DMG_LENGTH\"
+        url=\"https://github.com/$REPO/releases/download/$TAG/Clautch.zip\"
+        length=\"$ZIP_LENGTH\"
         type=\"application/octet-stream\"
         sparkle:edSignature=\"$SIGNATURE\" />
     </item>"

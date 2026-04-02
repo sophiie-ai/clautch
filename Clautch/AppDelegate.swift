@@ -57,6 +57,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
+        // Clean up any mounted "Install Clautch" DMG volumes
+        ejectInstallerVolumes()
+
         logger.info("Clautch launched successfully")
     }
 
@@ -560,6 +563,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let room = RoomManager.shared.currentRoom else { return }
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(room.shareableCode, forType: .string)
+        }
+    }
+
+    /// Eject any mounted "Install Clautch" DMG volumes left over from updates.
+    private func ejectInstallerVolumes() {
+        DispatchQueue.global(qos: .utility).async { [logger] in
+            let fm = FileManager.default
+            guard let volumes = try? fm.contentsOfDirectory(atPath: "/Volumes") else { return }
+            for vol in volumes where vol.hasPrefix("Install Clautch") {
+                let path = "/Volumes/\(vol)"
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/usr/bin/hdiutil")
+                task.arguments = ["detach", path, "-quiet"]
+                try? task.run()
+                task.waitUntilExit()
+                if task.terminationStatus == 0 {
+                    logger.info("Ejected installer volume: \(vol)")
+                }
+            }
         }
     }
 
