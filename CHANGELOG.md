@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.42](https://github.com/sophiie-ai/clautch/compare/v0.2.41...v0.2.42) (2026-04-02)
+
+
+### Features
+
+* settings window, accessibility labels, window conventions, and spacing fixes ([74312a0](https://github.com/sophiie-ai/clautch/commit/74312a03a9102c8accd4cab5fb93acd10e979fc9))
+
 ## [0.2.41](https://github.com/sophiie-ai/clautch/compare/v0.2.40...v0.2.41) (2026-04-02)
 
 
