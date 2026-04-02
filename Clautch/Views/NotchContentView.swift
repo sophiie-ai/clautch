@@ -55,6 +55,7 @@ struct NotchContentView: View {
             withAnimation(.easeInOut(duration: 2.5)) {
                 wanderPosition = newTarget
             }
+            roomManager.updatePosition(newTarget)
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 isWalking = false
             }
@@ -96,6 +97,7 @@ struct NotchContentView: View {
         if let myId = profile?.peerId {
             let remotePeers = roomManager.peerStore.visiblePeers(excludingPeerId: myId)
             for peer in remotePeers {
+                let peerX = peer.xPosition ?? roomManager.peerStore.xPosition(for: peer.peerId)
                 creatures.append(CreatureDisplay(
                     id: "remote-\(peer.peerId)",
                     state: CreatureState(
@@ -106,7 +108,7 @@ struct NotchContentView: View {
                     creatureType: peer.creatureType,
                     colorPreset: peer.colorPreset,
                     accessory: peer.accessory,
-                    xPosition: roomManager.peerStore.xPosition(for: peer.peerId),
+                    xPosition: peerX,
                     isLocal: false,
                     displayName: peer.displayName,
                     reaction: peer.hasActiveReaction ? peer.reaction : nil,

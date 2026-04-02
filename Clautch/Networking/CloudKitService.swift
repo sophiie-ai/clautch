@@ -106,6 +106,9 @@ final class CloudKitService: @unchecked Sendable {
             record["accessory"] = state.accessory.rawValue
             record["heartbeat"] = Date() as NSDate
             record["isActive"] = 1
+            if let x = state.xPosition {
+                record["xPosition"] = x as NSNumber
+            }
             record["reaction"] = state.reaction?.rawValue ?? ""
             if let rt = state.reactionTimestamp {
                 record["reactionTimestamp"] = rt as NSDate
@@ -242,6 +245,7 @@ extension PeerState {
 
         let colorRaw = record["colorPreset"] as? String ?? "none"
         let accessoryRaw = record["accessory"] as? String ?? "none"
+        let xPos = record["xPosition"] as? Double
         let reactionRaw = record["reaction"] as? String ?? ""
         let chatMsg = record["chatMessage"] as? String ?? ""
         let chatTs = record["chatTimestamp"] as? Date
@@ -256,6 +260,7 @@ extension PeerState {
             colorPreset: CreatureColorPreset(rawValue: colorRaw) ?? .none,
             accessory: CreatureAccessory(rawValue: accessoryRaw) ?? .none,
             timestamp: heartbeat,
+            xPosition: xPos.map { CGFloat(min(max($0, 0), 1)) },
             reaction: reactionRaw.isEmpty ? nil : PeerReaction(rawValue: reactionRaw),
             reactionTimestamp: reactionTs,
             chatMessage: chatMsg.isEmpty ? nil : String(chatMsg.prefix(50)),

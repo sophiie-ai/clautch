@@ -234,6 +234,7 @@ struct GrassIslandView: View {
                         x: geo.size.width / 2 + creatureOffset(for: creature, in: geo.size.width),
                         y: grassLineY - creatureSize / 2 - 4
                     )
+                    .animation(.easeInOut(duration: 2.0), value: creature.xPosition)
                     .shadow(
                         color: creature.isLocal ? .white.opacity(0.15) : .clear,
                         radius: creature.isLocal ? 3 : 0

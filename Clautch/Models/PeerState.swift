@@ -111,6 +111,7 @@ struct PeerState: Codable, Sendable, Identifiable {
     let colorPreset: CreatureColorPreset
     let accessory: CreatureAccessory
     let timestamp: Date
+    var xPosition: CGFloat?
     var reaction: PeerReaction?
     var reactionTimestamp: Date?
     var chatMessage: String?
@@ -155,7 +156,8 @@ struct PeerState: Codable, Sendable, Identifiable {
         colorPreset == other.colorPreset &&
         accessory == other.accessory &&
         reaction == other.reaction &&
-        chatMessage == other.chatMessage
+        chatMessage == other.chatMessage &&
+        abs((xPosition ?? 0.5) - (other.xPosition ?? 0.5)) < 0.01
     }
 }
 

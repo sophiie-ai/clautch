@@ -204,11 +204,12 @@ final class RoomManager {
 
     func broadcastState(task: CreatureTask, emotion: CreatureEmotion) {
         guard let profile = UserProfile.current else { return }
-        // Preserve active reaction and chat when updating state
+        // Preserve active reaction, chat, and position when updating state
         let existingReaction = localState?.reaction
         let existingReactionTs = localState?.reactionTimestamp
         let existingChat = localState?.chatMessage
         let existingChatTs = localState?.chatTimestamp
+        let existingPos = localState?.xPosition
         localState = PeerState(
             peerId: profile.peerId,
             displayName: profile.displayName,
@@ -218,11 +219,17 @@ final class RoomManager {
             colorPreset: profile.colorPreset,
             accessory: profile.accessory,
             timestamp: Date(),
+            xPosition: existingPos,
             reaction: existingReaction,
             reactionTimestamp: existingReactionTs,
             chatMessage: existingChat,
             chatTimestamp: existingChatTs
         )
+    }
+
+    /// Update the local creature's position for network broadcast.
+    func updatePosition(_ x: CGFloat) {
+        localState?.xPosition = x
     }
 
     /// Send a chat message — broadcast on next sync, auto-clear after 8s.
@@ -239,6 +246,7 @@ final class RoomManager {
             colorPreset: state.colorPreset,
             accessory: state.accessory,
             timestamp: Date(),
+            xPosition: state.xPosition,
             reaction: state.reaction,
             reactionTimestamp: state.reactionTimestamp,
             chatMessage: trimmed,
@@ -267,6 +275,7 @@ final class RoomManager {
             colorPreset: state.colorPreset,
             accessory: state.accessory,
             timestamp: Date(),
+            xPosition: state.xPosition,
             reaction: reaction,
             reactionTimestamp: Date(),
             chatMessage: state.chatMessage,
