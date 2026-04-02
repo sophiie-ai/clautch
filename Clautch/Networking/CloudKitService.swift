@@ -187,6 +187,17 @@ extension PeerState {
               let heartbeat = record["heartbeat"] as? Date
         else { return nil }
 
+        // Reject oversized or invalid fields
+        guard peerId.count <= 64,
+              displayName.count <= 100,
+              creatureRaw.count <= 32,
+              taskRaw.count <= 32,
+              emotionRaw.count <= 32,
+              CreatureType(rawValue: creatureRaw) != nil,
+              CreatureTask(rawValue: taskRaw) != nil,
+              CreatureEmotion(rawValue: emotionRaw) != nil
+        else { return nil }
+
         let colorRaw = record["colorPreset"] as? String ?? "none"
         let accessoryRaw = record["accessory"] as? String ?? "none"
         let reactionRaw = record["reaction"] as? String ?? ""
@@ -196,16 +207,16 @@ extension PeerState {
 
         self.init(
             peerId: peerId,
-            displayName: displayName,
-            creatureType: CreatureType(rawValue: creatureRaw) ?? .ghost,
-            task: CreatureTask(rawValue: taskRaw) ?? .idle,
-            emotion: CreatureEmotion(rawValue: emotionRaw) ?? .neutral,
+            displayName: String(displayName.prefix(50)),
+            creatureType: CreatureType(rawValue: creatureRaw)!,
+            task: CreatureTask(rawValue: taskRaw)!,
+            emotion: CreatureEmotion(rawValue: emotionRaw)!,
             colorPreset: CreatureColorPreset(rawValue: colorRaw) ?? .none,
             accessory: CreatureAccessory(rawValue: accessoryRaw) ?? .none,
             timestamp: heartbeat,
             reaction: reactionRaw.isEmpty ? nil : PeerReaction(rawValue: reactionRaw),
             reactionTimestamp: reactionTs,
-            chatMessage: chatMsg.isEmpty ? nil : chatMsg,
+            chatMessage: chatMsg.isEmpty ? nil : String(chatMsg.prefix(50)),
             chatTimestamp: chatTs
         )
     }

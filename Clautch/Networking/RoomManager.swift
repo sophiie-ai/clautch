@@ -20,6 +20,10 @@ final class RoomManager {
     private let cloudKit = CloudKitService.shared
     private let logger = Logger(subsystem: "com.clautch.app", category: "RoomManager")
 
+    /// Track last-broadcast state to avoid redundant CloudKit writes.
+    private var lastBroadcastState: PeerState?
+    private var lastHeartbeatDate: Date = .distantPast
+
     /// The latest local state to broadcast.
     var localState: PeerState?
 
@@ -92,7 +96,7 @@ final class RoomManager {
         }
 
         let normalized = code.uppercased().trimmingCharacters(in: .whitespaces)
-        guard normalized.count == 6 else {
+        guard normalized.count == 6 || normalized.count == 8 else {
             throw RoomError.invalidCode
         }
 
@@ -162,6 +166,8 @@ final class RoomManager {
         currentRoom = nil
         status = .disconnected
         peerStore.clear()
+        lastBroadcastState = nil
+        lastHeartbeatDate = .distantPast
         UserDefaults.standard.lastRoomCode = nil
         UserDefaults.standard.lastRoomToken = nil
 
@@ -304,16 +310,27 @@ final class RoomManager {
         let presenceID = myPresenceRecordID
         let roomCode = room.roomCode
 
-        // Run heartbeat and peer fetch concurrently via nonisolated helpers
-        async let heartbeatRecord: CKRecord? = writeHeartbeat(
-            state: state, presenceID: presenceID, roomCode: roomCode
-        )
+        // Only write if state changed or heartbeat is older than 30s
+        let stateChanged = state.map { s in
+            lastBroadcastState.map { !s.broadcastEquals($0) } ?? true
+        } ?? false
+        let heartbeatStale = Date().timeIntervalSince(lastHeartbeatDate) > 30
+        let shouldWrite = stateChanged || heartbeatStale
+
+        // Run heartbeat (if needed) and peer fetch concurrently
+        async let heartbeatRecord: CKRecord? = shouldWrite
+            ? writeHeartbeat(state: state, presenceID: presenceID, roomCode: roomCode)
+            : nil
         async let fetchedPeers: [(CKRecord.ID, PeerState)] = fetchPresences(roomCode: roomCode)
 
         let record = await heartbeatRecord
         let peers = await fetchedPeers
 
-        if let record { myPresenceRecordID = record.recordID }
+        if let record {
+            myPresenceRecordID = record.recordID
+            lastBroadcastState = state
+            lastHeartbeatDate = Date()
+        }
         peerStore.update(with: peers)
 
         if syncCycleCount % 5 == 0 {
@@ -373,7 +390,7 @@ enum RoomError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noProfile:         return "Please set up your profile first"
-        case .invalidCode:       return "Room code must be 6 characters"
+        case .invalidCode:       return "Invalid room code"
         case .roomNotFound:      return "Room not found"
         case .invalidToken:      return "Invalid invite link"
         case .cloudKitUnavailable: return "iCloud is not available. Sign in to iCloud in System Settings to use rooms."

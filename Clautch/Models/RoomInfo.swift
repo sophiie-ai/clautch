@@ -18,31 +18,44 @@ struct RoomInfo: Codable, Sendable {
     }
 
     /// Parse a shareable code into (roomCode, inviteToken?).
-    /// Accepts "ABCDEF" (legacy) or "ABCDEF-xYz123..." (with token).
+    /// Accepts "ABCDEFGH" (bare) or "ABCDEFGH-xYz123..." (with token).
+    /// Also accepts legacy 6-char codes.
     static func parse(shareableCode: String) -> (code: String, token: String?) {
         let trimmed = shareableCode.trimmingCharacters(in: .whitespaces)
-        guard let dashIndex = trimmed.firstIndex(of: "-"),
-              trimmed.distance(from: trimmed.startIndex, to: dashIndex) == 6 else {
-            // No dash or dash not at position 6 — treat as bare code
-            return (String(trimmed.prefix(6)).uppercased(), nil)
+        if let dashIndex = trimmed.firstIndex(of: "-") {
+            let pos = trimmed.distance(from: trimmed.startIndex, to: dashIndex)
+            if pos == 8 || pos == 6 { // 8-char (current) or 6-char (legacy)
+                let code = String(trimmed[trimmed.startIndex..<dashIndex]).uppercased()
+                let token = String(trimmed[trimmed.index(after: dashIndex)...])
+                return (code, token.isEmpty ? nil : token)
+            }
         }
-        let code = String(trimmed[trimmed.startIndex..<dashIndex]).uppercased()
-        let token = String(trimmed[trimmed.index(after: dashIndex)...])
-        return (code, token.isEmpty ? nil : token)
+        // Bare code (no token)
+        let codeLen = min(trimmed.count, 8)
+        return (String(trimmed.prefix(codeLen)).uppercased(), nil)
     }
 
-    /// Generate a 6-character room code (alphanumeric, no ambiguous chars).
+    /// Generate an 8-character room code (alphanumeric, no ambiguous chars).
+    /// 32^8 ≈ 1.1 trillion possibilities.
     static func generateCode() -> String {
         let chars = Array("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
-        return String((0..<6).map { _ in chars.randomElement()! })
+        return String((0..<8).map { _ in chars.randomElement()! })
     }
 
-    /// Generate a cryptographic invite token (128 bits, Base62 encoded).
+    /// Generate a cryptographic invite token (Base62, rejection-sampled for uniform distribution).
     static func generateInviteToken() -> String {
-        var bytes = [UInt8](repeating: 0, count: 16)
-        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
         let chars = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
-        return String(bytes.map { chars[Int($0) % chars.count] })
+        let limit = UInt8(256 / chars.count * chars.count) // 248 — largest multiple of 62 ≤ 256
+        var result = [Character]()
+        result.reserveCapacity(22)
+        while result.count < 22 {
+            var byte: UInt8 = 0
+            _ = SecRandomCopyBytes(kSecRandomDefault, 1, &byte)
+            if byte < limit {
+                result.append(chars[Int(byte) % chars.count])
+            }
+        }
+        return String(result)
     }
 }
 

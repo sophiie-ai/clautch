@@ -144,6 +144,19 @@ struct PeerState: Codable, Sendable, Identifiable {
     var activeChatMessage: String? {
         hasActiveChat ? chatMessage : nil
     }
+
+    /// Whether the broadcast-relevant fields match another state.
+    func broadcastEquals(_ other: PeerState) -> Bool {
+        peerId == other.peerId &&
+        displayName == other.displayName &&
+        creatureType == other.creatureType &&
+        task == other.task &&
+        emotion == other.emotion &&
+        colorPreset == other.colorPreset &&
+        accessory == other.accessory &&
+        reaction == other.reaction &&
+        chatMessage == other.chatMessage
+    }
 }
 
 // MARK: - Unified Creature Display
