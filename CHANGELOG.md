@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.35](https://github.com/sophiie-ai/clautch/compare/v0.2.34...v0.2.35) (2026-04-02)
+
+
+### Features
+
+* switch Sparkle updates to ZIP and auto-eject stale DMG volumes ([a04d609](https://github.com/sophiie-ai/clautch/commit/a04d6096cab45d75dcdd6099d4200020d1466138))
+
 ## [0.2.34](https://github.com/sophiie-ai/clautch/compare/v0.2.33...v0.2.34) (2026-04-01)
 
 
