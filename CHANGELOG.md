@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.37](https://github.com/sophiie-ai/clautch/compare/v0.2.36...v0.2.37) (2026-04-02)
+
+
+### Features
+
+* CloudKit retry logic with backoff, batch cleanup, and new tests ([88f0a1f](https://github.com/sophiie-ai/clautch/commit/88f0a1f93ce0b39092af17327736cb8cd905c466))
+* harden CloudKit rooms — conditional writes, input validation, stronger codes ([0576973](https://github.com/sophiie-ai/clautch/commit/0576973e015851553e1b62b92e37e416a516f76b))
+
+
+### Performance
+
+* reduce CPU usage when panel is collapsed ([d6e2a21](https://github.com/sophiie-ai/clautch/commit/d6e2a2149086b783cf309b4ff855752714f6f7d7))
+
 ## [0.2.36](https://github.com/sophiie-ai/clautch/compare/v0.2.35...v0.2.36) (2026-04-02)
 
 
