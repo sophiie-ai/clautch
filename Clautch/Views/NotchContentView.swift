@@ -34,25 +34,37 @@ struct NotchContentView: View {
     var body: some View {
         GrassIslandView(creatures: allCreatures, isExpanded: isExpanded, isWalking: isWalking)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .onAppear { startWandering() }
-            .onDisappear { wanderTimer?.invalidate() }
+            .onAppear { if isExpanded { startWandering() } }
+            .onDisappear { stopWandering() }
+            .onChange(of: isExpanded) { _, expanded in
+                if expanded {
+                    startWandering()
+                } else {
+                    stopWandering()
+                }
+            }
     }
 
     // MARK: - Wander
 
     private func startWandering() {
-        wanderTimer?.invalidate()
+        guard wanderTimer == nil else { return }
         wanderTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
             let newTarget = CGFloat.random(in: 0.05...0.95)
             isWalking = true
             withAnimation(.easeInOut(duration: 2.5)) {
                 wanderPosition = newTarget
             }
-            // Stop walking after the animation completes
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 isWalking = false
             }
         }
+    }
+
+    private func stopWandering() {
+        wanderTimer?.invalidate()
+        wanderTimer = nil
+        isWalking = false
     }
 
     /// Build unified creature list from local sessions + remote peers.

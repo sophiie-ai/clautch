@@ -55,10 +55,10 @@ struct CreatureSpriteView: View {
     var isWalking: Bool = false
 
     var body: some View {
-        let shouldAnimate = isExpanded || !AnimationSettings.shared.reduceAnimationWhenCollapsed
-        let interval: Double = shouldAnimate ? (1.0 / 10) : (1.0 / 2)
+        let hidden = !isExpanded && AnimationSettings.shared.hideWhenCollapsed
+        let interval: Double = isExpanded ? (1.0 / 10) : 1.0  // 10 FPS expanded, 1 FPS collapsed
 
-        TimelineView(.animation(minimumInterval: interval)) { timeline in
+        TimelineView(hidden ? .animation(minimumInterval: 10) : .animation(minimumInterval: interval)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let bob = BobAnimation.value(
                 time: t,
@@ -76,7 +76,8 @@ struct CreatureSpriteView: View {
                 colorPreset: colorPreset,
                 accessory: accessory,
                 isWalking: isWalking,
-                time: t
+                time: t,
+                isExpanded: isExpanded
             )
             .frame(width: 32, height: 32)
             .offset(y: bob)
@@ -146,6 +147,7 @@ struct PixelCreatureView: View {
     var accessory: CreatureAccessory = .none
     var isWalking: Bool = false
     var time: Double = 0
+    var isExpanded: Bool = true
 
     private var colors: CreatureColors {
         CreatureColors(type: type, colorPreset: colorPreset, task: task, emotion: emotion)
@@ -217,8 +219,10 @@ struct PixelCreatureView: View {
                 }
             }
 
-            // --- State effects ---
-            drawStateEffects(ctx: ctx, size: size, px: px)
+            // --- State effects (expanded only) ---
+            if isExpanded {
+                drawStateEffects(ctx: ctx, size: size, px: px)
+            }
         }
     }
 
