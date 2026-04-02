@@ -81,16 +81,59 @@ enum ConnectionStatus: Sendable {
 
 extension UserDefaults {
     private static let roomCodeKey = "com.clautch.lastRoomCode"
-    private static let roomTokenKey = "com.clautch.lastRoomToken"
 
-    /// The last shareable code (CODE-TOKEN or bare CODE) for auto-rejoin.
+    /// The last room code for auto-rejoin (not sensitive).
     var lastRoomCode: String? {
         get { string(forKey: Self.roomCodeKey) }
         set { set(newValue, forKey: Self.roomCodeKey) }
     }
 
+    /// Room invite token stored in Keychain.
     var lastRoomToken: String? {
-        get { string(forKey: Self.roomTokenKey) }
-        set { set(newValue, forKey: Self.roomTokenKey) }
+        get { KeychainHelper.read(key: "com.clautch.lastRoomToken") }
+        set {
+            if let value = newValue {
+                KeychainHelper.write(key: "com.clautch.lastRoomToken", value: value)
+            } else {
+                KeychainHelper.delete(key: "com.clautch.lastRoomToken")
+            }
+        }
+    }
+}
+
+// MARK: - Keychain Helper
+
+enum KeychainHelper {
+    static func write(key: String, value: String) {
+        let data = Data(value.utf8)
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+        ]
+        SecItemDelete(query as CFDictionary)
+        var add = query
+        add[kSecValueData as String] = data
+        SecItemAdd(add as CFDictionary, nil)
+    }
+
+    static func read(key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func delete(key: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+        ]
+        SecItemDelete(query as CFDictionary)
     }
 }

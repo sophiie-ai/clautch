@@ -306,10 +306,10 @@ struct RoomView: View {
         }
     }
 
-    /// The join input is valid if it contains at least a 6-char code.
+    /// The join input is valid if it contains a 6 or 8-char code.
     private var joinCodeValid: Bool {
         let (code, _) = RoomInfo.parse(shareableCode: joinCode)
-        return code.count == 6
+        return code.count == 6 || code.count == 8
     }
 
     // MARK: - Actions

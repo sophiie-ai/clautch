@@ -150,7 +150,7 @@ final class CloudKitService: @unchecked Sendable {
     func cleanupStalePresences(roomCode: String) async throws {
         guard let db = publicDB else { throw CloudKitUnavailableError() }
         try await withRetry {
-            let cutoff = Date().addingTimeInterval(-600) as NSDate
+            let cutoff = Date().addingTimeInterval(-300) as NSDate
             let predicate = NSPredicate(
                 format: "roomCode == %@ AND heartbeat < %@", roomCode, cutoff
             )

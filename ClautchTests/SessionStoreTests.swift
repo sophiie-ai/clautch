@@ -89,7 +89,7 @@ final class SessionStoreTests: XCTestCase {
     func testCleanupRemovesOldSessions() {
         let store = SessionStore()
         let stale = store.getOrCreate(id: "stale")
-        stale.state.lastActivity = Date(timeIntervalSinceNow: -700) // >10 min
+        stale.state.lastActivity = Date(timeIntervalSinceNow: -400) // >5 min
 
         let fresh = store.getOrCreate(id: "fresh")
         fresh.state.lastActivity = Date()
@@ -102,7 +102,7 @@ final class SessionStoreTests: XCTestCase {
     func testCleanupKeepsRecentSessions() {
         let store = SessionStore()
         let s = store.getOrCreate(id: "recent")
-        s.state.lastActivity = Date(timeIntervalSinceNow: -300) // 5 min, within 10 min window
+        s.state.lastActivity = Date(timeIntervalSinceNow: -200) // 3.3 min, within 5 min window
         store.cleanupStale()
         XCTAssertEqual(store.sessions.count, 1)
     }

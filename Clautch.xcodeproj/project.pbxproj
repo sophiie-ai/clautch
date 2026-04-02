@@ -36,6 +36,7 @@
 		C59FF3BA1A0679902FCB5BF6 /* SocketServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A96C317933A876142263C02 /* SocketServer.swift */; };
 		C8437926E9493D6C053BFCEB /* SessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 941654AB5CB9C3AB86AFF1A6 /* SessionStoreTests.swift */; };
 		CBDA2473ACF805DD27769C31 /* PeerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EEA97069510BF43AEF4A0F /* PeerStore.swift */; };
+		CE96A169BD85A26B09493F9A /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72078A7FD34B39EF7580A90 /* StatsView.swift */; };
 		CF2A287CEF7133514A48A36E /* SessionStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */; };
 		D111D15AA4DAAA2FB8C09769 /* NotchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8C9B4777BFE300C4B219C61 /* NotchPanel.swift */; };
 		D78AB26A7D77261B497278B6 /* CreatureSpriteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B322233C180E7390E3E334 /* CreatureSpriteView.swift */; };
@@ -93,6 +94,7 @@
 		CABCBAFC5BE6C93BC7615722 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CC6DF5F6D203AF00F28F0795 /* SessionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionData.swift; sourceTree = "<group>"; };
 		D42E60C01944427749F3A837 /* RoomInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomInfoTests.swift; sourceTree = "<group>"; };
+		D72078A7FD34B39EF7580A90 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		EA221585FBB871CB2504786D /* CreatureType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureType.swift; sourceTree = "<group>"; };
 		ED5FCDCBD1B87DAFB21C6830 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F53EC35E5F3EE5039009E917 /* RoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomView.swift; sourceTree = "<group>"; };
@@ -132,6 +134,7 @@
 				37A05E9A0BB497F97DCA2375 /* NotchContentView.swift */,
 				9612774E06FC2528A320C225 /* OnboardingView.swift */,
 				F53EC35E5F3EE5039009E917 /* RoomView.swift */,
+				D72078A7FD34B39EF7580A90 /* StatsView.swift */,
 				D9236698D70945CE1CAFB898 /* Components */,
 			);
 			path = Views;
@@ -364,6 +367,7 @@
 				76BBFC0A3FD6F9F465229AB4 /* SessionStore.swift in Sources */,
 				C59FF3BA1A0679902FCB5BF6 /* SocketServer.swift in Sources */,
 				ABA1A08C987E488DF347FF54 /* StateMachine.swift in Sources */,
+				CE96A169BD85A26B09493F9A /* StatsView.swift in Sources */,
 				DAE848DD2CE57399BFFA5F29 /* UserProfile.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -528,7 +532,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.36;
+				MARKETING_VERSION = 0.2.37;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};
@@ -589,7 +593,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.36;
+				MARKETING_VERSION = 0.2.37;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};

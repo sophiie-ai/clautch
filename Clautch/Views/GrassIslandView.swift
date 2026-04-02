@@ -239,6 +239,7 @@ struct GrassIslandView: View {
                         color: creature.isLocal ? .white.opacity(0.15) : .clear,
                         radius: creature.isLocal ? 3 : 0
                     )
+                    .help(creatureTooltip(creature))
                     .contextMenu {
                         if creature.isLocal {
                             ForEach(PeerReaction.allCases) { reaction in
@@ -322,6 +323,14 @@ struct GrassIslandView: View {
         let m = Int(interval) / 60
         let s = Int(interval) % 60
         return m > 0 ? "\(m)m \(s)s" : "\(s)s"
+    }
+
+    private func creatureTooltip(_ creature: CreatureDisplay) -> String {
+        var parts = [creature.displayName, creature.state.task.displayLabel]
+        if let duration = creature.sessionDuration {
+            parts.append(formatDuration(duration))
+        }
+        return parts.joined(separator: " · ")
     }
 
     private func creatureOffset(for creature: CreatureDisplay, in width: CGFloat) -> CGFloat {

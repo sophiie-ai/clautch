@@ -33,10 +33,10 @@ final class SessionStore {
         }
     }
 
-    /// Remove sessions that have been inactive for more than 10 minutes.
+    /// Remove sessions that have been inactive for more than 5 minutes.
     func cleanupStale() {
         sessions.removeAll { session in
-            Date().timeIntervalSince(session.state.lastActivity) > 600
+            Date().timeIntervalSince(session.state.lastActivity) > 300
         }
     }
 }

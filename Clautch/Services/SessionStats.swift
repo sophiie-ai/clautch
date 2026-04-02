@@ -76,6 +76,29 @@ final class SessionStats {
         return total
     }
 
+    /// Daily totals for the current week (Mon–Sun), ordered by day.
+    var weekDays: [(label: String, seconds: TimeInterval)] {
+        let calendar = Calendar.current
+        let today = Date()
+        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start else {
+            return []
+        }
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "EEE"
+        var result: [(String, TimeInterval)] = []
+        for dayOffset in 0..<7 {
+            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
+            let key = Self.dateKey(for: day)
+            var total = dailyTotals[key] ?? 0
+            // Add in-progress time for today
+            if key == Self.dateKey(for: today), let start = trackingStart {
+                total += Date().timeIntervalSince(start)
+            }
+            result.append((dayFormatter.string(from: day), total))
+        }
+        return result
+    }
+
     /// Format seconds as "Xh Ym".
     static func format(_ seconds: TimeInterval) -> String {
         let h = Int(seconds) / 3600

@@ -8,6 +8,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var notchPanel: NotchPanel?
     private var onboardingWindow: NSWindow?
     private var roomWindow: NSWindow?
+    private var statsWindow: NSWindow?
     private var statusItem: NSStatusItem?
     private var sessionBadgeTimer: Timer?
     private let logger = Logger(subsystem: "com.clautch.app", category: "AppDelegate")
@@ -170,6 +171,49 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.roomWindow = window
     }
 
+    // MARK: - Stats Window
+
+    @objc private func showStatsWindow() {
+        if let existing = statsWindow {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            existing.makeKeyAndOrderFront(nil)
+            existing.orderFrontRegardless()
+            return
+        }
+
+        let statsView = StatsView()
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 320),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        window.title = "Clautch Usage Stats"
+        window.contentView = NSHostingView(rootView: statsView)
+        window.isReleasedWhenClosed = false
+
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
+        watchForResignActive()
+
+        var token: NSObjectProtocol?
+        token = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            self?.statsWindow = nil
+            self?.returnToAccessoryIfNeeded()
+            if let token { NotificationCenter.default.removeObserver(token) }
+        }
+
+        self.statsWindow = window
+    }
+
     // MARK: - Notch Panel
 
     private static let preferredScreenKey = "com.clautch.preferredScreen"
@@ -286,6 +330,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let statsItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         statsItem.tag = 150
         menu.addItem(statsItem)
+
+        let statsWindowItem = NSMenuItem(
+            title: "Usage Stats…",
+            action: #selector(showStatsWindow),
+            keyEquivalent: ""
+        )
+        statsWindowItem.target = self
+        menu.addItem(statsWindowItem)
 
         // Sessions header (dynamic content filled in menuWillOpen)
         menu.addItem(.separator())
@@ -479,7 +531,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func returnToAccessoryIfNeeded() {
-        guard onboardingWindow == nil && roomWindow == nil else { return }
+        guard onboardingWindow == nil && roomWindow == nil && statsWindow == nil else { return }
         if let token = resignToken {
             NotificationCenter.default.removeObserver(token)
             resignToken = nil
