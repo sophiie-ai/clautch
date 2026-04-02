@@ -456,74 +456,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Menu Actions
 
-    private var updateCheckTimer: Timer?
-    private var sparkleCloseToken: NSObjectProtocol?
+    private var resignToken: NSObjectProtocol?
 
     @objc private func checkForUpdates() {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         updaterController.checkForUpdates(nil)
-
-        // Poll briefly to find and surface the Sparkle window, then stop.
-        var attempts = 0
-        var surfaced = false
-        updateCheckTimer?.invalidate()
-        updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] timer in
-            attempts += 1
-
-            let sparkleWindows = NSApp.windows.filter { window in
-                window != self?.notchPanel &&
-                window != self?.onboardingWindow &&
-                window != self?.roomWindow &&
-                window.isVisible &&
-                window.title != ""
-            }
-
-            if !surfaced && !sparkleWindows.isEmpty {
-                for window in sparkleWindows {
-                    window.orderFrontRegardless()
-                }
-                surfaced = true
-                self?.watchForSparkleClose()
-            }
-
-            // Stop once surfaced, or after 10s timeout
-            let done = surfaced || attempts > 20
-            if done {
-                timer.invalidate()
-                self?.updateCheckTimer = nil
-                // If we never found a Sparkle window, go back to accessory
-                if !surfaced {
-                    self?.returnToAccessoryIfNeeded()
-                }
-            }
-        }
+        watchForResignActive()
     }
 
-    /// Watch for all non-owned windows closing so we can return to accessory mode.
-    private func watchForSparkleClose() {
-        guard sparkleCloseToken == nil else { return }
-        sparkleCloseToken = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
+    /// Return to accessory mode as soon as the app loses focus.
+    /// Covers Sparkle alerts, sheets, and any other transient windows.
+    private func watchForResignActive() {
+        guard resignToken == nil else { return }
+        resignToken = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            // Short delay to let window fully close
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self?.returnToAccessoryIfNeeded()
-            }
+            self?.returnToAccessoryIfNeeded()
         }
     }
 
     private func returnToAccessoryIfNeeded() {
         guard onboardingWindow == nil && roomWindow == nil else { return }
-        let hasOtherWindows = NSApp.windows.contains { window in
-            window != notchPanel && window.isVisible && window.title != ""
-        }
-        guard !hasOtherWindows else { return }
-        if let token = sparkleCloseToken {
+        if let token = resignToken {
             NotificationCenter.default.removeObserver(token)
-            sparkleCloseToken = nil
+            resignToken = nil
         }
         NSApp.setActivationPolicy(.accessory)
     }
