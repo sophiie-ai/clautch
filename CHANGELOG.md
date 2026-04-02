@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.41](https://github.com/sophiie-ai/clautch/compare/v0.2.40...v0.2.41) (2026-04-02)
+
+
+### Features
+
+* chat bubbles, reaction animations, CloudKit subscriptions, room expiry, activity feed, and performance optimizations ([b2d2784](https://github.com/sophiie-ai/clautch/commit/b2d278437dc9dd311233f65b5e76c48a3e2e0eba))
+
 ## [0.2.40](https://github.com/sophiie-ai/clautch/compare/v0.2.39...v0.2.40) (2026-04-02)
 
 
