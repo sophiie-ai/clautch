@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.39](https://github.com/sophiie-ai/clautch/compare/v0.2.38...v0.2.39) (2026-04-02)
+
+
+### Features
+
+* usage stats window, peer tooltips, keychain tokens, and fixes ([2bca675](https://github.com/sophiie-ai/clautch/commit/2bca67554a662c0b8b002499f053f6603450b336))
+
 ## [0.2.38](https://github.com/sophiie-ai/clautch/compare/v0.2.37...v0.2.38) (2026-04-02)
 
 
