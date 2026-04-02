@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.38](https://github.com/sophiie-ai/clautch/compare/v0.2.37...v0.2.38) (2026-04-02)
+
+
+### Features
+
+* sync creature positions across room peers via CloudKit ([93a6833](https://github.com/sophiie-ai/clautch/commit/93a6833b8df0137d2db7c971b6596a4cc44571f8))
+
 ## [0.2.37](https://github.com/sophiie-ai/clautch/compare/v0.2.36...v0.2.37) (2026-04-02)
 
 
