@@ -457,20 +457,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Menu Actions
 
     private var updateCheckTimer: Timer?
+    private var sparkleCloseToken: NSObjectProtocol?
 
     @objc private func checkForUpdates() {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         updaterController.checkForUpdates(nil)
 
-        // Poll every 0.5s to find and bring Sparkle windows to front.
-        // Sparkle creates windows asynchronously, so we can't predict when.
+        // Poll briefly to find and surface the Sparkle window, then stop.
         var attempts = 0
+        var surfaced = false
         updateCheckTimer?.invalidate()
         updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] timer in
             attempts += 1
 
-            // Find any window not owned by us (Sparkle windows)
             let sparkleWindows = NSApp.windows.filter { window in
                 window != self?.notchPanel &&
                 window != self?.onboardingWindow &&
@@ -479,23 +479,53 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 window.title != ""
             }
 
-            for window in sparkleWindows {
-                NSApp.setActivationPolicy(.regular)
-                NSApp.activate(ignoringOtherApps: true)
-                window.level = .floating
-                window.orderFrontRegardless()
-                window.level = .normal
+            if !surfaced && !sparkleWindows.isEmpty {
+                for window in sparkleWindows {
+                    window.orderFrontRegardless()
+                }
+                surfaced = true
+                self?.watchForSparkleClose()
             }
 
-            // Stop after 30s or when no Sparkle windows remain after finding some
-            if attempts > 60 {
+            // Stop once surfaced, or after 10s timeout
+            let done = surfaced || attempts > 20
+            if done {
                 timer.invalidate()
                 self?.updateCheckTimer = nil
-                if self?.onboardingWindow == nil && self?.roomWindow == nil {
-                    NSApp.setActivationPolicy(.accessory)
+                // If we never found a Sparkle window, go back to accessory
+                if !surfaced {
+                    self?.returnToAccessoryIfNeeded()
                 }
             }
         }
+    }
+
+    /// Watch for all non-owned windows closing so we can return to accessory mode.
+    private func watchForSparkleClose() {
+        guard sparkleCloseToken == nil else { return }
+        sparkleCloseToken = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // Short delay to let window fully close
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self?.returnToAccessoryIfNeeded()
+            }
+        }
+    }
+
+    private func returnToAccessoryIfNeeded() {
+        guard onboardingWindow == nil && roomWindow == nil else { return }
+        let hasOtherWindows = NSApp.windows.contains { window in
+            window != notchPanel && window.isVisible && window.title != ""
+        }
+        guard !hasOtherWindows else { return }
+        if let token = sparkleCloseToken {
+            NotificationCenter.default.removeObserver(token)
+            sparkleCloseToken = nil
+        }
+        NSApp.setActivationPolicy(.accessory)
     }
 
     @objc private func toggleNotifications() {
