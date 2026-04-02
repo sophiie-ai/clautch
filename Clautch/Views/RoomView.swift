@@ -9,6 +9,18 @@ struct RoomView: View {
     @State private var copiedCode = false
     @State private var chatInput = ""
     @State private var activityFeed = RoomActivityFeed.shared
+    @State private var showKeychainAlert = false
+    @State private var pendingAction: PendingRoomAction?
+
+    private enum PendingRoomAction {
+        case create
+        case join(String)
+    }
+
+    private static let keychainAcceptedKey = "com.clautch.keychainAccepted"
+    private var keychainAccepted: Bool {
+        UserDefaults.standard.bool(forKey: Self.keychainAcceptedKey)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,6 +45,17 @@ struct RoomView: View {
             }
         }
         .frame(minWidth: 300, minHeight: 350)
+        .alert("Keychain Storage", isPresented: $showKeychainAlert) {
+            Button("Allow") {
+                UserDefaults.standard.set(true, forKey: Self.keychainAcceptedKey)
+                executePendingAction()
+            }
+            Button("Cancel", role: .cancel) {
+                pendingAction = nil
+            }
+        } message: {
+            Text("Clautch stores room invite tokens in your macOS Keychain to keep them secure. The Keychain encrypts data at rest and protects it with your login password, so tokens are never stored in plain text.")
+        }
     }
 
     // MARK: - Connected
@@ -256,15 +279,11 @@ struct RoomView: View {
 
             // Create room
             Button(action: {
-                isLoading = true
-                errorMessage = nil
-                Task {
-                    do {
-                        _ = try await roomManager.createRoom()
-                    } catch {
-                        errorMessage = error.localizedDescription
-                    }
-                    isLoading = false
+                if keychainAccepted {
+                    performCreate()
+                } else {
+                    pendingAction = .create
+                    showKeychainAlert = true
                 }
             }) {
                 Label("Create Room", systemImage: "plus.circle.fill")
@@ -301,15 +320,11 @@ struct RoomView: View {
                     .cornerRadius(10)
 
                 Button(action: {
-                    isLoading = true
-                    errorMessage = nil
-                    Task {
-                        do {
-                            try await roomManager.joinRoom(shareableCode: joinCode)
-                        } catch {
-                            errorMessage = error.localizedDescription
-                        }
-                        isLoading = false
+                    if keychainAccepted {
+                        performJoin(joinCode)
+                    } else {
+                        pendingAction = .join(joinCode)
+                        showKeychainAlert = true
                     }
                 }) {
                     Text("Join Room")
@@ -376,6 +391,43 @@ struct RoomView: View {
     }
 
     // MARK: - Actions
+
+    private func performCreate() {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                _ = try await roomManager.createRoom()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+        }
+    }
+
+    private func performJoin(_ code: String) {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                try await roomManager.joinRoom(shareableCode: code)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+        }
+    }
+
+    private func executePendingAction() {
+        guard let action = pendingAction else { return }
+        pendingAction = nil
+        switch action {
+        case .create:
+            performCreate()
+        case .join(let code):
+            performJoin(code)
+        }
+    }
 
     private func sendChat() {
         let msg = chatInput.trimmingCharacters(in: .whitespaces)

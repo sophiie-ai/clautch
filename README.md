@@ -10,11 +10,20 @@ A macOS notch companion for dev teams. Pixel-art creatures live in your MacBook'
 - **Claude Code integration** — creature reacts in real time: thinking, working, sleeping, compacting
 - **Visual state effects** — thought bubbles, sparkle particles, floating z's, pulsing warnings
 - **Emotions** — creature shows happy/sad reactions based on tool success or failure
-- **Team rooms** — CloudKit-backed rooms with 6-char codes; see teammates' creatures
-- **Creature interactions** — creatures face toward each other when in a room
+- **Team rooms** — CloudKit-backed rooms with 8-char codes and invite tokens; see teammates' creatures
+- **Chat & reactions** — send messages and pixel-art reactions to teammates via the room
+- **Activity feed** — scrollable history of joins, leaves, chats, and reactions in the room view
+- **Push updates** — CloudKit subscriptions for near-real-time peer sync
+- **Peer signing** — Ed25519 signatures prevent impersonation in rooms
+- **Keychain storage** — room invite tokens stored securely in macOS Keychain
+- **Day/night sky** — time-of-day sky gradient with sunrise, sunset, and stars
+- **Creature interactions** — creatures face toward each other, idle yawns and look-arounds
 - **Session tracking** — menu bar shows active sessions with state icons
+- **Usage stats** — daily and weekly session time with a bar chart
+- **Settings window** — tabbed preferences for display, notifications, and general options
 - **Notifications** — optional macOS alerts on session complete or tool errors
-- **Launch at Login** — one-click toggle in the menu
+- **Accessibility** — VoiceOver labels on creatures, controls, and onboarding elements
+- **Launch at Login** — one-click toggle in Settings
 - **Auto-updates** — Sparkle integration for seamless updates
 - **6 creature types** — Ghost, Cat, Robot, Mushroom, Slime, Owl
 - **Color presets** — Sky, Rose, Mint, Lavender, Lemon, Coral
@@ -90,17 +99,26 @@ Hooks auto-repair every 60 seconds if removed or overwritten.
 
 ### Rooms
 
-Create a room from the menu bar → Room. Share the 6-character code with teammates. Each person's creature appears on everyone's notch island, reflecting their Claude Code activity in real time. Powered by CloudKit — no server required.
+Create a room from the menu bar → Room. Share the invite code with teammates. Each person's creature appears on everyone's notch island, reflecting their Claude Code activity in real time.
+
+- **8-character room codes** with cryptographic invite tokens for secure access
+- **Invite tokens** stored in macOS Keychain (you'll be prompted on first use)
+- **Peer signing** via Ed25519 prevents others from impersonating your creature
+- **Push notifications** via CloudKit subscriptions for near-real-time updates (polling fallback)
+- **Auto-expiry** cleans up rooms with no active peers after 2 hours
+- **Offline handling** — graceful reconnection when CloudKit is temporarily unreachable
+
+Powered by CloudKit — no server required.
 
 ## Menu bar
 
 The ghost icon in the menu bar provides:
 
 - Active session list with state icons (brain, hammer, moon, etc.)
-- Room management (create/join/leave)
+- Room management (create/join/leave, copy invite code, send reactions)
+- Usage stats (today + this week)
 - Creature customization
-- Notification toggle
-- Launch at Login toggle
+- Settings (Cmd+,) — display, notifications, and general preferences
 - Check for Updates
 
 ## Development
