@@ -8,6 +8,7 @@ struct RoomView: View {
     @State private var isLoading = false
     @State private var copiedCode = false
     @State private var chatInput = ""
+    @State private var activityFeed = RoomActivityFeed.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,48 +38,47 @@ struct RoomView: View {
     // MARK: - Connected
 
     private var connectedView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             // Room code display
             if let room = roomManager.currentRoom {
-                VStack(spacing: 6) {
-                    Text("Room Code")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
-
+                HStack(spacing: 8) {
                     Button(action: copyCode) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 6) {
                             Text(room.roomCode)
-                                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                                .font(.system(size: 16, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.primary)
-                                .tracking(4)
+                                .tracking(2)
 
                             Image(systemName: copiedCode ? "checkmark" : "doc.on.doc")
-                                .font(.system(size: 12))
+                                .font(.system(size: 10))
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
                         .background(Color.primary.opacity(0.06))
-                        .cornerRadius(10)
+                        .cornerRadius(8)
                     }
                     .buttonStyle(.plain)
 
-                    Text(copiedCode ? "Copied invite link!" : "Click to copy invite")
+                    Text(copiedCode ? "Copied!" : "Copy invite")
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Text("\(peerList.count + 1) online")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
-                .padding(.top, 16)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
             }
 
             Divider()
                 .padding(.horizontal, 20)
 
-            // Peer list
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Team (\(peerList.count + 1))")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-
+            // Peer list (compact)
+            VStack(alignment: .leading, spacing: 4) {
                 // Self
                 if let profile = UserProfile.current {
                     peerRow(
@@ -101,7 +101,52 @@ struct RoomView: View {
             }
             .padding(.horizontal, 20)
 
-            Spacer()
+            Divider()
+                .padding(.horizontal, 20)
+
+            // Activity feed
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    if activityFeed.events.isEmpty {
+                        Text("No activity yet")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(activityFeed.events) { event in
+                            HStack(spacing: 6) {
+                                Image(systemName: event.icon)
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(eventColor(event.kind))
+                                    .frame(width: 12)
+
+                                if event.kind == .chat {
+                                    Text("\(event.peerName): ")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(.primary) +
+                                    Text(event.text)
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text(event.text)
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+
+                                Text(event.timeAgo)
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+            .frame(maxHeight: .infinity)
 
             // Chat input
             HStack(spacing: 8) {
@@ -123,11 +168,14 @@ struct RoomView: View {
                 .disabled(chatInput.isEmpty)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 8)
+            .padding(.bottom, 4)
 
             // Leave button
             Button(action: {
-                Task { await roomManager.leaveRoom() }
+                Task {
+                    activityFeed.clear()
+                    await roomManager.leaveRoom()
+                }
             }) {
                 Text("Leave Room")
                     .font(.system(size: 13, weight: .medium))
@@ -139,7 +187,7 @@ struct RoomView: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 20)
-            .padding(.bottom, 16)
+            .padding(.bottom, 12)
         }
     }
 
@@ -183,6 +231,15 @@ struct RoomView: View {
         case .thinking: return .yellow
         case .sleeping: return .purple
         case .compacting: return .red
+        }
+    }
+
+    private func eventColor(_ kind: RoomEvent.Kind) -> Color {
+        switch kind {
+        case .chat:     return .blue
+        case .join:     return .green
+        case .leave:    return .orange
+        case .reaction: return .yellow
         }
     }
 
@@ -318,7 +375,9 @@ struct RoomView: View {
     private func sendChat() {
         let msg = chatInput.trimmingCharacters(in: .whitespaces)
         guard !msg.isEmpty else { return }
+        let name = UserProfile.current?.displayName ?? "You"
         roomManager.sendChat(msg)
+        activityFeed.addChat(from: name, message: msg)
         chatInput = ""
     }
 

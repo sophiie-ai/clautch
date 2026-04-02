@@ -165,6 +165,7 @@ struct GrassIslandView: View {
                 // Collapsed: nothing drawn — transparent background, creature only
             }
         }
+        .drawingGroup()  // GPU-rasterize static scenic content
         .overlay {
             // SwiftUI creature sprites
             GeometryReader { geo in
@@ -186,42 +187,27 @@ struct GrassIslandView: View {
                     ? bottom - groundH - logSpace - statusSpace - scenePad
                     : notchHeight + dropHeight
 
-                ForEach(creatures.sorted(by: { $0.xPosition < $1.xPosition })) { creature in
-                    TimelineView(.animation(minimumInterval: 1.0 / 12)) { timeline in
-                        let t = timeline.date.timeIntervalSinceReferenceDate
-                        let walkHop: CGFloat = (isWalking && creature.isLocal)
-                            ? -3 * abs(CGFloat(sin(t * .pi * 4)))
-                            : 0
-
-                        CreatureSpriteView(
-                            state: creature.state,
-                            creatureType: creature.creatureType,
-                            colorPreset: creature.colorPreset,
-                            accessory: creature.accessory,
-                            isExpanded: isExpanded,
-                            isWalking: isWalking && creature.isLocal
-                        )
-                        .frame(width: creatureSize, height: creatureSize)
-                        .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
-                        .scaleEffect(
-                            x: 1 + (1 - bounceScale) * 0.5,
-                            y: bounceScale,
-                            anchor: .bottom
-                        )
-                        .offset(y: bounceOffset + walkHop)
-                    }
+                ForEach(creatures) { creature in
+                    CreatureSpriteView(
+                        state: creature.state,
+                        creatureType: creature.creatureType,
+                        colorPreset: creature.colorPreset,
+                        accessory: creature.accessory,
+                        isExpanded: isExpanded,
+                        isWalking: isWalking && creature.isLocal
+                    )
+                    .frame(width: creatureSize, height: creatureSize)
+                    .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
+                    .scaleEffect(
+                        x: 1 + (1 - bounceScale) * 0.5,
+                        y: bounceScale,
+                        anchor: .bottom
+                    )
+                    .offset(y: bounceOffset)
                     .overlay(alignment: .top) {
                         VStack(spacing: 2) {
                             if isExpanded, let chat = creature.chatMessage {
-                                Text(String(chat.prefix(50)))
-                                    .font(.system(size: 7, weight: .medium, design: .rounded))
-                                    .foregroundStyle(.black)
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 2)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(.white.opacity(0.9))
-                                    )
+                                PixelChatBubble(text: String(chat.prefix(50)))
                                     .transition(.asymmetric(
                                         insertion: .scale(scale: 0.5).combined(with: .opacity),
                                         removal: .opacity
@@ -229,14 +215,10 @@ struct GrassIslandView: View {
                                     .id("chat-\(creature.id)-\(chat)")
                             }
 
-                            if let reaction = creature.reaction {
-                                PixelReactionView(reaction: reaction)
-                                    .frame(width: 15, height: 15)
-                                    .transition(.asymmetric(
-                                        insertion: .scale(scale: 0.3).combined(with: .opacity).combined(with: .offset(y: 4)),
-                                        removal: .opacity.combined(with: .offset(y: -6))
-                                    ))
-                                    .id("reaction-\(creature.id)-\(reaction.rawValue)")
+                            if isExpanded, let reaction = creature.reaction,
+                               creature.reactionActive {
+                                ReactionFloater(reaction: reaction)
+                                    .id("reaction-\(creature.id)-\(reaction.rawValue)-\(creature.reactionActive)")
                             }
 
                             if isExpanded && creature.isLocal {
@@ -525,6 +507,81 @@ struct StatusBarOverlay: View {
         case .tired:           return .purple
         case .neutral:         return .gray
         }
+    }
+}
+
+// MARK: - Pixel Chat Bubble
+
+/// A pixel-art speech bubble with a small triangular tail.
+struct PixelChatBubble: View {
+    let text: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(text)
+                .font(.system(size: 7, weight: .medium, design: .rounded))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(
+                    PixelBubbleShape()
+                        .fill(.white.opacity(0.92))
+                )
+                .background(
+                    PixelBubbleShape()
+                        .stroke(Color.black.opacity(0.15), lineWidth: 0.5)
+                )
+
+            // Pixel tail (3 rows of decreasing width)
+            VStack(spacing: 0) {
+                Rectangle().fill(.white.opacity(0.92)).frame(width: 5, height: 1)
+                Rectangle().fill(.white.opacity(0.92)).frame(width: 3, height: 1)
+                Rectangle().fill(.white.opacity(0.92)).frame(width: 1, height: 1)
+            }
+        }
+    }
+}
+
+/// Stepped rectangle shape for pixel aesthetic.
+private struct PixelBubbleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let s: CGFloat = 1.5  // pixel step size
+        var p = Path()
+        // Rounded-ish rectangle with stepped corners
+        p.move(to: CGPoint(x: rect.minX + s, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX - s, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + s))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - s))
+        p.addLine(to: CGPoint(x: rect.maxX - s, y: rect.maxY))
+        p.addLine(to: CGPoint(x: rect.minX + s, y: rect.maxY))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - s))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.minY + s))
+        p.closeSubpath()
+        return p
+    }
+}
+
+// MARK: - Reaction Floater
+
+/// Animates a reaction floating upward and fading out.
+struct ReactionFloater: View {
+    let reaction: PeerReaction
+    @State private var floatOffset: CGFloat = 0
+    @State private var opacity: Double = 1.0
+
+    var body: some View {
+        PixelReactionView(reaction: reaction)
+            .frame(width: 15, height: 15)
+            .offset(y: floatOffset)
+            .opacity(opacity)
+            .onAppear {
+                withAnimation(.easeOut(duration: 2.5)) {
+                    floatOffset = -14
+                }
+                withAnimation(.easeIn(duration: 2.5).delay(0.5)) {
+                    opacity = 0
+                }
+            }
     }
 }
 

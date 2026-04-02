@@ -27,6 +27,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Request notification permission
         NotificationService.shared.requestPermissionIfNeeded()
 
+        // Register for CloudKit silent push notifications
+        NSApp.registerForRemoteNotifications(matching: [])  // silent pushes only
+
         // Setup menu bar
         setupStatusItem()
 
@@ -62,6 +65,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ejectInstallerVolumes()
 
         logger.info("Clautch launched successfully")
+    }
+
+    func application(_ application: NSApplication, didReceiveRemoteNotification userInfo: [String: Any]) {
+        // CloudKit silent push — trigger immediate peer sync
+        Task { @MainActor in
+            RoomManager.shared.handlePushNotification()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

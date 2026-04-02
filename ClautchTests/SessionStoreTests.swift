@@ -39,6 +39,7 @@ final class SessionStoreTests: XCTestCase {
         let stale = store.getOrCreate(id: "stale")
         stale.state.lastActivity = Date(timeIntervalSinceNow: -120) // 2 min ago
 
+        store.invalidateCache()
         XCTAssertEqual(store.activeSessions.count, 1)
         XCTAssertEqual(store.activeSessions.first?.id, "fresh")
     }
@@ -53,6 +54,7 @@ final class SessionStoreTests: XCTestCase {
         let newer = store.getOrCreate(id: "newer")
         newer.state.lastActivity = Date()
 
+        store.invalidateCache()
         XCTAssertEqual(store.effectiveSession?.id, "newer")
     }
 
@@ -65,6 +67,7 @@ final class SessionStoreTests: XCTestCase {
         let store = SessionStore()
         let s = store.getOrCreate(id: "old")
         s.state.lastActivity = Date(timeIntervalSinceNow: -120)
+        store.invalidateCache()
         XCTAssertNil(store.effectiveSession)
     }
 

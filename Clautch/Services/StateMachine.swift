@@ -33,6 +33,7 @@ final class StateMachine {
 
         let session = sessionStore.getOrCreate(id: event.sessionId)
         session.applyEvent(event)
+        sessionStore.invalidateCache()
 
         if event.eventType == .sessionEnd {
             sessionStore.markInactive(id: event.sessionId)

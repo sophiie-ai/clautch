@@ -32,17 +32,26 @@ final class PeerStore {
     }
 
     /// Update the store with fresh data from CloudKit.
-    /// Detects new reactions and chat messages from peers and posts notifications.
+    /// Detects new reactions, chat messages, joins, and leaves — posts notifications and feeds activity.
     func update(with fetchedPeers: [(CKRecord.ID, PeerState)]) {
         let myId = UserProfile.current?.peerId
+        let activity = RoomActivityFeed.shared
 
         var newPeers: [String: PeerState] = [:]
         var newRecordIDs: [String: CKRecord.ID] = [:]
+        var fetchedIds = Set<String>()
 
         for (recordID, peer) in fetchedPeers {
-            // Detect new reactions/chats from other peers
+            fetchedIds.insert(peer.peerId)
+
+            // Detect new reactions/chats/joins from other peers
             if peer.peerId != myId {
                 let oldPeer = peers[peer.peerId]
+
+                // New peer joined
+                if oldPeer == nil && peer.isActive {
+                    activity.addJoin(peer.displayName)
+                }
 
                 // New reaction that wasn't there before
                 if let reaction = peer.reaction, peer.hasActiveReaction,
@@ -50,6 +59,7 @@ final class PeerStore {
                     NotificationService.shared.postReactionReceived(
                         from: peer.displayName, reaction: reaction
                     )
+                    activity.addReaction(from: peer.displayName, reaction: reaction)
                 }
 
                 // New chat message
@@ -58,11 +68,21 @@ final class PeerStore {
                     NotificationService.shared.postChatReceived(
                         from: peer.displayName, message: chat
                     )
+                    activity.addChat(from: peer.displayName, message: chat)
                 }
             }
 
             newPeers[peer.peerId] = peer
             newRecordIDs[peer.peerId] = recordID
+        }
+
+        // Detect peers that left (were visible before, now gone)
+        if myId != nil {
+            for (peerId, oldPeer) in peers where peerId != myId {
+                if oldPeer.isVisible && !fetchedIds.contains(peerId) {
+                    activity.addLeave(oldPeer.displayName)
+                }
+            }
         }
 
         peers = newPeers

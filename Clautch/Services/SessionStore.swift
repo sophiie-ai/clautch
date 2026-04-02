@@ -6,14 +6,14 @@ import Foundation
 final class SessionStore {
     private(set) var sessions: [SessionData] = []
 
-    /// Sessions that have had activity in the last 60 seconds.
-    var activeSessions: [SessionData] {
-        sessions.filter { $0.state.isActive }
-    }
+    /// Cached derived state — invalidated on mutations.
+    private(set) var activeSessions: [SessionData] = []
+    private(set) var effectiveSession: SessionData?
 
-    /// The primary session (most recently active).
-    var effectiveSession: SessionData? {
-        activeSessions
+    private func refreshDerived() {
+        let active = sessions.filter { $0.state.isActive }
+        activeSessions = active
+        effectiveSession = active
             .sorted { $0.state.lastActivity > $1.state.lastActivity }
             .first
     }
@@ -24,19 +24,30 @@ final class SessionStore {
         }
         let session = SessionData(id: id)
         sessions.append(session)
+        refreshDerived()
         return session
     }
 
     func markInactive(id: String) {
         if let session = sessions.first(where: { $0.id == id }) {
             session.state.task = .sleeping
+            refreshDerived()
         }
+    }
+
+    /// Refresh derived state after external mutations (e.g. session state changes).
+    func invalidateCache() {
+        refreshDerived()
     }
 
     /// Remove sessions that have been inactive for more than 5 minutes.
     func cleanupStale() {
+        let before = sessions.count
         sessions.removeAll { session in
             Date().timeIntervalSince(session.state.lastActivity) > 300
+        }
+        if sessions.count != before {
+            refreshDerived()
         }
     }
 }

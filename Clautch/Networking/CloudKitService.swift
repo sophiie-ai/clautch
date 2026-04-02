@@ -173,6 +173,36 @@ final class CloudKitService: @unchecked Sendable {
         }
     }
 
+    // MARK: - Room Expiry
+
+    /// Check if a room has any active presences. If none are active for > 2 hours, delete it.
+    func expireRoomIfStale(roomCode: String) async throws -> Bool {
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
+        return try await withRetry {
+            // Check for any active presence in this room
+            let activeCutoff = Date().addingTimeInterval(-300) as NSDate // 5 min
+            let predicate = NSPredicate(
+                format: "roomCode == %@ AND heartbeat > %@", roomCode, activeCutoff
+            )
+            let query = CKQuery(recordType: Self.presenceType, predicate: predicate)
+            let (results, _) = try await db.records(matching: query, resultsLimit: 1)
+
+            if results.isEmpty {
+                // No active peers — check if the room itself is old enough to expire
+                if let roomRecord = try await self.findRoom(code: roomCode),
+                   let createdAt = roomRecord["createdAt"] as? Date,
+                   Date().timeIntervalSince(createdAt) > 7200 { // 2 hours
+                    try await db.deleteRecord(withID: roomRecord.recordID)
+                    // Also cleanup all stale presences for this room
+                    try await self.cleanupStalePresences(roomCode: roomCode)
+                    self.logger.info("Expired stale room: \(roomCode)")
+                    return true
+                }
+            }
+            return false
+        }
+    }
+
     // MARK: - Retry Logic
 
     /// Retry transient CloudKit errors with exponential backoff.
@@ -204,6 +234,40 @@ final class CloudKitService: @unchecked Sendable {
         default:
             return false
         }
+    }
+
+    // MARK: - Subscriptions
+
+    private static let presenceSubscriptionID = "presence-changes"
+
+    /// Subscribe to presence changes for a room. CloudKit sends silent pushes on changes.
+    func subscribeToPresence(roomCode: String) async throws {
+        guard let db = publicDB else { throw CloudKitUnavailableError() }
+
+        // Remove existing subscription first (idempotent)
+        try? await db.deleteSubscription(withID: Self.presenceSubscriptionID)
+
+        let predicate = NSPredicate(format: "roomCode == %@", roomCode)
+        let subscription = CKQuerySubscription(
+            recordType: Self.presenceType,
+            predicate: predicate,
+            subscriptionID: Self.presenceSubscriptionID,
+            options: [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion]
+        )
+
+        let info = CKSubscription.NotificationInfo()
+        info.shouldSendContentAvailable = true  // silent push
+        subscription.notificationInfo = info
+
+        try await db.save(subscription)
+        logger.info("Subscribed to presence changes for room \(roomCode)")
+    }
+
+    /// Remove the presence subscription.
+    func unsubscribeFromPresence() async {
+        guard let db = publicDB else { return }
+        try? await db.deleteSubscription(withID: Self.presenceSubscriptionID)
+        logger.info("Unsubscribed from presence changes")
     }
 
     // MARK: - Account Check

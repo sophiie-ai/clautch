@@ -65,6 +65,9 @@ struct CreatureSpriteView: View {
                 period: state.task.bobPeriod,
                 amplitude: state.task.bobAmplitude
             )
+            let walkHop: CGFloat = isWalking
+                ? -3 * abs(CGFloat(sin(t * .pi * 4)))
+                : 0
             let activeFrames = isWalking ? creatureType.walkFrames : creatureType.frames
             let frame = Int(t * (isWalking ? 6 : state.task.fps)) % max(activeFrames.count, 1)
 
@@ -80,7 +83,7 @@ struct CreatureSpriteView: View {
                 isExpanded: isExpanded
             )
             .frame(width: 32, height: 32)
-            .offset(y: bob)
+            .offset(y: bob + walkHop)
             // Compacting: pulsing scale
             .scaleEffect(state.task == .compacting
                 ? 0.85 + 0.15 * abs(sin(t * 4))
@@ -98,6 +101,14 @@ private struct CreatureColors: Equatable {
     let eye: Color
     let mouth: Color
     let highlight: Color
+
+    /// Cache key to detect when colors need recomputing.
+    struct Key: Hashable {
+        let type: CreatureType
+        let colorPreset: CreatureColorPreset
+        let task: CreatureTask
+        let emotion: CreatureEmotion
+    }
 
     init(type: CreatureType, colorPreset: CreatureColorPreset, task: CreatureTask, emotion: CreatureEmotion) {
         let taskTint: Color = switch task {
@@ -137,6 +148,25 @@ private struct CreatureColors: Equatable {
     }
 }
 
+/// Thread-safe cache for CreatureColors keyed by creature appearance.
+/// Avoids per-frame NSColor↔sRGB round-trips.
+private final class CreatureColorCache: @unchecked Sendable {
+    static let shared = CreatureColorCache()
+    private var cache: [CreatureColors.Key: CreatureColors] = [:]
+    private let lock = NSLock()
+
+    func colors(for key: CreatureColors.Key) -> CreatureColors {
+        lock.lock()
+        defer { lock.unlock() }
+        if let cached = cache[key] { return cached }
+        let colors = CreatureColors(type: key.type, colorPreset: key.colorPreset, task: key.task, emotion: key.emotion)
+        cache[key] = colors
+        // Cap cache size to prevent unbounded growth
+        if cache.count > 64 { cache.removeAll() ; cache[key] = colors }
+        return colors
+    }
+}
+
 /// Renders any creature type from its pixel grid data with state-driven effects.
 struct PixelCreatureView: View {
     let type: CreatureType
@@ -150,7 +180,8 @@ struct PixelCreatureView: View {
     var isExpanded: Bool = true
 
     private var colors: CreatureColors {
-        CreatureColors(type: type, colorPreset: colorPreset, task: task, emotion: emotion)
+        let key = CreatureColors.Key(type: type, colorPreset: colorPreset, task: task, emotion: emotion)
+        return CreatureColorCache.shared.colors(for: key)
     }
 
     private var grid: [[Int]] {

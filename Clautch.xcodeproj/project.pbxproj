@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0A377F6A4CD2FE55E3A818B7 /* PeerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4390BDECDDDCC6FCE400ED40 /* PeerState.swift */; };
 		1103AA7B710E2F26C6D029CB /* ActivityFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72DA42A6EC862A03CE4FAB8E /* ActivityFeed.swift */; };
+		D6E7F8091A2B3C4D5E6F7A8B /* RoomActivityFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* RoomActivityFeed.swift */; };
 		112DADB586E7D2057D166849 /* CloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD912A5F01994C9E24785F8F /* CloudKitService.swift */; };
 		142CCCB57341EA96272F042E /* BobAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A24772089DC4C3D8257AFED /* BobAnimation.swift */; };
 		25797CEE9C0221F1AED4E7B9 /* HookEventTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E79828A1299FD896FDD55E /* HookEventTests.swift */; };
@@ -78,6 +79,7 @@
 		668377B4E6CDB23F75C0607F /* StateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateMachine.swift; sourceTree = "<group>"; };
 		67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		72DA42A6EC862A03CE4FAB8E /* ActivityFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityFeed.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* RoomActivityFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomActivityFeed.swift; sourceTree = "<group>"; };
 		7A24772089DC4C3D8257AFED /* BobAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BobAnimation.swift; sourceTree = "<group>"; };
 		7A6999253CA6EA31609F60BB /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		7B1A8940C490CCD0E8772503 /* NSScreen+Notch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Notch.swift"; sourceTree = "<group>"; };
@@ -180,6 +182,7 @@
 			isa = PBXGroup;
 			children = (
 				72DA42A6EC862A03CE4FAB8E /* ActivityFeed.swift */,
+				A1B2C3D4E5F60718293A4B5C /* RoomActivityFeed.swift */,
 				F91B03F44A420102018F1805 /* HookInstaller.swift */,
 				67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */,
 				CD8EB93627CF73ABB8107A80 /* PeerSigner.swift */,
@@ -369,6 +372,7 @@
 				4B47143E75DF85C227120C41 /* PeerSigner.swift in Sources */,
 				0A377F6A4CD2FE55E3A818B7 /* PeerState.swift in Sources */,
 				CBDA2473ACF805DD27769C31 /* PeerStore.swift in Sources */,
+				D6E7F8091A2B3C4D5E6F7A8B /* RoomActivityFeed.swift in Sources */,
 				3C0FAB57243E1ABF9687216A /* RoomInfo.swift in Sources */,
 				B6B15D06D1E72E27B450A0D2 /* RoomManager.swift in Sources */,
 				2CFF3A5C1D6EF61293E2D228 /* RoomView.swift in Sources */,

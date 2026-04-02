@@ -122,10 +122,11 @@ struct NotchContentView: View {
         return computeFacing(creatures)
     }
 
+    /// Compute facing directions and return sorted by xPosition (avoids re-sorting in ForEach).
     private func computeFacing(_ creatures: [CreatureDisplay]) -> [CreatureDisplay] {
         guard creatures.count > 1 else { return creatures }
         let sorted = creatures.sorted { $0.xPosition < $1.xPosition }
-        return creatures.map { c in
+        return sorted.map { c in
             var c = c
             // Find nearest other creature
             if let nearest = sorted.filter({ $0.id != c.id })

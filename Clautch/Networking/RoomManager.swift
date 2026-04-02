@@ -24,6 +24,9 @@ final class RoomManager {
     private var lastBroadcastState: PeerState?
     private var lastHeartbeatDate: Date = .distantPast
 
+    /// Whether we have an active CloudKit subscription (skip aggressive polling).
+    private var hasSubscription = false
+
     /// The latest local state to broadcast.
     var localState: PeerState?
 
@@ -73,6 +76,7 @@ final class RoomManager {
             status = .connected
             ensureLocalState()
             startSyncTimer()
+            await setupSubscription(roomCode: code)
             logger.info("Created room: \(code)")
             return code
         } catch {
@@ -139,6 +143,7 @@ final class RoomManager {
             UserDefaults.standard.lastRoomToken = serverToken
             status = .connected
             startSyncTimer()
+            await setupSubscription(roomCode: normalized)
 
             try await fetchPeers()
 
@@ -156,6 +161,8 @@ final class RoomManager {
 
     func leaveRoom() async {
         stopSyncTimer()
+        await cloudKit.unsubscribeFromPresence()
+        hasSubscription = false
 
         if let presenceID = myPresenceRecordID {
             try? await cloudKit.deletePresence(recordID: presenceID)
@@ -298,7 +305,10 @@ final class RoomManager {
 
     private func startSyncTimer() {
         stopSyncTimer()
-        syncTimer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { [weak self] _ in
+        // With subscriptions active, polling is just a heartbeat fallback (10s).
+        // Without subscriptions, poll aggressively (4s).
+        let interval: TimeInterval = hasSubscription ? 10.0 : 4.0
+        syncTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 await self?.syncCycle()
             }
@@ -308,6 +318,28 @@ final class RoomManager {
     private func stopSyncTimer() {
         syncTimer?.invalidate()
         syncTimer = nil
+    }
+
+    /// Set up CloudKit subscription for push-based updates.
+    private func setupSubscription(roomCode: String) async {
+        do {
+            try await cloudKit.subscribeToPresence(roomCode: roomCode)
+            hasSubscription = true
+            // Restart timer with longer interval now that we have push
+            startSyncTimer()
+            logger.info("Push subscription active, polling reduced")
+        } catch {
+            hasSubscription = false
+            logger.warning("Subscription setup failed, using polling fallback: \(error)")
+        }
+    }
+
+    /// Called when a CloudKit push notification arrives — triggers immediate sync.
+    func handlePushNotification() {
+        guard currentRoom != nil else { return }
+        Task { @MainActor in
+            await syncCycle()
+        }
     }
 
     private var syncCycleCount = 0
@@ -364,6 +396,14 @@ final class RoomManager {
 
         if syncCycleCount % 5 == 0 {
             try? await cloudKit.cleanupStalePresences(roomCode: roomCode)
+        }
+
+        // Check room expiry every ~2 minutes (30 cycles * 4s)
+        if syncCycleCount % 30 == 0 {
+            if let expired = try? await cloudKit.expireRoomIfStale(roomCode: roomCode), expired {
+                logger.info("Room expired, leaving")
+                await leaveRoom()
+            }
         }
     }
 
