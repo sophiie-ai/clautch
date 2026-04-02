@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.43](https://github.com/sophiie-ai/clautch/compare/v0.2.42...v0.2.43) (2026-04-02)
+
+
+### Features
+
+* keychain confirmation dialog and README update ([87e1759](https://github.com/sophiie-ai/clautch/commit/87e1759959f6b99b20dac5fadc42f142765ae2cd))
+
 ## [0.2.42](https://github.com/sophiie-ai/clautch/compare/v0.2.41...v0.2.42) (2026-04-02)
 
 
