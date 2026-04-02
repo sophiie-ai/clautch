@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.40](https://github.com/sophiie-ai/clautch/compare/v0.2.39...v0.2.40) (2026-04-02)
+
+
+### Features
+
+* peer signing, day/night sky, idle variety, offline handling, tests ([9cba9d6](https://github.com/sophiie-ai/clautch/commit/9cba9d6e45813d05262b5d01d6979e880541edf4))
+
 ## [0.2.39](https://github.com/sophiie-ai/clautch/compare/v0.2.38...v0.2.39) (2026-04-02)
 
 
