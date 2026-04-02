@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.36](https://github.com/sophiie-ai/clautch/compare/v0.2.35...v0.2.36) (2026-04-02)
+
+
+### Bug Fixes
+
+* return to accessory mode on resign active, not window close ([3844c14](https://github.com/sophiie-ai/clautch/commit/3844c14f49ecde26bb63651abf5eb5cfa7585bc3))
+* stop Sparkle update check from repeatedly stealing focus ([71e7fd8](https://github.com/sophiie-ai/clautch/commit/71e7fd8812eeb3d76d50bf7e9eb1272b93780c60))
+
 ## [0.2.35](https://github.com/sophiie-ai/clautch/compare/v0.2.34...v0.2.35) (2026-04-02)
 
 
