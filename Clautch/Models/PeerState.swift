@@ -112,6 +112,8 @@ struct PeerState: Codable, Sendable, Identifiable {
     let accessory: CreatureAccessory
     let timestamp: Date
     var xPosition: CGFloat?
+    var publicKey: String?
+    var signature: String?
     var reaction: PeerReaction?
     var reactionTimestamp: Date?
     var chatMessage: String?

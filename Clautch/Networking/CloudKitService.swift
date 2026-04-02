@@ -109,6 +109,13 @@ final class CloudKitService: @unchecked Sendable {
             if let x = state.xPosition {
                 record["xPosition"] = x as NSNumber
             }
+            // Peer signing
+            let sig = PeerSigner.sign(
+                peerId: state.peerId, task: state.task.rawValue,
+                emotion: state.emotion.rawValue, timestamp: Date()
+            )
+            record["publicKey"] = PeerSigner.publicKeyString
+            record["signature"] = sig
             record["reaction"] = state.reaction?.rawValue ?? ""
             if let rt = state.reactionTimestamp {
                 record["reactionTimestamp"] = rt as NSDate
@@ -246,10 +253,21 @@ extension PeerState {
         let colorRaw = record["colorPreset"] as? String ?? "none"
         let accessoryRaw = record["accessory"] as? String ?? "none"
         let xPos = record["xPosition"] as? Double
+        let pubKey = record["publicKey"] as? String
+        let sig = record["signature"] as? String
         let reactionRaw = record["reaction"] as? String ?? ""
         let chatMsg = record["chatMessage"] as? String ?? ""
         let chatTs = record["chatTimestamp"] as? Date
         let reactionTs = record["reactionTimestamp"] as? Date
+
+        // Verify signature if present — reject peers with invalid signatures
+        if let pubKey, let sig, !pubKey.isEmpty, !sig.isEmpty {
+            let valid = PeerSigner.verify(
+                signature: sig, publicKey: pubKey,
+                peerId: peerId, task: taskRaw, emotion: emotionRaw, timestamp: heartbeat
+            )
+            if !valid { return nil }
+        }
 
         self.init(
             peerId: peerId,
@@ -261,6 +279,8 @@ extension PeerState {
             accessory: CreatureAccessory(rawValue: accessoryRaw) ?? .none,
             timestamp: heartbeat,
             xPosition: xPos.map { CGFloat(min(max($0, 0), 1)) },
+            publicKey: pubKey,
+            signature: sig,
             reaction: reactionRaw.isEmpty ? nil : PeerReaction(rawValue: reactionRaw),
             reactionTimestamp: reactionTs,
             chatMessage: chatMsg.isEmpty ? nil : String(chatMsg.prefix(50)),

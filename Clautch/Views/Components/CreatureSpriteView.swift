@@ -399,6 +399,35 @@ struct PixelCreatureView: View {
                 )
             }
         }
+
+        // Idle micro-animations: periodic visual variety every ~12s
+        if task == .idle && emotion == .neutral {
+            let cycle = t.truncatingRemainder(dividingBy: 12.0)
+
+            // Look-around: eyes shift left/right briefly (2.0-3.0s in cycle)
+            if cycle > 2.0 && cycle < 3.0 {
+                let progress = (cycle - 2.0) / 1.0
+                let shift = sin(progress * .pi) * 1.5
+                ctx.fill(
+                    Path(CGRect(x: size.width / 2 + shift - 0.5, y: 3 * px, width: 1, height: 1)),
+                    with: .color(.white.opacity(0.5))
+                )
+            }
+
+            // Yawn: small "o" appears briefly (7.0-8.0s in cycle)
+            if cycle > 7.0 && cycle < 8.0 {
+                let progress = (cycle - 7.0) / 1.0
+                let alpha = sin(progress * .pi)
+                let s: CGFloat = 1.5 + alpha
+                ctx.fill(
+                    Path(ellipseIn: CGRect(
+                        x: size.width / 2 - s / 2, y: 5 * px - s / 2,
+                        width: s, height: s
+                    )),
+                    with: .color(Color(red: 0.3, green: 0.3, blue: 0.3).opacity(alpha * 0.6))
+                )
+            }
+        }
     }
 }
 

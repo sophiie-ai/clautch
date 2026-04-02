@@ -61,17 +61,19 @@ struct RoomInfo: Codable, Sendable {
 
 // MARK: - Connection Status
 
-enum ConnectionStatus: Sendable {
+enum ConnectionStatus: Sendable, Equatable {
     case disconnected
     case connecting
     case connected
+    case reconnecting
     case error(String)
 
     var label: String {
         switch self {
-        case .disconnected: return "Not in a room"
-        case .connecting:   return "Connecting…"
-        case .connected:    return "Connected"
+        case .disconnected:  return "Not in a room"
+        case .connecting:    return "Connecting…"
+        case .connected:     return "Connected"
+        case .reconnecting:  return "Reconnecting…"
         case .error(let msg): return "Error: \(msg)"
         }
     }

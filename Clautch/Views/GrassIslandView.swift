@@ -21,10 +21,27 @@ struct GrassIslandView: View {
         }
     }
 
-    private let skyTop = Color(red: 0.15, green: 0.25, blue: 0.45)
-    private let skyBottom = Color(red: 0.25, green: 0.45, blue: 0.55)
     private let grassGreen = Color(red: 0.2, green: 0.5, blue: 0.25)
     private let grassDark = Color(red: 0.12, green: 0.35, blue: 0.15)
+
+    /// Sky colors and star count based on time of day.
+    private var skyTheme: (top: Color, bottom: Color, stars: Int) {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 6..<8:   // Dawn
+            return (Color(red: 0.45, green: 0.30, blue: 0.40),
+                    Color(red: 0.75, green: 0.45, blue: 0.30), 3)
+        case 8..<17:  // Day
+            return (Color(red: 0.20, green: 0.45, blue: 0.75),
+                    Color(red: 0.40, green: 0.65, blue: 0.85), 0)
+        case 17..<19: // Dusk
+            return (Color(red: 0.35, green: 0.20, blue: 0.45),
+                    Color(red: 0.70, green: 0.35, blue: 0.30), 4)
+        default:      // Night
+            return (Color(red: 0.08, green: 0.10, blue: 0.25),
+                    Color(red: 0.12, green: 0.18, blue: 0.35), 14)
+        }
+    }
 
     var body: some View {
         let screen = NSScreen.screens.first(where: { $0.hasNotch })
@@ -89,19 +106,21 @@ struct GrassIslandView: View {
                 let grassY = bottom - groundH - logSpace - statusSpace - scenePad
 
                 // Sky gradient (fills from top of screen)
+                let sky = skyTheme
                 ctx.clip(to: path)
-                let skyGradient = Gradient(colors: [skyTop, skyBottom])
+                let skyGradient = Gradient(colors: [sky.top, sky.bottom])
                 ctx.fill(
                     Path(CGRect(x: midX - panelHalf, y: 0, width: panelHalf * 2, height: grassY)),
                     with: .linearGradient(skyGradient, startPoint: CGPoint(x: midX, y: 0), endPoint: CGPoint(x: midX, y: grassY))
                 )
 
-                // Stars (tiny dots in sky) — only if enough sky area
+                // Stars (tiny dots in sky) — count varies by time of day
                 let skyTop_y = notchHeight + 5
                 let skyBottom_y = grassY - 5
-                if skyBottom_y > skyTop_y + 2 {
+                let starCount = showLog ? sky.stars + 6 : sky.stars
+                if skyBottom_y > skyTop_y + 2 && starCount > 0 {
                     var starRng = StableRNG(seed: 77)
-                    for _ in 0..<(showLog ? 12 : 6) {
+                    for _ in 0..<starCount {
                         let sx = midX - panelHalf + CGFloat.random(in: 0...(panelHalf * 2), using: &starRng)
                         let sy = CGFloat.random(in: skyTop_y...skyBottom_y, using: &starRng)
                         let alpha = Double.random(in: 0.3...0.7, using: &starRng)

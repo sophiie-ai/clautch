@@ -168,6 +168,7 @@ final class RoomManager {
         peerStore.clear()
         lastBroadcastState = nil
         lastHeartbeatDate = .distantPast
+        consecutiveFailures = 0
         UserDefaults.standard.lastRoomCode = nil
         UserDefaults.standard.lastRoomToken = nil
 
@@ -310,6 +311,7 @@ final class RoomManager {
     }
 
     private var syncCycleCount = 0
+    private var consecutiveFailures = 0
 
     private func syncCycle() async {
         guard let room = currentRoom else { return }
@@ -335,12 +337,30 @@ final class RoomManager {
         let record = await heartbeatRecord
         let peers = await fetchedPeers
 
+        // Track connectivity: if both write and fetch returned nothing, it's a failure
+        let fetchFailed = peers.isEmpty && shouldWrite && record == nil
+        if fetchFailed {
+            consecutiveFailures += 1
+            if consecutiveFailures >= 3 && status == .connected {
+                status = .reconnecting
+                logger.warning("CloudKit unreachable, reconnecting…")
+            }
+        } else {
+            if consecutiveFailures > 0 && status == .reconnecting {
+                status = .connected
+                logger.info("CloudKit connection restored")
+            }
+            consecutiveFailures = 0
+        }
+
         if let record {
             myPresenceRecordID = record.recordID
             lastBroadcastState = state
             lastHeartbeatDate = Date()
         }
-        peerStore.update(with: peers)
+        if !peers.isEmpty {
+            peerStore.update(with: peers)
+        }
 
         if syncCycleCount % 5 == 0 {
             try? await cloudKit.cleanupStalePresences(roomCode: roomCode)

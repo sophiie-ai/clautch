@@ -299,10 +299,11 @@ struct RoomView: View {
 
     private var statusColor: Color {
         switch roomManager.status {
-        case .connected: return .green
-        case .connecting: return .yellow
-        case .disconnected: return .gray
-        case .error: return .red
+        case .connected:     return .green
+        case .connecting:    return .yellow
+        case .reconnecting:  return .orange
+        case .disconnected:  return .gray
+        case .error:         return .red
         }
     }
 
