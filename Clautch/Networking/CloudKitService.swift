@@ -84,54 +84,58 @@ final class CloudKitService: @unchecked Sendable {
         state: PeerState
     ) async throws -> CKRecord {
         guard let db = publicDB else { throw CloudKitUnavailableError() }
-        let record: CKRecord
-        if let existingID = existingRecordID {
-            do {
-                record = try await db.record(for: existingID)
-            } catch {
+        return try await withRetry {
+            let record: CKRecord
+            if let existingID = existingRecordID {
+                do {
+                    record = try await db.record(for: existingID)
+                } catch {
+                    record = CKRecord(recordType: Self.presenceType)
+                }
+            } else {
                 record = CKRecord(recordType: Self.presenceType)
             }
-        } else {
-            record = CKRecord(recordType: Self.presenceType)
-        }
 
-        record["roomCode"] = roomCode
-        record["peerId"] = state.peerId
-        record["displayName"] = state.displayName
-        record["creatureType"] = state.creatureType.rawValue
-        record["task"] = state.task.rawValue
-        record["emotion"] = state.emotion.rawValue
-        record["colorPreset"] = state.colorPreset.rawValue
-        record["accessory"] = state.accessory.rawValue
-        record["heartbeat"] = Date() as NSDate
-        record["isActive"] = 1
-        record["reaction"] = state.reaction?.rawValue ?? ""
-        if let rt = state.reactionTimestamp {
-            record["reactionTimestamp"] = rt as NSDate
-        }
-        record["chatMessage"] = state.chatMessage ?? ""
-        if let ct = state.chatTimestamp {
-            record["chatTimestamp"] = ct as NSDate
-        }
+            record["roomCode"] = roomCode
+            record["peerId"] = state.peerId
+            record["displayName"] = state.displayName
+            record["creatureType"] = state.creatureType.rawValue
+            record["task"] = state.task.rawValue
+            record["emotion"] = state.emotion.rawValue
+            record["colorPreset"] = state.colorPreset.rawValue
+            record["accessory"] = state.accessory.rawValue
+            record["heartbeat"] = Date() as NSDate
+            record["isActive"] = 1
+            record["reaction"] = state.reaction?.rawValue ?? ""
+            if let rt = state.reactionTimestamp {
+                record["reactionTimestamp"] = rt as NSDate
+            }
+            record["chatMessage"] = state.chatMessage ?? ""
+            if let ct = state.chatTimestamp {
+                record["chatTimestamp"] = ct as NSDate
+            }
 
-        return try await db.save(record)
+            return try await db.save(record)
+        }
     }
 
     func fetchPresences(roomCode: String) async throws -> [(CKRecord.ID, PeerState)] {
         guard let db = publicDB else { throw CloudKitUnavailableError() }
-        let predicate = NSPredicate(format: "roomCode == %@", roomCode)
-        let query = CKQuery(recordType: Self.presenceType, predicate: predicate)
-        query.sortDescriptors = [NSSortDescriptor(key: "heartbeat", ascending: false)]
+        return try await withRetry {
+            let predicate = NSPredicate(format: "roomCode == %@", roomCode)
+            let query = CKQuery(recordType: Self.presenceType, predicate: predicate)
+            query.sortDescriptors = [NSSortDescriptor(key: "heartbeat", ascending: false)]
 
-        let (results, _) = try await db.records(matching: query, resultsLimit: 20)
+            let (results, _) = try await db.records(matching: query, resultsLimit: 20)
 
-        var peers: [(CKRecord.ID, PeerState)] = []
-        for (id, result) in results {
-            guard let record = try? result.get() else { continue }
-            guard let peer = PeerState(from: record) else { continue }
-            peers.append((id, peer))
+            var peers: [(CKRecord.ID, PeerState)] = []
+            for (id, result) in results {
+                guard let record = try? result.get() else { continue }
+                guard let peer = PeerState(from: record) else { continue }
+                peers.append((id, peer))
+            }
+            return peers
         }
-        return peers
     }
 
     func deletePresence(recordID: CKRecord.ID) async throws {
@@ -142,15 +146,53 @@ final class CloudKitService: @unchecked Sendable {
 
     func cleanupStalePresences(roomCode: String) async throws {
         guard let db = publicDB else { throw CloudKitUnavailableError() }
-        let cutoff = Date().addingTimeInterval(-600) as NSDate
-        let predicate = NSPredicate(
-            format: "roomCode == %@ AND heartbeat < %@", roomCode, cutoff
-        )
-        let query = CKQuery(recordType: Self.presenceType, predicate: predicate)
-        let (results, _) = try await db.records(matching: query, resultsLimit: 50)
+        try await withRetry {
+            let cutoff = Date().addingTimeInterval(-600) as NSDate
+            let predicate = NSPredicate(
+                format: "roomCode == %@ AND heartbeat < %@", roomCode, cutoff
+            )
+            let query = CKQuery(recordType: Self.presenceType, predicate: predicate)
+            let (results, _) = try await db.records(matching: query, resultsLimit: 50)
 
-        for (id, _) in results {
-            _ = try? await db.deleteRecord(withID: id)
+            let idsToDelete = results.map(\.0)
+            if !idsToDelete.isEmpty {
+                let op = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: idsToDelete)
+                op.qualityOfService = .utility
+                try await db.add(op)
+            }
+        }
+    }
+
+    // MARK: - Retry Logic
+
+    /// Retry transient CloudKit errors with exponential backoff.
+    private func withRetry<T>(
+        maxAttempts: Int = 3,
+        _ operation: () async throws -> T
+    ) async throws -> T {
+        var lastError: Error?
+        for attempt in 0..<maxAttempts {
+            do {
+                return try await operation()
+            } catch let error as CKError where Self.isTransient(error) {
+                lastError = error
+                if attempt < maxAttempts - 1 {
+                    let delay = pow(2.0, Double(attempt)) // 1s, 2s, 4s
+                    try? await Task.sleep(for: .seconds(delay))
+                }
+            }
+        }
+        throw lastError!
+    }
+
+    private static func isTransient(_ error: CKError) -> Bool {
+        switch error.code {
+        case .networkUnavailable, .networkFailure,
+             .serviceUnavailable, .serverResponseLost,
+             .requestRateLimited, .zoneBusy:
+            return true
+        default:
+            return false
         }
     }
 

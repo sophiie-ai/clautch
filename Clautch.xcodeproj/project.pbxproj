@@ -34,6 +34,7 @@
 		C007A5DC669A8C0702B47BAC /* CreatureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3999AF3656ACC6EEA809E4A1 /* CreatureState.swift */; };
 		C1CA3D0FBA81D955DA0C2AE3 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = FF89FBDAAD4B2E24B493F045 /* Sparkle */; };
 		C59FF3BA1A0679902FCB5BF6 /* SocketServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A96C317933A876142263C02 /* SocketServer.swift */; };
+		C8437926E9493D6C053BFCEB /* SessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 941654AB5CB9C3AB86AFF1A6 /* SessionStoreTests.swift */; };
 		CBDA2473ACF805DD27769C31 /* PeerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EEA97069510BF43AEF4A0F /* PeerStore.swift */; };
 		CF2A287CEF7133514A48A36E /* SessionStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */; };
 		D111D15AA4DAAA2FB8C09769 /* NotchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8C9B4777BFE300C4B219C61 /* NotchPanel.swift */; };
@@ -42,6 +43,7 @@
 		E5F8490C42AFBCD2AC7C8219 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98751085909AD9B03FF8968 /* AppDelegate.swift */; };
 		F233539B64F2DAFB91C8D0EE /* PeerStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B42D2112A7FB8BA8E04ADE95 /* PeerStateTests.swift */; };
 		F2C4B920C09A812FBEC8A82B /* HookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91B03F44A420102018F1805 /* HookInstaller.swift */; };
+		F58D4468AC68A801B6D802BE /* SessionDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B081ED01994621225ABF8FE /* SessionDataTests.swift */; };
 		FFF95B8DF8695D4A1B274CBF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CABCBAFC5BE6C93BC7615722 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -75,6 +77,8 @@
 		7A6999253CA6EA31609F60BB /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		7B1A8940C490CCD0E8772503 /* NSScreen+Notch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Notch.swift"; sourceTree = "<group>"; };
 		8939C7DD222D0AECDD18A300 /* ClautchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClautchApp.swift; sourceTree = "<group>"; };
+		8B081ED01994621225ABF8FE /* SessionDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDataTests.swift; sourceTree = "<group>"; };
+		941654AB5CB9C3AB86AFF1A6 /* SessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTests.swift; sourceTree = "<group>"; };
 		9612774E06FC2528A320C225 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		9737E9CAA66D882E4E9BB53A /* GrassIslandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrassIslandView.swift; sourceTree = "<group>"; };
 		9DE666F07E5D0C674F3D5D5D /* CreatureStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureStateTests.swift; sourceTree = "<group>"; };
@@ -227,7 +231,9 @@
 				B1E79828A1299FD896FDD55E /* HookEventTests.swift */,
 				B42D2112A7FB8BA8E04ADE95 /* PeerStateTests.swift */,
 				D42E60C01944427749F3A837 /* RoomInfoTests.swift */,
+				8B081ED01994621225ABF8FE /* SessionDataTests.swift */,
 				FB6309D7AE6562CF28192822 /* SessionStatsTests.swift */,
+				941654AB5CB9C3AB86AFF1A6 /* SessionStoreTests.swift */,
 			);
 			path = ClautchTests;
 			sourceTree = "<group>";
@@ -371,7 +377,9 @@
 				25797CEE9C0221F1AED4E7B9 /* HookEventTests.swift in Sources */,
 				F233539B64F2DAFB91C8D0EE /* PeerStateTests.swift in Sources */,
 				35F16FF9374D274589ACF9FF /* RoomInfoTests.swift in Sources */,
+				F58D4468AC68A801B6D802BE /* SessionDataTests.swift in Sources */,
 				5066CF7DDA67521EB52CBAE7 /* SessionStatsTests.swift in Sources */,
+				C8437926E9493D6C053BFCEB /* SessionStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -520,7 +528,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.23;
+				MARKETING_VERSION = 0.2.36;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};
@@ -581,7 +589,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.2.23;
+				MARKETING_VERSION = 0.2.36;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};
