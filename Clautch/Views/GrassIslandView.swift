@@ -241,6 +241,9 @@ struct GrassIslandView: View {
                         radius: creature.isLocal ? 3 : 0
                     )
                     .help(creatureTooltip(creature))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(creatureAccessibilityLabel(creature))
+                    .accessibilityHint(creature.isLocal ? "Right-click to send a reaction" : "")
                     .contextMenu {
                         if creature.isLocal {
                             ForEach(PeerReaction.allCases) { reaction in
@@ -324,6 +327,21 @@ struct GrassIslandView: View {
         let m = Int(interval) / 60
         let s = Int(interval) % 60
         return m > 0 ? "\(m)m \(s)s" : "\(s)s"
+    }
+
+    private func creatureAccessibilityLabel(_ creature: CreatureDisplay) -> String {
+        var parts = ["\(creature.displayName), \(creature.creatureType.displayName)"]
+        parts.append(creature.state.task.displayLabel)
+        if creature.state.emotion != .neutral {
+            parts.append(creature.state.emotion.rawValue)
+        }
+        if let chat = creature.chatMessage {
+            parts.append("says: \(chat)")
+        }
+        if let reaction = creature.reaction, creature.reactionActive {
+            parts.append("reacted with \(reaction.rawValue)")
+        }
+        return parts.joined(separator: ", ")
     }
 
     private func creatureTooltip(_ creature: CreatureDisplay) -> String {
@@ -418,8 +436,12 @@ struct EventLogOverlay: View {
                         .foregroundStyle(.white.opacity(0.3))
                 }
                 .foregroundStyle(.white.opacity(0.55))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(item.text), \(item.timeAgo) ago")
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Activity log")
     }
 }
 

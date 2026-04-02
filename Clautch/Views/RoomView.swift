@@ -32,7 +32,7 @@ struct RoomView: View {
                 disconnectedView
             }
         }
-        .frame(width: 320, height: 380)
+        .frame(minWidth: 300, minHeight: 350)
     }
 
     // MARK: - Connected
@@ -59,6 +59,8 @@ struct RoomView: View {
                         .cornerRadius(8)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Copy room invite code")
+                    .accessibilityHint("Copies the room code and invite token to the clipboard")
 
                     Text(copiedCode ? "Copied!" : "Copy invite")
                         .font(.system(size: 10))
@@ -78,7 +80,7 @@ struct RoomView: View {
                 .padding(.horizontal, 20)
 
             // Peer list (compact)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 // Self
                 if let profile = UserProfile.current {
                     peerRow(
@@ -106,7 +108,7 @@ struct RoomView: View {
 
             // Activity feed
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 4) {
+                LazyVStack(alignment: .leading, spacing: 6) {
                     if activityFeed.events.isEmpty {
                         Text("No activity yet")
                             .font(.system(size: 11))
@@ -166,9 +168,10 @@ struct RoomView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(chatInput.isEmpty)
+                .accessibilityLabel("Send message")
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 4)
+            .padding(.bottom, 8)
 
             // Leave button
             Button(action: {
@@ -222,6 +225,8 @@ struct RoomView: View {
                 .cornerRadius(4)
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(name), \(task.rawValue)")
     }
 
     private func taskColor(_ task: CreatureTask) -> Color {

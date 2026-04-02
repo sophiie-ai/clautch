@@ -151,12 +151,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let roomView = RoomView()
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 380),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 420),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
-        window.center()
+        window.minSize = NSSize(width: 300, height: 350)
+        window.setFrameAutosaveName("ClautchRoom")
         window.title = "Clautch Room"
         window.contentView = NSHostingView(rootView: roomView)
         window.isReleasedWhenClosed = false
@@ -195,11 +196,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let statsView = StatsView()
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 360, height: 320),
-            styleMask: [.titled, .closable],
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
-        window.center()
+        window.minSize = NSSize(width: 320, height: 280)
+        window.setFrameAutosaveName("ClautchStats")
         window.title = "Clautch Usage Stats"
         window.contentView = NSHostingView(rootView: statsView)
         window.isReleasedWhenClosed = false
@@ -511,6 +513,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(loginItem)
 
         menu.addItem(.separator())
+
+        let settingsItem = NSMenuItem(
+            title: "Settings…",
+            action: #selector(showSettings),
+            keyEquivalent: ","
+        )
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Clautch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         self.statusItem?.menu = menu
@@ -634,6 +646,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+    }
+
+    @objc private func showSettings() {
+        // Open the SwiftUI Settings window (Cmd+,)
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        // NSApp.sendAction opens the Settings scene registered in ClautchApp
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        watchForResignActive()
     }
 
     @objc private func toggleLaunchAtLogin() {

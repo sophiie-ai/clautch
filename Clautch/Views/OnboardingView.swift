@@ -68,6 +68,8 @@ struct OnboardingView: View {
                                     .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 1.5)
                             )
                             .onTapGesture { accessory = acc }
+                            .accessibilityLabel(acc == .none ? "No accessory" : "\(acc.rawValue) accessory")
+                            .accessibilityAddTraits(acc == accessory ? .isSelected : [])
                     }
                 }
             }
@@ -162,6 +164,10 @@ struct OnboardingView: View {
         )
         .onTapGesture { selectedType = type }
         .onHover { hovering in isHovering = hovering ? type : nil }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(type.displayName) creature")
+        .accessibilityAddTraits(type == selectedType ? .isSelected : [])
+        .accessibilityHint("Double-click to select this creature")
     }
 
     // MARK: - Color Swatch
@@ -188,6 +194,9 @@ struct OnboardingView: View {
             )
             .shadow(color: selected ? Color.accentColor.opacity(0.3) : .clear, radius: 4)
             .onTapGesture { colorPreset = preset }
+            .accessibilityLabel(preset == .none ? "No color" : "\(preset.rawValue) color")
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityHint("Double-click to select this color")
     }
 
     // MARK: - Actions

@@ -42,7 +42,7 @@ struct StatsView: View {
 
             Spacer()
         }
-        .frame(width: 360, height: 320)
+        .frame(minWidth: 320, minHeight: 280)
     }
 
     // MARK: - Components
