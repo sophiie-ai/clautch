@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.50](https://github.com/sophiie-ai/clautch/compare/v0.2.49...v0.2.50) (2026-04-03)
+
+
+### Bug Fixes
+
+* collapsed widget stays within menu bar height, no peek below ([7d5bfae](https://github.com/sophiie-ai/clautch/commit/7d5bfaef6c3b1207ea8c64adbb12e2557766dae8))
+* settings tabs now clickable on entire tab area, not just the icon ([0712e07](https://github.com/sophiie-ai/clautch/commit/0712e070349936eb590f408e9138a28cd4fd8f5c))
+
 ## [0.2.49](https://github.com/sophiie-ai/clautch/compare/v0.2.48...v0.2.49) (2026-04-03)
 
 
