@@ -385,6 +385,16 @@ struct GrassIslandView: View {
     }
 
     private func creatureOffset(for creature: CreatureDisplay, in width: CGFloat) -> CGFloat {
+        if !isExpanded {
+            // When collapsed, position creatures beside the notch (left or right)
+            let notchW = notchWidthInWindow(totalWidth: width)
+            let notchHalf = notchW / 2
+            let sideMargin: CGFloat = 8
+            let idx = creatures.firstIndex(where: { $0.id == creature.id }) ?? 0
+            let side: CGFloat = idx % 2 == 0 ? -1 : 1  // alternate left/right
+            let slot = CGFloat(idx / 2)  // how far out from notch
+            return side * (notchHalf + sideMargin + creatureSize * slot + creatureSize / 2)
+        }
         let usable = width - creatureSize - 20
         return -usable / 2 + creature.xPosition * usable
     }

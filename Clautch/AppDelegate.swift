@@ -128,13 +128,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             content: {
                 OnboardingView { [weak self] _ in
                     DispatchQueue.main.async {
-                        self?.setupNotchPanel()
                         self?.rebuildMenu()
                         // Suppress accessory transition — notch panel keeps app alive
                         self?.windowCoordinator.suppressAccessoryTransition = true
                         self?.windowCoordinator.close(key: "onboarding")
-                        NSApp.setActivationPolicy(.accessory)
-                        self?.animateCreatureToNotch {}
+                        // Fly creature to notch, THEN show the panel
+                        self?.animateCreatureToNotch {
+                            self?.setupNotchPanel()
+                            NSApp.setActivationPolicy(.accessory)
+                        }
                     }
                 }
             }
@@ -181,20 +183,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         flyWindow.contentView = NSHostingView(rootView: creatureView.frame(width: spriteSize, height: spriteSize))
         flyWindow.orderFrontRegardless()
 
-        // Target: center of the notch
+        // Target: shrink to creature size and land at notch
+        let endSize: CGFloat = 12
         let endFrame = NSRect(
-            x: notchFrame.midX - spriteSize / 2,
-            y: notchFrame.midY - spriteSize / 2,
-            width: spriteSize,
-            height: spriteSize
+            x: notchFrame.midX - endSize / 2,
+            y: notchFrame.midY - endSize / 2,
+            width: endSize,
+            height: endSize
         )
 
-        // Animate with NSAnimationContext
+        // Animate: fly up, shrink, and fade
         NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.6
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            ctx.duration = 0.5
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             flyWindow.animator().setFrame(endFrame, display: true)
-            flyWindow.animator().alphaValue = 0.3
+            flyWindow.animator().alphaValue = 0.0
         }, completionHandler: {
             flyWindow.close()
             completion()
