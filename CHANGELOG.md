@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/sophiie-ai/clautch/compare/v0.2.55...v0.3.0) (2026-04-03)
+
+
+### Features
+
+* permission indicator, creature personalities, layout refactor, contrast fix, and pipeline tests ([c8bc0ea](https://github.com/sophiie-ai/clautch/commit/c8bc0ea257e2e97165ea01b731390168ecaf87e8))
+
+
+### Bug Fixes
+
+* release-please now bumps minor version on feat commits ([257e53b](https://github.com/sophiie-ai/clautch/commit/257e53b654118fd30c9a0afd31d72d6a912b251a))
+
 ## [0.2.55](https://github.com/sophiie-ai/clautch/compare/v0.2.54...v0.2.55) (2026-04-03)
 
 
