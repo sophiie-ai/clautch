@@ -128,10 +128,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             content: {
                 OnboardingView { [weak self] _ in
                     DispatchQueue.main.async {
-                        self?.animateCreatureToNotch {
-                            self?.setupNotchPanel()
-                            self?.rebuildMenu()
-                        }
+                        // Set up panel BEFORE closing onboarding to prevent app quit
+                        self?.setupNotchPanel()
+                        self?.rebuildMenu()
+                        self?.windowCoordinator.close(key: "onboarding")
+                        self?.animateCreatureToNotch {}
                     }
                 }
             }

@@ -71,6 +71,11 @@ final class WindowCoordinator {
         windows[key] = window
     }
 
+    /// Close a managed window by key.
+    func close(key: String) {
+        windows[key]?.close()
+    }
+
     /// Whether a window with the given key is currently open.
     func isOpen(_ key: String) -> Bool {
         windows[key] != nil
