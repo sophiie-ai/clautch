@@ -442,9 +442,9 @@ struct PanelClipShape: Shape {
                 control: CGPoint(x: midX - panelHalf, y: bottom))
             path.addLine(to: CGPoint(x: midX - panelHalf, y: 0))
         } else {
-            // Collapsed: clip to just the notch/menu bar height
+            // Collapsed: clip to just the notch/menu bar height (top of view)
             let clipHeight = min(notchHeight, rect.height)
-            path.addRect(CGRect(x: rect.minX, y: rect.maxY - clipHeight, width: rect.width, height: clipHeight))
+            path.addRect(CGRect(x: rect.minX, y: 0, width: rect.width, height: clipHeight))
         }
         path.closeSubpath()
         return path
