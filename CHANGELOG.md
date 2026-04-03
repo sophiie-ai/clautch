@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.48](https://github.com/sophiie-ai/clautch/compare/v0.2.47...v0.2.48) (2026-04-03)
+
+
+### Bug Fixes
+
+* collapsed panel only intercepts clicks in notch/menubar strip ([86df880](https://github.com/sophiie-ai/clautch/commit/86df880f9bec015b6da0b14e983a1174c8553c6b))
+* display picker in Settings now properly recreates panel on selected screen ([1f75683](https://github.com/sophiie-ai/clautch/commit/1f756836f24c219d0ae158989c445138e30e8714))
+* expanded panel only intercepts clicks within visible island bounds ([f5bba52](https://github.com/sophiie-ai/clautch/commit/f5bba52489b82259ec9eefc706a739121e8b6bb4))
+* settings window now opens reliably using WindowCoordinator ([cc747df](https://github.com/sophiie-ai/clautch/commit/cc747df4acdec14b1a38c3a0f95415577c785462))
+
 ## [0.2.47](https://github.com/sophiie-ai/clautch/compare/v0.2.46...v0.2.47) (2026-04-03)
 
 
