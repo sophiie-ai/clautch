@@ -1,18 +1,26 @@
 import Foundation
 
 /// A single room activity event (chat, join, leave, reaction).
-struct RoomEvent: Identifiable {
-    let id = UUID()
+struct RoomEvent: Identifiable, Codable {
+    let id: UUID
     let kind: Kind
     let peerName: String
     let text: String
     let timestamp: Date
 
-    enum Kind: String {
+    enum Kind: String, Codable {
         case chat
         case join
         case leave
         case reaction
+    }
+
+    init(kind: Kind, peerName: String, text: String, timestamp: Date) {
+        self.id = UUID()
+        self.kind = kind
+        self.peerName = peerName
+        self.text = text
+        self.timestamp = timestamp
     }
 
     var timeAgo: String {
@@ -33,7 +41,8 @@ struct RoomEvent: Identifiable {
     }
 }
 
-/// Observable feed of room activity events (max 30 items, pruned on insert).
+/// Observable feed of room activity events (max 30 items).
+/// Persists to disk so chat history survives app restarts.
 @Observable
 @MainActor
 final class RoomActivityFeed {
@@ -41,8 +50,11 @@ final class RoomActivityFeed {
 
     private(set) var events: [RoomEvent] = []
     private let maxEvents = 30
+    private static let storageKey = "com.clautch.roomActivityFeed"
 
-    private init() {}
+    private init() {
+        loadFromDisk()
+    }
 
     func addChat(from peerName: String, message: String) {
         insert(RoomEvent(kind: .chat, peerName: peerName, text: message, timestamp: Date()))
@@ -62,6 +74,7 @@ final class RoomActivityFeed {
 
     func clear() {
         events.removeAll()
+        UserDefaults.standard.removeObject(forKey: Self.storageKey)
     }
 
     private func insert(_ event: RoomEvent) {
@@ -69,5 +82,22 @@ final class RoomActivityFeed {
         if events.count > maxEvents {
             events.removeLast()
         }
+        saveToDisk()
+    }
+
+    // MARK: - Persistence
+
+    private func saveToDisk() {
+        if let data = try? JSONEncoder().encode(events) {
+            UserDefaults.standard.set(data, forKey: Self.storageKey)
+        }
+    }
+
+    private func loadFromDisk() {
+        guard let data = UserDefaults.standard.data(forKey: Self.storageKey),
+              let decoded = try? JSONDecoder().decode([RoomEvent].self, from: data) else { return }
+        // Prune events older than 24 hours
+        let cutoff = Date(timeIntervalSinceNow: -86400)
+        events = decoded.filter { $0.timestamp > cutoff }.prefix(maxEvents).map { $0 }
     }
 }

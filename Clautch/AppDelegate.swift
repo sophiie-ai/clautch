@@ -515,28 +515,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
     }
 
-    @objc private func toggleNotifications() {
-        Task { @MainActor in
-            NotificationService.shared.isEnabled.toggle()
-        }
-    }
-
-    @objc private func toggleReduceAnimation() {
-        AnimationSettings.shared.reduceAnimationWhenCollapsed.toggle()
-    }
-
-    @objc private func toggleHideWhenCollapsed() {
-        AnimationSettings.shared.hideWhenCollapsed.toggle()
-    }
-
-    @objc private func toggleStatusBar() {
-        AnimationSettings.shared.showStatusBar.toggle()
-    }
-
-    @objc private func toggleEventLog() {
-        AnimationSettings.shared.showEventLog.toggle()
-    }
-
     @objc private func selectDisplay(_ sender: NSMenuItem) {
         guard let screenName = sender.representedObject as? String else { return }
         UserDefaults.standard.set(screenName, forKey: Self.preferredScreenKey)
@@ -612,20 +590,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    @objc private func toggleLaunchAtLogin() {
-        let service = SMAppService.mainApp
-        do {
-            if service.status == .enabled {
-                try service.unregister()
-                logger.info("Unregistered from login items")
-            } else {
-                try service.register()
-                logger.info("Registered as login item")
-            }
-        } catch {
-            logger.error("Login item toggle failed: \(error.localizedDescription)")
-        }
-    }
 }
 
 // MARK: - Menu Delegate

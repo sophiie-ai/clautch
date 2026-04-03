@@ -48,6 +48,7 @@
 		CF2A287CEF7133514A48A36E /* SessionStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */; };
 		CF7EAB7D121AE39514EEADC5 /* ActivityFeedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA07284BB0CACB212BE9AAE3 /* ActivityFeedTests.swift */; };
 		D111D15AA4DAAA2FB8C09769 /* NotchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8C9B4777BFE300C4B219C61 /* NotchPanel.swift */; };
+		B4E2C3D5A6F7189203B4C5D6 /* CreatureIslandOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F1D2E4B5C6078192A3B4C5 /* CreatureIslandOverlay.swift */; };
 		D78AB26A7D77261B497278B6 /* CreatureSpriteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B322233C180E7390E3E334 /* CreatureSpriteView.swift */; };
 		DAE848DD2CE57399BFFA5F29 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9DD10E685875E91848C6C55 /* UserProfile.swift */; };
 		E5F8490C42AFBCD2AC7C8219 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98751085909AD9B03FF8968 /* AppDelegate.swift */; };
@@ -75,6 +76,7 @@
 		1A96C317933A876142263C02 /* SocketServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketServer.swift; sourceTree = "<group>"; };
 		1DA6C675C7ACADFE6AF1805D /* SessionStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStats.swift; sourceTree = "<group>"; };
 		35B322233C180E7390E3E334 /* CreatureSpriteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureSpriteView.swift; sourceTree = "<group>"; };
+		A3F1D2E4B5C6078192A3B4C5 /* CreatureIslandOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureIslandOverlay.swift; sourceTree = "<group>"; };
 		37A05E9A0BB497F97DCA2375 /* NotchContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchContentView.swift; sourceTree = "<group>"; };
 		3999AF3656ACC6EEA809E4A1 /* CreatureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureState.swift; sourceTree = "<group>"; };
 		435CA37D802F20490420EF91 /* Clautch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Clautch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -222,6 +224,7 @@
 			isa = PBXGroup;
 			children = (
 				7A24772089DC4C3D8257AFED /* BobAnimation.swift */,
+				A3F1D2E4B5C6078192A3B4C5 /* CreatureIslandOverlay.swift */,
 				35B322233C180E7390E3E334 /* CreatureSpriteView.swift */,
 			);
 			path = Components;
@@ -375,6 +378,7 @@
 				142CCCB57341EA96272F042E /* BobAnimation.swift in Sources */,
 				A98C74683BA1820EE7406713 /* ClautchApp.swift in Sources */,
 				112DADB586E7D2057D166849 /* CloudKitService.swift in Sources */,
+				B4E2C3D5A6F7189203B4C5D6 /* CreatureIslandOverlay.swift in Sources */,
 				D78AB26A7D77261B497278B6 /* CreatureSpriteView.swift in Sources */,
 				C007A5DC669A8C0702B47BAC /* CreatureState.swift in Sources */,
 				AE578DD9D1FD3FEF6C7EEDED /* CreatureType.swift in Sources */,

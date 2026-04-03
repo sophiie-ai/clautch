@@ -1,5 +1,3 @@
-import Foundation
-
 /// Smooth vertical oscillation used to animate creature bobbing.
 enum BobAnimation {
 
