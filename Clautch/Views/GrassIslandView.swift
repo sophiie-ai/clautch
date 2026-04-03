@@ -83,7 +83,7 @@ struct GrassIslandView: View {
             let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
             let maxDrop = min(fullDrop, neededDrop)
             let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
-            let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 16
+            let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 0
             let dropHeight = isExpanded ? maxDrop : peekDrop
             let midX = size.width / 2
             let notchHalf = notchWidth / 2
@@ -200,7 +200,7 @@ struct GrassIslandView: View {
                 let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
                 let maxDrop = min(fullDrop, neededDrop)
                 let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
-                let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 8
+                let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 0
                 let dropHeight = isExpanded ? maxDrop : peekDrop
                 let bottom = notchHeight + dropHeight
                 let grassLineY = isExpanded

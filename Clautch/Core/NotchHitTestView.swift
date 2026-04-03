@@ -65,9 +65,8 @@ final class NotchHitTestView: NSView {
         // Window top (maxY) = top of screen / notch area.
 
         if !isExpanded {
-            // Collapsed: only accept clicks in the notch strip + creature peek.
-            let collapsedClickableHeight = notchHeight + 20
-            let minY = bounds.maxY - collapsedClickableHeight
+            // Collapsed: only accept clicks within the menu bar / notch height.
+            let minY = bounds.maxY - notchHeight
             return local.y >= minY ? self : nil
         }
 
