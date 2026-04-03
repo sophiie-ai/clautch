@@ -19,10 +19,9 @@ final class NotchPanel: NSPanel {
         backgroundColor = .clear
         hasShadow = false
 
-        // Appear on all Spaces, never show in Exposé, don't steal focus
+        // Appear on all Spaces, hide during Mission Control / Exposé
         collectionBehavior = [
             .fullScreenAuxiliary,
-            .stationary,
             .canJoinAllSpaces,
             .ignoresCycle,
         ]
