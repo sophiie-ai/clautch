@@ -1,8 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// Manages auxiliary windows (Room, Stats, Onboarding) with common patterns:
+/// Manages auxiliary windows (Room, Stats, Onboarding, Settings) with common patterns:
 /// show-or-focus, activation policy toggling, close observers, and frame autosave.
+/// All windows are centered on first show and brought to front reliably.
 final class WindowCoordinator {
     private var windows: [String: NSWindow] = [:]
     private var closeTokens: [String: NSObjectProtocol] = [:]
@@ -18,12 +19,9 @@ final class WindowCoordinator {
         content: () -> some View,
         onClose: (() -> Void)? = nil
     ) {
-        // Reuse existing window
+        // Reuse existing window — just bring to front
         if let existing = windows[key] {
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-            existing.makeKeyAndOrderFront(nil)
-            existing.orderFrontRegardless()
+            bringToFront(existing)
             return
         }
 
@@ -39,17 +37,16 @@ final class WindowCoordinator {
         if let minSize { window.minSize = minSize }
         if let name = autosaveName {
             window.setFrameAutosaveName(name)
-        } else {
+        }
+        // Always center if no saved position (frame at origin means no saved state)
+        if window.frame.origin == .zero {
             window.center()
         }
         window.title = title
         window.contentView = NSHostingView(rootView: content())
         window.isReleasedWhenClosed = false
 
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        window.orderFrontRegardless()
+        bringToFront(window)
 
         // Close observer
         let token = NotificationCenter.default.addObserver(
@@ -84,5 +81,16 @@ final class WindowCoordinator {
     /// Whether any managed windows are open.
     var hasOpenWindows: Bool {
         !windows.isEmpty
+    }
+
+    // MARK: - Private
+
+    /// Reliably bring a window to the front, activating the app.
+    private func bringToFront(_ window: NSWindow) {
+        NSApp.setActivationPolicy(.regular)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        // orderFrontRegardless as a fallback for stubborn cases
+        window.orderFrontRegardless()
     }
 }

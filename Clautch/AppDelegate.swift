@@ -473,8 +473,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func checkForUpdates() {
         NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
         updaterController.checkForUpdates(nil)
+        // Sparkle creates its own window — bring app to front after a brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NSApp.activate(ignoringOtherApps: true)
+            // Center Sparkle's window if it appeared
+            if let sparkleWindow = NSApp.windows.first(where: {
+                $0.isVisible && $0.title.contains("Software Update")
+            }) {
+                sparkleWindow.center()
+                sparkleWindow.makeKeyAndOrderFront(nil)
+            }
+        }
         watchForResignActive()
     }
 
