@@ -270,7 +270,12 @@ struct GrassIslandView: View {
                     .help(creatureTooltip(creature))
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(creatureAccessibilityLabel(creature))
-                    .accessibilityHint(creature.isLocal ? "Right-click to send a reaction" : "")
+                    .accessibilityHint(creature.isLocal ? "Right-click to send a reaction" : "Click to wave")
+                    .onTapGesture {
+                        if !creature.isLocal && isExpanded {
+                            RoomManager.shared.sendReaction(.wave)
+                        }
+                    }
                     .contextMenu {
                         if creature.isLocal {
                             ForEach(PeerReaction.allCases) { reaction in

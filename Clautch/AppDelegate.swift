@@ -121,14 +121,75 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             size: NSSize(width: 440, height: 600),
             content: {
                 OnboardingView { [weak self] _ in
-                    // Close onboarding and set up the notch panel
                     DispatchQueue.main.async {
-                        self?.setupNotchPanel()
-                        self?.rebuildMenu()
+                        self?.animateCreatureToNotch {
+                            self?.setupNotchPanel()
+                            self?.rebuildMenu()
+                        }
                     }
                 }
             }
         )
+    }
+
+    /// Animate a creature sprite from screen center up to the notch area, then set up the real panel.
+    private func animateCreatureToNotch(completion: @escaping () -> Void) {
+        guard let screen = preferredScreen(),
+              let notchFrame = screen.notchFrame,
+              let profile = UserProfile.current else {
+            completion()
+            return
+        }
+
+        // Create a small borderless window with the creature
+        let spriteSize: CGFloat = 48
+        let startFrame = NSRect(
+            x: screen.frame.midX - spriteSize / 2,
+            y: screen.frame.midY - spriteSize / 2,
+            width: spriteSize,
+            height: spriteSize
+        )
+
+        let flyWindow = NSWindow(
+            contentRect: startFrame,
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        flyWindow.isOpaque = false
+        flyWindow.backgroundColor = .clear
+        flyWindow.level = .floating
+        flyWindow.hasShadow = false
+
+        let creatureView = PixelCreatureView(
+            type: profile.creatureType,
+            frame: 0,
+            task: .idle,
+            emotion: .happy,
+            colorPreset: profile.colorPreset,
+            accessory: profile.accessory
+        )
+        flyWindow.contentView = NSHostingView(rootView: creatureView.frame(width: spriteSize, height: spriteSize))
+        flyWindow.orderFrontRegardless()
+
+        // Target: center of the notch
+        let endFrame = NSRect(
+            x: notchFrame.midX - spriteSize / 2,
+            y: notchFrame.midY - spriteSize / 2,
+            width: spriteSize,
+            height: spriteSize
+        )
+
+        // Animate with NSAnimationContext
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.6
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            flyWindow.animator().setFrame(endFrame, display: true)
+            flyWindow.animator().alphaValue = 0.3
+        }, completionHandler: {
+            flyWindow.close()
+            completion()
+        })
     }
 
     @objc private func changeCreature() {
