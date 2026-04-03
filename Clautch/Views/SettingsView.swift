@@ -25,7 +25,7 @@ struct SettingsView: View {
                     Label("Notifications", systemImage: "bell")
                 }
         }
-        .frame(width: 440, height: 340)
+        .frame(width: 440, height: 380)
     }
 }
 
@@ -147,9 +147,51 @@ private struct GeneralSettingsTab: View {
 
 private struct DisplaySettingsTab: View {
     @State private var settings = AnimationSettings.shared
+    @AppStorage("com.clautch.preferredScreen") private var preferredScreen = ""
+    @State private var availableScreens: [ScreenInfo] = []
+
+    struct ScreenInfo: Identifiable, Hashable {
+        let id: String  // localizedName
+        let name: String
+        let hasNotch: Bool
+        let resolution: String
+    }
 
     var body: some View {
         Form {
+            Section("Screen") {
+                if availableScreens.isEmpty {
+                    Text("No screens with a notch detected")
+                        .foregroundStyle(.secondary)
+                } else if availableScreens.count == 1 {
+                    HStack {
+                        Label(availableScreens[0].name, systemImage: "display")
+                        Spacer()
+                        Text(availableScreens[0].resolution)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Picker("Display", selection: $preferredScreen) {
+                        ForEach(availableScreens) { screen in
+                            HStack {
+                                Text(screen.name)
+                                Text(screen.resolution)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .tag(screen.id)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    .onChange(of: preferredScreen) { _, _ in
+                        // Post notification so AppDelegate can recreate the panel
+                        NotificationCenter.default.post(
+                            name: NSApplication.didChangeScreenParametersNotification,
+                            object: nil
+                        )
+                    }
+                }
+            }
+
             Section("Panel") {
                 Toggle("Show Event Log", isOn: $settings.showEventLog)
                     .help("Show recent activity events in the expanded panel")
@@ -168,6 +210,24 @@ private struct DisplaySettingsTab: View {
         }
         .formStyle(.grouped)
         .padding(.vertical, 8)
+        .onAppear { refreshScreens() }
+    }
+
+    private func refreshScreens() {
+        availableScreens = NSScreen.screens.filter { $0.hasNotch }.map { screen in
+            let w = Int(screen.frame.width)
+            let h = Int(screen.frame.height)
+            return ScreenInfo(
+                id: screen.localizedName,
+                name: screen.localizedName,
+                hasNotch: screen.hasNotch,
+                resolution: "\(w)×\(h)"
+            )
+        }
+        // If no preference set, default to first screen
+        if preferredScreen.isEmpty, let first = availableScreens.first {
+            preferredScreen = first.id
+        }
     }
 }
 
