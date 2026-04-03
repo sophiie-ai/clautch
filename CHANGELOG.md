@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.47](https://github.com/sophiie-ai/clautch/compare/v0.2.46...v0.2.47) (2026-04-03)
+
+
+### Features
+
+* click peer creature to wave, and animated onboarding-to-notch transition ([22baf1c](https://github.com/sophiie-ai/clautch/commit/22baf1cf7ed75763544c25dd1590c28fc7694fef))
+
 ## [0.2.46](https://github.com/sophiie-ai/clautch/compare/v0.2.45...v0.2.46) (2026-04-03)
 
 
