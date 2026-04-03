@@ -8,6 +8,10 @@ final class WindowCoordinator {
     private var windows: [String: NSWindow] = [:]
     private var closeTokens: [String: NSObjectProtocol] = [:]
 
+    /// When true, the next window close won't switch to accessory mode.
+    /// Set this before programmatically closing a window when the app should stay alive.
+    var suppressAccessoryTransition = false
+
     /// Show a window by key — reuses existing if open, otherwise creates from the builder.
     func show(
         key: String,
@@ -61,7 +65,11 @@ final class WindowCoordinator {
             onClose?()
             // Return to accessory if no other managed windows are open
             if self?.windows.isEmpty ?? true {
-                NSApp.setActivationPolicy(.accessory)
+                if self?.suppressAccessoryTransition == true {
+                    self?.suppressAccessoryTransition = false
+                } else {
+                    NSApp.setActivationPolicy(.accessory)
+                }
             }
         }
         closeTokens[key] = token

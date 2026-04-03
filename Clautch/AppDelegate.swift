@@ -128,10 +128,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             content: {
                 OnboardingView { [weak self] _ in
                     DispatchQueue.main.async {
-                        // Set up panel BEFORE closing onboarding to prevent app quit
                         self?.setupNotchPanel()
                         self?.rebuildMenu()
+                        // Suppress accessory transition — notch panel keeps app alive
+                        self?.windowCoordinator.suppressAccessoryTransition = true
                         self?.windowCoordinator.close(key: "onboarding")
+                        NSApp.setActivationPolicy(.accessory)
                         self?.animateCreatureToNotch {}
                     }
                 }
