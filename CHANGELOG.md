@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/sophiie-ai/clautch/compare/v0.3.0...v0.4.0) (2026-04-03)
+
+
+### Features
+
+* extract CreatureIslandOverlay and add smooth state transition animation ([bc8386c](https://github.com/sophiie-ai/clautch/commit/bc8386cfe3c207966556c513395c1d9ebe2e8d10))
+
 ## [0.3.0](https://github.com/sophiie-ai/clautch/compare/v0.2.55...v0.3.0) (2026-04-03)
 
 
