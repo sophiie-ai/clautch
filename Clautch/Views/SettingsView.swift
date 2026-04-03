@@ -164,8 +164,6 @@ private struct GeneralSettingsTab: View {
             Toggle("Pause Clautch", isOn: $settings.isPaused)
                 .help("Hides the notch panel and pauses all processing to save CPU")
 
-            Toggle("Animated Menu Bar Icon", isOn: $settings.menuBarCreature)
-                .help("Show your creature as the menu bar icon instead of the default icon")
         }
         .formStyle(.grouped)
         .padding(.vertical, 8)

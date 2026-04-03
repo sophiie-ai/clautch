@@ -325,8 +325,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var lastBadgeCount = -1
-    private var creatureAnimTimer: Timer?
-    private var creatureFrame = 0
 
     private func startSessionBadgeTimer() {
         sessionBadgeTimer?.invalidate()
@@ -345,68 +343,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         lastBadgeCount = count
         guard let button = statusItem?.button else { return }
         button.title = count > 0 ? "\(count)" : ""
-
-        // Start/stop creature animation based on setting
-        if AnimationSettings.shared.menuBarCreature {
-            startCreatureAnimation()
-        } else {
-            stopCreatureAnimation()
-        }
-    }
-
-    @MainActor
-    private func startCreatureAnimation() {
-        guard creatureAnimTimer == nil else { return }
-        updateMenuBarCreature()
-        creatureAnimTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.creatureFrame += 1
-                self?.updateMenuBarCreature()
-            }
-        }
-    }
-
-    private func stopCreatureAnimation() {
-        creatureAnimTimer?.invalidate()
-        creatureAnimTimer = nil
-        // Restore default icon
-        if let button = statusItem?.button {
-            let image = NSImage(named: "MenuBarIcon")
-            image?.isTemplate = true
-            image?.size = NSSize(width: 18, height: 18)
-            button.image = image
-        }
-    }
-
-    @MainActor
-    private func updateMenuBarCreature() {
-        guard let profile = UserProfile.current,
-              let button = statusItem?.button else { return }
-
-        let type = profile.creatureType
-        let frames = type.frames
-        guard !frames.isEmpty else { return }
-        let grid = frames[creatureFrame % frames.count]
-
-        let size: CGFloat = 18
-        let px = size / CGFloat(max(grid.first?.count ?? 8, 1))
-        let image = NSImage(size: NSSize(width: size, height: size), flipped: true) { rect in
-            for (r, row) in grid.enumerated() {
-                for (c, cell) in row.enumerated() {
-                    guard cell != 0 else { continue }
-                    let color: NSColor = switch cell {
-                    case 2: .labelColor          // eyes
-                    case 3: .secondaryLabelColor  // mouth
-                    default: .labelColor          // body
-                    }
-                    color.setFill()
-                    NSRect(x: CGFloat(c) * px, y: CGFloat(r) * px, width: px + 0.5, height: px + 0.5).fill()
-                }
-            }
-            return true
-        }
-        image.isTemplate = true
-        button.image = image
     }
 
     private func rebuildMenu() {
