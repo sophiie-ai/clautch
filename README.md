@@ -110,6 +110,16 @@ Create a room from the menu bar → Room. Share the invite code with teammates. 
 
 Powered by CloudKit — no server required.
 
+#### Deep links
+
+Share room invites as clickable links using the `clautch://` URL scheme:
+
+```
+clautch://join/ABCD1234-xYzInviteToken123
+```
+
+When opened, Clautch launches (or comes to front), joins the room, and opens the Room window. The format is `clautch://join/CODE-TOKEN` where CODE is the 8-character room code and TOKEN is the invite token.
+
 ## Menu bar
 
 The ghost icon in the menu bar provides:

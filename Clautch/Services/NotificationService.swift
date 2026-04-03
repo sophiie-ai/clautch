@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import UserNotifications
 import os
@@ -11,6 +12,34 @@ final class NotificationService {
     var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: "com.clautch.notificationsEnabled") }
         set { UserDefaults.standard.set(newValue, forKey: "com.clautch.notificationsEnabled") }
+    }
+
+    private static let soundKey = "com.clautch.soundEffects"
+    var soundEffectsEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: Self.soundKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Self.soundKey) }
+    }
+
+    /// Play a subtle system sound for a room event.
+    func playSound(_ kind: RoomSoundKind) {
+        guard soundEffectsEnabled else { return }
+        NSSound(named: kind.systemSoundName)?.play()
+    }
+
+    enum RoomSoundKind {
+        case peerJoin
+        case peerLeave
+        case chatReceived
+        case reactionReceived
+
+        var systemSoundName: NSSound.Name {
+            switch self {
+            case .peerJoin:          return "Pop"
+            case .peerLeave:         return "Tink"
+            case .chatReceived:      return "Blow"
+            case .reactionReceived:  return "Ping"
+            }
+        }
     }
 
     /// Coalescing window — batch rapid peer events into grouped notifications.

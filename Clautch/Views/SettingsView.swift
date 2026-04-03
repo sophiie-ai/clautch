@@ -175,14 +175,18 @@ private struct DisplaySettingsTab: View {
 
 private struct NotificationsSettingsTab: View {
     @AppStorage("com.clautch.notificationsEnabled") private var notificationsEnabled = false
+    @AppStorage("com.clautch.soundEffects") private var soundEffects = false
 
     var body: some View {
         Form {
             Toggle("Enable Notifications", isOn: $notificationsEnabled)
                 .help("Show macOS notifications for session events, errors, and peer messages")
 
-            if notificationsEnabled {
-                Text("You'll receive notifications for session completions, tool errors, and messages from room peers.")
+            Toggle("Sound Effects", isOn: $soundEffects)
+                .help("Play subtle sounds when peers join, leave, send reactions, or chat")
+
+            if notificationsEnabled || soundEffects {
+                Text("Peer events trigger notifications and/or sounds when teammates interact in your room.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }

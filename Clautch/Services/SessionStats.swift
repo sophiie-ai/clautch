@@ -17,8 +17,31 @@ final class SessionStats {
     private var trackingStart: Date?
     private var trackingTimer: Timer?
 
+    /// Recent emotion samples for the sparkline (last 20 points).
+    private static let moodStorageKey = "com.clautch.moodHistory"
+    private(set) var moodHistory: [MoodSample] = []
+    private let maxMoodSamples = 20
+
+    struct MoodSample: Codable {
+        let emotion: String  // raw value of CreatureEmotion
+        let timestamp: Date
+
+        /// Numeric value for sparkline rendering (0=neutral..1=positive, -1=negative).
+        var value: Double {
+            switch emotion {
+            case "happy", "excited": return 1.0
+            case "neutral":          return 0.0
+            case "confused", "tired": return -0.3
+            case "sad":              return -0.6
+            case "frustrated":       return -1.0
+            default:                 return 0.0
+            }
+        }
+    }
+
     private init() {
         loadFromDefaults()
+        loadMoodHistory()
     }
 
     // MARK: - Public
@@ -117,6 +140,33 @@ final class SessionStats {
         let daysUntil = calendar.dateComponents([.day], from: today, to: weekEnd).day ?? 0
         if daysUntil <= 1 { return "tomorrow" }
         return "in \(daysUntil)d"
+    }
+
+    /// Record a mood sample for the sparkline.
+    func recordMood(_ emotion: String) {
+        let sample = MoodSample(emotion: emotion, timestamp: Date())
+        // Don't add duplicate consecutive emotions
+        if moodHistory.last?.emotion == emotion { return }
+        moodHistory.append(sample)
+        if moodHistory.count > maxMoodSamples {
+            moodHistory.removeFirst()
+        }
+        saveMoodHistory()
+    }
+
+    private func loadMoodHistory() {
+        if let data = UserDefaults.standard.data(forKey: Self.moodStorageKey),
+           let decoded = try? JSONDecoder().decode([MoodSample].self, from: data) {
+            // Keep only last 24h of samples
+            let cutoff = Date(timeIntervalSinceNow: -86400)
+            moodHistory = decoded.filter { $0.timestamp > cutoff }.suffix(maxMoodSamples).map { $0 }
+        }
+    }
+
+    private func saveMoodHistory() {
+        if let data = try? JSONEncoder().encode(moodHistory) {
+            UserDefaults.standard.set(data, forKey: Self.moodStorageKey)
+        }
     }
 
     // MARK: - Private

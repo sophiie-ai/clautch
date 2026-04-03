@@ -54,11 +54,11 @@ struct NotchContentView: View {
             let newTarget = CGFloat.random(in: 0.05...0.95)
             walkingRight = newTarget > wanderPosition
             isWalking = true
-            withAnimation(.easeInOut(duration: 2.5)) {
+            withAnimation(.spring(response: 1.8, dampingFraction: 0.85)) {
                 wanderPosition = newTarget
             }
             roomManager.updatePosition(newTarget)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 isWalking = false
             }
         }

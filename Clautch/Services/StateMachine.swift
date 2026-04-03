@@ -83,6 +83,9 @@ final class StateMachine {
         let task = effective?.state.task ?? .idle
         let emotion = effective?.state.emotion ?? .neutral
         RoomManager.shared.broadcastState(task: task, emotion: emotion)
+
+        // Record mood for sparkline
+        SessionStats.shared.recordMood(emotion.rawValue)
     }
 
     private func updateStatsTracking() {

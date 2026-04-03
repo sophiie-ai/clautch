@@ -51,6 +51,7 @@ final class PeerStore {
                 // New peer joined
                 if oldPeer == nil && peer.isActive {
                     activity.addJoin(peer.displayName)
+                    NotificationService.shared.playSound(.peerJoin)
                 }
 
                 // New reaction that wasn't there before
@@ -60,6 +61,7 @@ final class PeerStore {
                         from: peer.displayName, reaction: reaction
                     )
                     activity.addReaction(from: peer.displayName, reaction: reaction)
+                    NotificationService.shared.playSound(.reactionReceived)
                 }
 
                 // New chat message
@@ -69,6 +71,7 @@ final class PeerStore {
                         from: peer.displayName, message: chat
                     )
                     activity.addChat(from: peer.displayName, message: chat)
+                    NotificationService.shared.playSound(.chatReceived)
                 }
             }
 
@@ -81,6 +84,7 @@ final class PeerStore {
             for (peerId, oldPeer) in peers where peerId != myId {
                 if oldPeer.isVisible && !fetchedIds.contains(peerId) {
                     activity.addLeave(oldPeer.displayName)
+                    NotificationService.shared.playSound(.peerLeave)
                 }
             }
         }

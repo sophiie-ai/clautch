@@ -4,11 +4,10 @@ import ServiceManagement
 import Sparkle
 import os
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var notchPanel: NotchPanel?
-    private var onboardingWindow: NSWindow?
-    private var roomWindow: NSWindow?
-    private var statsWindow: NSWindow?
+    private let windowCoordinator = WindowCoordinator()
     private var statusItem: NSStatusItem?
     private var sessionBadgeTimer: Timer?
     private let logger = Logger(subsystem: "com.clautch.app", category: "AppDelegate")
@@ -116,52 +115,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Onboarding
 
     private func showOnboarding() {
-        let onboarding = OnboardingView { [weak self] _ in
-            self?.onboardingWindow?.close()
-            self?.onboardingWindow = nil
-            self?.setupNotchPanel()
-            self?.rebuildMenu()
-            // Go back to accessory mode
-            NSApp.setActivationPolicy(.accessory)
-        }
-
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 600),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
+        windowCoordinator.show(
+            key: "onboarding",
+            title: "Welcome to Clautch",
+            size: NSSize(width: 440, height: 600),
+            content: {
+                OnboardingView { [weak self] _ in
+                    // Close onboarding and set up the notch panel
+                    DispatchQueue.main.async {
+                        self?.setupNotchPanel()
+                        self?.rebuildMenu()
+                    }
+                }
+            }
         )
-        window.center()
-        window.title = "Welcome to Clautch"
-        window.contentView = NSHostingView(rootView: onboarding)
-        window.isReleasedWhenClosed = false
-
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        window.orderFrontRegardless()
-
-        // Return to accessory when closed via X button — store token to prevent leaks
-        var token: NSObjectProtocol?
-        token = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { [weak self] _ in
-            self?.onboardingWindow = nil
-            NSApp.setActivationPolicy(.accessory)
-            if let token { NotificationCenter.default.removeObserver(token) }
-        }
-
-        self.onboardingWindow = window
     }
 
     @objc private func changeCreature() {
-        if let existing = onboardingWindow {
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-            existing.makeKeyAndOrderFront(nil)
-            existing.orderFrontRegardless()
+        if windowCoordinator.isOpen("onboarding") {
+            // Just re-show it
+            showOnboarding()
             return
         }
         notchPanel?.close()
@@ -172,89 +145,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Room Window
 
     @objc private func showRoomWindow() {
-        if let existing = roomWindow {
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-            existing.makeKeyAndOrderFront(nil)
-            existing.orderFrontRegardless()
-            return
-        }
-
-        let roomView = RoomView()
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 420),
-            styleMask: [.titled, .closable, .resizable, .miniaturizable],
-            backing: .buffered,
-            defer: false
+        windowCoordinator.show(
+            key: "room",
+            title: "Clautch Room",
+            size: NSSize(width: 320, height: 420),
+            minSize: NSSize(width: 300, height: 350),
+            resizable: true,
+            autosaveName: "ClautchRoom",
+            content: { RoomView() }
         )
-        window.minSize = NSSize(width: 300, height: 350)
-        window.setFrameAutosaveName("ClautchRoom")
-        window.title = "Clautch Room"
-        window.contentView = NSHostingView(rootView: roomView)
-        window.isReleasedWhenClosed = false
-
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        window.orderFrontRegardless()
-
-        // Return to accessory when closed — store token to prevent leaks
-        var roomToken: NSObjectProtocol?
-        roomToken = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { [weak self] _ in
-            self?.roomWindow = nil
-            NSApp.setActivationPolicy(.accessory)
-            if let roomToken { NotificationCenter.default.removeObserver(roomToken) }
-        }
-
-        self.roomWindow = window
     }
 
     // MARK: - Stats Window
 
     @objc private func showStatsWindow() {
-        if let existing = statsWindow {
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-            existing.makeKeyAndOrderFront(nil)
-            existing.orderFrontRegardless()
-            return
-        }
-
-        let statsView = StatsView()
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 360, height: 320),
-            styleMask: [.titled, .closable, .resizable, .miniaturizable],
-            backing: .buffered,
-            defer: false
+        windowCoordinator.show(
+            key: "stats",
+            title: "Clautch Usage Stats",
+            size: NSSize(width: 360, height: 320),
+            minSize: NSSize(width: 320, height: 280),
+            resizable: true,
+            autosaveName: "ClautchStats",
+            content: { StatsView() }
         )
-        window.minSize = NSSize(width: 320, height: 280)
-        window.setFrameAutosaveName("ClautchStats")
-        window.title = "Clautch Usage Stats"
-        window.contentView = NSHostingView(rootView: statsView)
-        window.isReleasedWhenClosed = false
-
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        window.orderFrontRegardless()
-        watchForResignActive()
-
-        var token: NSObjectProtocol?
-        token = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { [weak self] _ in
-            self?.statsWindow = nil
-            self?.returnToAccessoryIfNeeded()
-            if let token { NotificationCenter.default.removeObserver(token) }
-        }
-
-        self.statsWindow = window
     }
 
     // MARK: - Notch Panel
@@ -300,7 +213,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func screenDidChange() {
-        guard onboardingWindow == nil else { return }
+        guard !windowCoordinator.isOpen("onboarding") else { return }
         let wasExpanded = NotchHoverState.shared.isHovered
         notchPanel?.close()
         notchPanel = nil
@@ -554,7 +467,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func returnToAccessoryIfNeeded() {
-        guard onboardingWindow == nil && roomWindow == nil && statsWindow == nil else { return }
+        guard !windowCoordinator.hasOpenWindows else { return }
         if let token = resignToken {
             NotificationCenter.default.removeObserver(token)
             resignToken = nil

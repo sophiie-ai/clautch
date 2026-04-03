@@ -40,6 +40,20 @@ struct StatsView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
 
+            // Mood sparkline
+            if !stats.moodHistory.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Mood")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    MoodSparkline(samples: stats.moodHistory)
+                        .frame(height: 30)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+            }
+
             Spacer()
         }
         .frame(minWidth: 320, minHeight: 280)
@@ -90,5 +104,52 @@ struct StatsView: View {
             }
         }
         .frame(height: 140)
+    }
+}
+
+// MARK: - Mood Sparkline
+
+struct MoodSparkline: View {
+    let samples: [SessionStats.MoodSample]
+
+    var body: some View {
+        Canvas { ctx, size in
+            guard samples.count >= 2 else { return }
+            let w = size.width
+            let h = size.height
+            let midY = h / 2
+
+            // Draw baseline
+            ctx.stroke(
+                Path { p in p.move(to: CGPoint(x: 0, y: midY)); p.addLine(to: CGPoint(x: w, y: midY)) },
+                with: .color(.primary.opacity(0.1)),
+                lineWidth: 0.5
+            )
+
+            // Build sparkline path
+            var path = Path()
+            for (i, sample) in samples.enumerated() {
+                let x = w * CGFloat(i) / CGFloat(samples.count - 1)
+                let y = midY - CGFloat(sample.value) * (h / 2 - 2)
+                if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                else { path.addLine(to: CGPoint(x: x, y: y)) }
+            }
+
+            // Color based on latest mood
+            let lastValue = samples.last?.value ?? 0
+            let lineColor: Color = lastValue > 0.3 ? .green :
+                                   lastValue < -0.3 ? .red : .yellow
+            ctx.stroke(path, with: .color(lineColor.opacity(0.8)), lineWidth: 1.5)
+
+            // Dots at each sample
+            for (i, sample) in samples.enumerated() {
+                let x = w * CGFloat(i) / CGFloat(samples.count - 1)
+                let y = midY - CGFloat(sample.value) * (h / 2 - 2)
+                ctx.fill(
+                    Path(ellipseIn: CGRect(x: x - 1.5, y: y - 1.5, width: 3, height: 3)),
+                    with: .color(lineColor.opacity(0.6))
+                )
+            }
+        }
     }
 }
