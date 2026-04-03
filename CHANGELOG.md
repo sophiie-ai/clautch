@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.44](https://github.com/sophiie-ai/clautch/compare/v0.2.43...v0.2.44) (2026-04-03)
+
+
+### Features
+
+* deep links, CloudKit protocol, notification grouping, menubar creature, sky interpolation, typing indicator, creature settings, walk paths, menu reorg, and tests ([04d68fd](https://github.com/sophiie-ai/clautch/commit/04d68fdec23112483907250ce0dc9a851c434032))
+
 ## [0.2.43](https://github.com/sophiie-ai/clautch/compare/v0.2.42...v0.2.43) (2026-04-02)
 
 
