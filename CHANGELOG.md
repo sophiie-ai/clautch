@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/sophiie-ai/clautch/compare/v0.4.0...v0.5.0) (2026-04-03)
+
+
+### Features
+
+* code cleanup, file extraction, smooth transitions, and chat persistence ([c1173b4](https://github.com/sophiie-ai/clautch/commit/c1173b449a7016cf95d16affd6f689ba3065305b))
+
 ## [0.4.0](https://github.com/sophiie-ai/clautch/compare/v0.3.0...v0.4.0) (2026-04-03)
 
 
