@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.54](https://github.com/sophiie-ai/clautch/compare/v0.2.53...v0.2.54) (2026-04-03)
+
+
+### Features
+
+* polished onboarding fly-to-notch animation, creatures beside notch when collapsed ([3fcda20](https://github.com/sophiie-ai/clautch/commit/3fcda2023658e549c67638e133c96568a4d0f2f7))
+
+
+### Bug Fixes
+
+* changing creature no longer quits app ([899c4e0](https://github.com/sophiie-ai/clautch/commit/899c4e04c332590a8b92fe565e55e26545ca01e0))
+
 ## [0.2.53](https://github.com/sophiie-ai/clautch/compare/v0.2.52...v0.2.53) (2026-04-03)
 
 
