@@ -265,8 +265,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hostingView.layer?.backgroundColor = .clear
 
         let hitTestView = NotchHitTestView(hostingView: hostingView)
-        hitTestView.onClicked = {
+        hitTestView.notchHeight = screen.safeAreaInsets.top
+        hitTestView.isExpanded = NotchHoverState.shared.isHovered
+        hitTestView.onClicked = { [weak hitTestView] in
             let expanding = !NotchHoverState.shared.isHovered
+            hitTestView?.isExpanded = expanding
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 NotchHoverState.shared.isHovered = expanding
             }
