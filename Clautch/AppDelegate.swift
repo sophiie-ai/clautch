@@ -639,23 +639,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showSettings() {
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        // Open the SwiftUI Settings scene
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        // The Settings window is created lazily — find and bring it to front
-        DispatchQueue.main.async {
-            if let settingsWindow = NSApp.windows.first(where: {
-                $0.title.contains("Settings") || $0.frameAutosaveName == "com.apple.SwiftUI.Settings"
-            }) {
-                if !settingsWindow.isVisible {
-                    settingsWindow.center()
-                }
-                settingsWindow.makeKeyAndOrderFront(nil)
-                settingsWindow.orderFrontRegardless()
-            }
-            self.watchForResignActive()
-        }
+        windowCoordinator.show(
+            key: "settings",
+            title: "Clautch Settings",
+            size: NSSize(width: 440, height: 380),
+            autosaveName: "ClautchSettings",
+            content: { SettingsView() }
+        )
     }
 
     @objc private func toggleLaunchAtLogin() {
