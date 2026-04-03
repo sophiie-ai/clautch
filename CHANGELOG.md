@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.53](https://github.com/sophiie-ai/clautch/compare/v0.2.52...v0.2.53) (2026-04-03)
+
+
+### Bug Fixes
+
+* all windows now center on first show and come to front reliably ([a6a55ec](https://github.com/sophiie-ai/clautch/commit/a6a55ecbc01d014d880cc8fd7b03b855273dea79))
+
 ## [0.2.52](https://github.com/sophiie-ai/clautch/compare/v0.2.51...v0.2.52) (2026-04-03)
 
 
