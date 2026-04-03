@@ -2,8 +2,24 @@ import Foundation
 import CloudKit
 import os
 
+/// Protocol for CloudKit operations — enables mock injection for testing.
+protocol CloudKitServiceProtocol: Sendable {
+    var isAvailable: Bool { get }
+    func createRoom(code: String, creatorPeerId: String, inviteToken: String) async throws -> CKRecord
+    func findRoom(code: String) async throws -> CKRecord?
+    func deleteRoom(recordID: CKRecord.ID) async throws
+    func writePresence(existingRecordID: CKRecord.ID?, roomCode: String, state: PeerState) async throws -> CKRecord
+    func fetchPresences(roomCode: String) async throws -> [(CKRecord.ID, PeerState)]
+    func deletePresence(recordID: CKRecord.ID) async throws
+    func cleanupStalePresences(roomCode: String) async throws
+    func expireRoomIfStale(roomCode: String) async throws -> Bool
+    func subscribeToPresence(roomCode: String) async throws
+    func unsubscribeFromPresence() async
+    func checkAvailability() async -> Bool
+}
+
 /// Low-level CloudKit operations for rooms and presence.
-final class CloudKitService: @unchecked Sendable {
+final class CloudKitService: CloudKitServiceProtocol, @unchecked Sendable {
     static let shared = CloudKitService()
 
     /// Container is lazily initialized. Returns nil if iCloud entitlements
@@ -124,6 +140,7 @@ final class CloudKitService: @unchecked Sendable {
             if let ct = state.chatTimestamp {
                 record["chatTimestamp"] = ct as NSDate
             }
+            record["isTyping"] = (state.isTyping ?? false) ? 1 : 0
 
             return try await db.save(record)
         }
@@ -323,6 +340,7 @@ extension PeerState {
         let chatMsg = record["chatMessage"] as? String ?? ""
         let chatTs = record["chatTimestamp"] as? Date
         let reactionTs = record["reactionTimestamp"] as? Date
+        let typing = (record["isTyping"] as? Int64 ?? 0) == 1
 
         // Verify signature if present — reject peers with invalid signatures
         if let pubKey, let sig, !pubKey.isEmpty, !sig.isEmpty {
@@ -348,7 +366,8 @@ extension PeerState {
             reaction: reactionRaw.isEmpty ? nil : PeerReaction(rawValue: reactionRaw),
             reactionTimestamp: reactionTs,
             chatMessage: chatMsg.isEmpty ? nil : String(chatMsg.prefix(50)),
-            chatTimestamp: chatTs
+            chatTimestamp: chatTs,
+            isTyping: typing
         )
     }
 }

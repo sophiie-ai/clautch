@@ -24,23 +24,43 @@ struct GrassIslandView: View {
     private let grassGreen = Color(red: 0.2, green: 0.5, blue: 0.25)
     private let grassDark = Color(red: 0.12, green: 0.35, blue: 0.15)
 
-    /// Sky colors and star count based on time of day.
+    /// Sky colors and star count, smoothly interpolated by time of day.
     private var skyTheme: (top: Color, bottom: Color, stars: Int) {
-        let hour = Calendar.current.component(.hour, from: Date())
-        switch hour {
-        case 6..<8:   // Dawn
-            return (Color(red: 0.45, green: 0.30, blue: 0.40),
-                    Color(red: 0.75, green: 0.45, blue: 0.30), 3)
-        case 8..<17:  // Day
-            return (Color(red: 0.20, green: 0.45, blue: 0.75),
-                    Color(red: 0.40, green: 0.65, blue: 0.85), 0)
-        case 17..<19: // Dusk
-            return (Color(red: 0.35, green: 0.20, blue: 0.45),
-                    Color(red: 0.70, green: 0.35, blue: 0.30), 4)
-        default:      // Night
-            return (Color(red: 0.08, green: 0.10, blue: 0.25),
-                    Color(red: 0.12, green: 0.18, blue: 0.35), 14)
+        let cal = Calendar.current
+        let now = Date()
+        let h = cal.component(.hour, from: now)
+        let m = cal.component(.minute, from: now)
+        let t = Double(h) + Double(m) / 60.0  // fractional hour (e.g. 7.5 = 7:30)
+
+        // Keyframes: (hour, topR, topG, topB, botR, botG, botB, stars)
+        let keys: [(h: Double, tr: Double, tg: Double, tb: Double, br: Double, bg: Double, bb: Double, s: Double)] = [
+            (0,  0.08, 0.10, 0.25, 0.12, 0.18, 0.35, 14),  // Midnight
+            (6,  0.08, 0.10, 0.25, 0.12, 0.18, 0.35, 14),  // Pre-dawn
+            (7,  0.45, 0.30, 0.40, 0.75, 0.45, 0.30,  3),  // Dawn
+            (8,  0.20, 0.45, 0.75, 0.40, 0.65, 0.85,  0),  // Morning
+            (17, 0.20, 0.45, 0.75, 0.40, 0.65, 0.85,  0),  // Late afternoon
+            (18, 0.35, 0.20, 0.45, 0.70, 0.35, 0.30,  4),  // Dusk
+            (19, 0.12, 0.12, 0.30, 0.15, 0.20, 0.35, 10),  // Early night
+            (24, 0.08, 0.10, 0.25, 0.12, 0.18, 0.35, 14),  // Midnight wrap
+        ]
+
+        // Find surrounding keyframes and interpolate
+        var lo = keys[0], hi = keys[1]
+        for i in 0..<(keys.count - 1) {
+            if t >= keys[i].h && t < keys[i + 1].h {
+                lo = keys[i]; hi = keys[i + 1]; break
+            }
         }
+        let span = hi.h - lo.h
+        let f = span > 0 ? (t - lo.h) / span : 0  // blend factor 0..1
+        let top = Color(red: lo.tr + (hi.tr - lo.tr) * f,
+                        green: lo.tg + (hi.tg - lo.tg) * f,
+                        blue: lo.tb + (hi.tb - lo.tb) * f)
+        let bot = Color(red: lo.br + (hi.br - lo.br) * f,
+                        green: lo.bg + (hi.bg - lo.bg) * f,
+                        blue: lo.bb + (hi.bb - lo.bb) * f)
+        let stars = Int((lo.s + (hi.s - lo.s) * f).rounded())
+        return (top, bot, stars)
     }
 
     var body: some View {
@@ -213,6 +233,11 @@ struct GrassIslandView: View {
                                         removal: .opacity
                                     ))
                                     .id("chat-\(creature.id)-\(chat)")
+                            }
+
+                            if isExpanded && creature.isTyping && creature.chatMessage == nil {
+                                TypingIndicator()
+                                    .transition(.opacity)
                             }
 
                             if isExpanded, let reaction = creature.reaction,
@@ -528,6 +553,33 @@ struct StatusBarOverlay: View {
         case .confused:        return .yellow
         case .tired:           return .purple
         case .neutral:         return .gray
+        }
+    }
+}
+
+// MARK: - Typing Indicator
+
+/// Animated three-dot typing indicator.
+struct TypingIndicator: View {
+    @State private var phase: Double = 0
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 6)) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 2) {
+                ForEach(0..<3, id: \.self) { i in
+                    Circle()
+                        .fill(.white.opacity(0.7))
+                        .frame(width: 3, height: 3)
+                        .offset(y: -2 * sin(t * 4 + Double(i) * 0.8))
+                }
+            }
+            .padding(.horizontal, 5)
+            .padding(.vertical, 3)
+            .background(
+                PixelBubbleShape()
+                    .fill(.white.opacity(0.3))
+            )
         }
     }
 }

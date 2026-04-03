@@ -17,7 +17,7 @@ final class RoomManager {
     private var roomRecordID: CKRecord.ID?
 
     private var syncTimer: Timer?
-    private let cloudKit = CloudKitService.shared
+    private let cloudKit: any CloudKitServiceProtocol
     private let logger = Logger(subsystem: "com.clautch.app", category: "RoomManager")
 
     /// Track last-broadcast state to avoid redundant CloudKit writes.
@@ -36,7 +36,14 @@ final class RoomManager {
         return peerStore.visiblePeers(excludingPeerId: profile.peerId).count
     }
 
-    private init() {}
+    private init() {
+        self.cloudKit = CloudKitService.shared
+    }
+
+    /// Test-only initializer for injecting a mock CloudKit service.
+    init(cloudKit: any CloudKitServiceProtocol) {
+        self.cloudKit = cloudKit
+    }
 
     // MARK: - Create Room
 
@@ -240,11 +247,28 @@ final class RoomManager {
         localState?.xPosition = x
     }
 
+    private var typingClearTask: Task<Void, Never>?
+
+    /// Set typing state — auto-clears after 3s of inactivity.
+    func setTyping(_ typing: Bool) {
+        localState?.isTyping = typing
+        typingClearTask?.cancel()
+        if typing {
+            typingClearTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(3))
+                if localState?.isTyping == true {
+                    localState?.isTyping = false
+                }
+            }
+        }
+    }
+
     /// Send a chat message — broadcast on next sync, auto-clear after 8s.
     func sendChat(_ message: String) {
         guard var state = ensureLocalState() else { return }
         let trimmed = String(message.prefix(50))
         guard !trimmed.isEmpty else { return }
+        setTyping(false)
         state = PeerState(
             peerId: state.peerId,
             displayName: state.displayName,

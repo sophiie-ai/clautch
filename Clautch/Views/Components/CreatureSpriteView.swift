@@ -35,6 +35,12 @@ final class AnimationSettings {
         didSet { UserDefaults.standard.set(showEventLog, forKey: Self.eventLogKey) }
     }
 
+    /// Show an animated creature in the menu bar icon.
+    private static let menuBarCreatureKey = "com.clautch.menuBarCreature"
+    var menuBarCreature: Bool = false {
+        didSet { UserDefaults.standard.set(menuBarCreature, forKey: Self.menuBarCreatureKey) }
+    }
+
     init() {
         self.reduceAnimationWhenCollapsed = UserDefaults.standard.bool(forKey: Self.reduceKey)
         self.hideWhenCollapsed = UserDefaults.standard.bool(forKey: Self.hideKey)
@@ -42,6 +48,7 @@ final class AnimationSettings {
         // Default to true for new settings
         self.showStatusBar = UserDefaults.standard.object(forKey: Self.statusBarKey) as? Bool ?? true
         self.showEventLog = UserDefaults.standard.object(forKey: Self.eventLogKey) as? Bool ?? true
+        self.menuBarCreature = UserDefaults.standard.bool(forKey: Self.menuBarCreatureKey)
     }
 }
 

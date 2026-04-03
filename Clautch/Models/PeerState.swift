@@ -118,6 +118,7 @@ struct PeerState: Codable, Sendable, Identifiable {
     var reactionTimestamp: Date?
     var chatMessage: String?
     var chatTimestamp: Date?
+    var isTyping: Bool?
 
     var id: String { peerId }
 
@@ -159,6 +160,7 @@ struct PeerState: Codable, Sendable, Identifiable {
         accessory == other.accessory &&
         reaction == other.reaction &&
         chatMessage == other.chatMessage &&
+        isTyping == other.isTyping &&
         abs((xPosition ?? 0.5) - (other.xPosition ?? 0.5)) < 0.01
     }
 }
@@ -181,4 +183,5 @@ struct CreatureDisplay: Identifiable {
     var reaction: PeerReaction?
     var reactionActive: Bool = false
     var chatMessage: String?
+    var isTyping: Bool = false
 }

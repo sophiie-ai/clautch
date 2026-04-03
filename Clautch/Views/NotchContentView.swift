@@ -28,6 +28,7 @@ struct NotchContentView: View {
     @State private var wanderPosition: CGFloat = 0.25
     @State private var wanderTimer: Timer?
     @State private var isWalking: Bool = false
+    @State private var walkingRight: Bool = true
 
     private var isExpanded: Bool { hoverState.isHovered }
 
@@ -51,6 +52,7 @@ struct NotchContentView: View {
         guard wanderTimer == nil else { return }
         wanderTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
             let newTarget = CGFloat.random(in: 0.05...0.95)
+            walkingRight = newTarget > wanderPosition
             isWalking = true
             withAnimation(.easeInOut(duration: 2.5)) {
                 wanderPosition = newTarget
@@ -113,7 +115,8 @@ struct NotchContentView: View {
                     displayName: peer.displayName,
                     reaction: peer.hasActiveReaction ? peer.reaction : nil,
                     reactionActive: peer.hasActiveReaction,
-                    chatMessage: peer.activeChatMessage
+                    chatMessage: peer.activeChatMessage,
+                    isTyping: peer.isTyping ?? false
                 ))
             }
         }
@@ -128,8 +131,10 @@ struct NotchContentView: View {
         let sorted = creatures.sorted { $0.xPosition < $1.xPosition }
         return sorted.map { c in
             var c = c
-            // Find nearest other creature
-            if let nearest = sorted.filter({ $0.id != c.id })
+            // When walking, local creature faces travel direction
+            if c.isLocal && isWalking {
+                c.facingRight = walkingRight
+            } else if let nearest = sorted.filter({ $0.id != c.id })
                 .min(by: { abs($0.xPosition - c.xPosition) < abs($1.xPosition - c.xPosition) }) {
                 c.facingRight = nearest.xPosition > c.xPosition
             }

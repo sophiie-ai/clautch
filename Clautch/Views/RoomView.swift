@@ -183,6 +183,9 @@ struct RoomView: View {
                     .background(Color.primary.opacity(0.06))
                     .cornerRadius(6)
                     .onSubmit { sendChat() }
+                    .onChange(of: chatInput) { _, newValue in
+                        roomManager.setTyping(!newValue.isEmpty)
+                    }
 
                 Button(action: sendChat) {
                     Image(systemName: "paperplane.fill")

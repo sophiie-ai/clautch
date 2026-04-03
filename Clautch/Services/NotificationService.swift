@@ -13,6 +13,11 @@ final class NotificationService {
         set { UserDefaults.standard.set(newValue, forKey: "com.clautch.notificationsEnabled") }
     }
 
+    /// Coalescing window — batch rapid peer events into grouped notifications.
+    private var pendingPeerEvents: [(String, String)] = []  // (title, body)
+    private var coalesceTask: Task<Void, Never>?
+    private let coalesceDelay: TimeInterval = 2.5
+
     private init() {}
 
     func requestPermissionIfNeeded() {
@@ -46,22 +51,48 @@ final class NotificationService {
 
     func postReactionReceived(from peerName: String, reaction: PeerReaction) {
         guard isEnabled else { return }
-        let content = UNMutableNotificationContent()
-        content.title = "\(peerName) reacted"
-        content.body = "\(reaction.emoji) \(reaction.rawValue.capitalized)"
-        content.sound = .default
-        let id = "reaction-\(peerName)-\(Int(Date().timeIntervalSince1970))"
-        let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
+        enqueuePeerEvent(title: "\(peerName) reacted", body: "\(reaction.emoji) \(reaction.rawValue.capitalized)")
     }
 
     func postChatReceived(from peerName: String, message: String) {
         guard isEnabled else { return }
+        enqueuePeerEvent(title: peerName, body: sanitize(message, maxLength: 50))
+    }
+
+    /// Enqueue a peer event — coalesces rapid events into a single grouped notification.
+    private func enqueuePeerEvent(title: String, body: String) {
+        pendingPeerEvents.append((title, body))
+
+        // Reset the coalesce timer
+        coalesceTask?.cancel()
+        coalesceTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(coalesceDelay))
+            guard !Task.isCancelled else { return }
+            flushPeerEvents()
+        }
+    }
+
+    /// Flush pending peer events into one or more notifications.
+    private func flushPeerEvents() {
+        guard !pendingPeerEvents.isEmpty else { return }
+        let events = pendingPeerEvents
+        pendingPeerEvents.removeAll()
+
         let content = UNMutableNotificationContent()
-        content.title = peerName
-        content.body = sanitize(message, maxLength: 50)
+        if events.count == 1 {
+            content.title = events[0].0
+            content.body = events[0].1
+        } else {
+            content.title = "Clautch Room"
+            content.body = events.prefix(4).map { "\($0.0): \($0.1)" }.joined(separator: "\n")
+            if events.count > 4 {
+                content.body += "\n+\(events.count - 4) more"
+            }
+        }
         content.sound = .default
-        let id = "chat-\(peerName)-\(Int(Date().timeIntervalSince1970))"
+        content.threadIdentifier = "clautch-room"
+
+        let id = "room-\(Int(Date().timeIntervalSince1970))"
         let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
     }

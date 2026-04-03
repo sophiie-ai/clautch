@@ -67,6 +67,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("Clautch launched successfully")
     }
 
+    // MARK: - Deep Links
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            handleDeepLink(url)
+        }
+    }
+
+    private func handleDeepLink(_ url: URL) {
+        // clautch://join/CODE-TOKEN or clautch://join/CODE
+        guard url.scheme == "clautch", url.host == "join" else {
+            logger.warning("Unknown deep link: \(url)")
+            return
+        }
+        let shareableCode = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !shareableCode.isEmpty else { return }
+
+        logger.info("Deep link join: \(shareableCode)")
+        Task { @MainActor in
+            do {
+                try await RoomManager.shared.joinRoom(shareableCode: shareableCode)
+                // Show the room window after joining
+                showRoomWindow()
+            } catch {
+                logger.error("Deep link join failed: \(error)")
+                // Show room window anyway so user sees the error
+                showRoomWindow()
+            }
+        }
+    }
+
     func application(_ application: NSApplication, didReceiveRemoteNotification userInfo: [String: Any]) {
         // CloudKit silent push — trigger immediate peer sync
         Task { @MainActor in
@@ -302,6 +333,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var lastBadgeCount = -1
+    private var creatureAnimTimer: Timer?
+    private var creatureFrame = 0
 
     private func startSessionBadgeTimer() {
         sessionBadgeTimer?.invalidate()
@@ -320,38 +353,88 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         lastBadgeCount = count
         guard let button = statusItem?.button else { return }
         button.title = count > 0 ? "\(count)" : ""
+
+        // Start/stop creature animation based on setting
+        if AnimationSettings.shared.menuBarCreature {
+            startCreatureAnimation()
+        } else {
+            stopCreatureAnimation()
+        }
+    }
+
+    @MainActor
+    private func startCreatureAnimation() {
+        guard creatureAnimTimer == nil else { return }
+        updateMenuBarCreature()
+        creatureAnimTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.creatureFrame += 1
+                self?.updateMenuBarCreature()
+            }
+        }
+    }
+
+    private func stopCreatureAnimation() {
+        creatureAnimTimer?.invalidate()
+        creatureAnimTimer = nil
+        // Restore default icon
+        if let button = statusItem?.button {
+            let image = NSImage(named: "MenuBarIcon")
+            image?.isTemplate = true
+            image?.size = NSSize(width: 18, height: 18)
+            button.image = image
+        }
+    }
+
+    @MainActor
+    private func updateMenuBarCreature() {
+        guard let profile = UserProfile.current,
+              let button = statusItem?.button else { return }
+
+        let type = profile.creatureType
+        let frames = type.frames
+        guard !frames.isEmpty else { return }
+        let grid = frames[creatureFrame % frames.count]
+
+        let size: CGFloat = 18
+        let px = size / CGFloat(max(grid.first?.count ?? 8, 1))
+        let image = NSImage(size: NSSize(width: size, height: size), flipped: true) { rect in
+            for (r, row) in grid.enumerated() {
+                for (c, cell) in row.enumerated() {
+                    guard cell != 0 else { continue }
+                    let color: NSColor = switch cell {
+                    case 2: .labelColor          // eyes
+                    case 3: .secondaryLabelColor  // mouth
+                    default: .labelColor          // body
+                    }
+                    color.setFill()
+                    NSRect(x: CGFloat(c) * px, y: CGFloat(r) * px, width: px + 0.5, height: px + 0.5).fill()
+                }
+            }
+            return true
+        }
+        image.isTemplate = true
+        button.image = image
     }
 
     private func rebuildMenu() {
         let menu = NSMenu()
         menu.delegate = self
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
-        menu.addItem(withTitle: "Clautch v\(version)", action: nil, keyEquivalent: "")
-        menu.addItem(.separator())
 
-        // Profile info
+        // ── Header ──
         if let profile = UserProfile.current {
-            let creatureItem = NSMenuItem(
+            let profileItem = NSMenuItem(
                 title: "\(profile.creatureType.displayName) — \(profile.displayName)",
                 action: nil, keyEquivalent: ""
             )
-            menu.addItem(creatureItem)
+            menu.addItem(profileItem)
         }
-
-        // Session stats (dynamic, updated in menuWillOpen)
         let statsItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         statsItem.tag = 150
         menu.addItem(statsItem)
 
-        let statsWindowItem = NSMenuItem(
-            title: "Usage Stats…",
-            action: #selector(showStatsWindow),
-            keyEquivalent: ""
-        )
-        statsWindowItem.target = self
-        menu.addItem(statsWindowItem)
-
-        // Sessions header (dynamic content filled in menuWillOpen)
+        // ── Sessions ──
         menu.addItem(.separator())
         let sessionsHeader = NSMenuItem(title: "Sessions (0)", action: nil, keyEquivalent: "")
         sessionsHeader.tag = 300
@@ -360,30 +443,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         sentinel.tag = 399
         menu.addItem(sentinel)
 
-        // Room
-        let roomItem = NSMenuItem(
-            title: "Room…",
-            action: #selector(showRoomWindow),
-            keyEquivalent: "r"
-        )
+        // ── Room ──
+        menu.addItem(.separator())
+        let roomItem = NSMenuItem(title: "Room…", action: #selector(showRoomWindow), keyEquivalent: "r")
         roomItem.target = self
         menu.addItem(roomItem)
 
-        // Room status (dynamic, updated via delegate)
         let roomStatus = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         roomStatus.tag = 200
         menu.addItem(roomStatus)
 
-        let copyCodeItem = NSMenuItem(
-            title: "Copy Room Code",
-            action: #selector(copyRoomCode),
-            keyEquivalent: ""
-        )
+        let copyCodeItem = NSMenuItem(title: "Copy Invite Code", action: #selector(copyRoomCode), keyEquivalent: "")
         copyCodeItem.target = self
         copyCodeItem.tag = 201
         menu.addItem(copyCodeItem)
 
-        // Reactions submenu (only when in a room)
         let reactItem = NSMenuItem(title: "Send Reaction", action: nil, keyEquivalent: "")
         reactItem.tag = 250
         let reactMenu = NSMenu()
@@ -400,129 +474,56 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         reactItem.submenu = reactMenu
         menu.addItem(reactItem)
 
+        // ── Windows ──
         menu.addItem(.separator())
+        let statsWindowItem = NSMenuItem(title: "Usage Stats…", action: #selector(showStatsWindow), keyEquivalent: "")
+        statsWindowItem.target = self
+        menu.addItem(statsWindowItem)
 
-        let changeItem = NSMenuItem(
-            title: "Change Creature…",
-            action: #selector(changeCreature),
-            keyEquivalent: ""
-        )
+        let changeItem = NSMenuItem(title: "Change Creature…", action: #selector(changeCreature), keyEquivalent: "")
         changeItem.target = self
         menu.addItem(changeItem)
 
-        menu.addItem(.separator())
-
-        // Notifications toggle
-        let notifItem = NSMenuItem(
-            title: "Notifications",
-            action: #selector(toggleNotifications),
-            keyEquivalent: ""
-        )
-        notifItem.target = self
-        notifItem.tag = 500
-        menu.addItem(notifItem)
-
-        // Notch-specific options (only shown when a notch is detected)
+        // ── Display (notch screens only) ──
         let notchScreens = NSScreen.screens.filter { $0.hasNotch }
-        let hasNotch = !notchScreens.isEmpty
-        if hasNotch {
-            // Display picker (only if multiple notch screens)
-            if notchScreens.count > 1 {
-                let displayItem = NSMenuItem(title: "Display", action: nil, keyEquivalent: "")
-                displayItem.tag = 850
-                let displayMenu = NSMenu()
-                for screen in notchScreens {
-                    let item = NSMenuItem(
-                        title: screen.localizedName,
-                        action: #selector(selectDisplay(_:)),
-                        keyEquivalent: ""
-                    )
-                    item.target = self
-                    item.representedObject = screen.localizedName
-                    displayMenu.addItem(item)
-                }
-                displayItem.submenu = displayMenu
-                menu.addItem(displayItem)
+        if notchScreens.count > 1 {
+            menu.addItem(.separator())
+            let displayItem = NSMenuItem(title: "Display", action: nil, keyEquivalent: "")
+            displayItem.tag = 850
+            let displayMenu = NSMenu()
+            for screen in notchScreens {
+                let item = NSMenuItem(
+                    title: screen.localizedName,
+                    action: #selector(selectDisplay(_:)),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                item.representedObject = screen.localizedName
+                displayMenu.addItem(item)
             }
-            let animItem = NSMenuItem(
-                title: "Reduce Animation",
-                action: #selector(toggleReduceAnimation),
-                keyEquivalent: ""
-            )
-            animItem.target = self
-            animItem.tag = 700
-            menu.addItem(animItem)
-
-            let hideItem = NSMenuItem(
-                title: "Hide When Collapsed",
-                action: #selector(toggleHideWhenCollapsed),
-                keyEquivalent: ""
-            )
-            hideItem.target = self
-            hideItem.tag = 750
-            menu.addItem(hideItem)
+            displayItem.submenu = displayMenu
+            menu.addItem(displayItem)
         }
 
-        // Status Bar toggle
-        let statusBarItem = NSMenuItem(
-            title: "Status Bar",
-            action: #selector(toggleStatusBar),
-            keyEquivalent: ""
-        )
-        statusBarItem.target = self
-        statusBarItem.tag = 760
-        menu.addItem(statusBarItem)
+        // ── System ──
+        menu.addItem(.separator())
 
-        // Event Log toggle
-        let eventLogItem = NSMenuItem(
-            title: "Event Log",
-            action: #selector(toggleEventLog),
-            keyEquivalent: ""
-        )
-        eventLogItem.target = self
-        eventLogItem.tag = 770
-        menu.addItem(eventLogItem)
-
-        // Pause toggle — hides panel and stops processing
-        let pauseItem = NSMenuItem(
-            title: "Pause Clautch",
-            action: #selector(togglePause),
-            keyEquivalent: ""
-        )
+        let pauseItem = NSMenuItem(title: "Pause Clautch", action: #selector(togglePause), keyEquivalent: "")
         pauseItem.target = self
         pauseItem.tag = 800
         menu.addItem(pauseItem)
 
-        // Check for Updates
-        let updateItem = NSMenuItem(
-            title: "Check for Updates…",
-            action: #selector(checkForUpdates),
-            keyEquivalent: ""
-        )
+        let updateItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
         updateItem.target = self
         menu.addItem(updateItem)
 
-        // Launch at Login toggle
-        let loginItem = NSMenuItem(
-            title: "Launch at Login",
-            action: #selector(toggleLaunchAtLogin),
-            keyEquivalent: ""
-        )
-        loginItem.target = self
-        loginItem.tag = 600
-        menu.addItem(loginItem)
-
-        menu.addItem(.separator())
-
-        let settingsItem = NSMenuItem(
-            title: "Settings…",
-            action: #selector(showSettings),
-            keyEquivalent: ","
-        )
+        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
         menu.addItem(.separator())
+        let aboutItem = NSMenuItem(title: "Clautch v\(version)", action: nil, keyEquivalent: "")
+        menu.addItem(aboutItem)
         menu.addItem(withTitle: "Quit Clautch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         self.statusItem?.menu = menu
@@ -732,24 +733,6 @@ extension AppDelegate: NSMenuDelegate {
         }
 
         // Update toggles
-        if let notifItem = menu.item(withTag: 500) {
-            notifItem.state = NotificationService.shared.isEnabled ? .on : .off
-        }
-        if let loginItem = menu.item(withTag: 600) {
-            loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        }
-        if let animItem = menu.item(withTag: 700) {
-            animItem.state = AnimationSettings.shared.reduceAnimationWhenCollapsed ? .on : .off
-        }
-        if let hideItem = menu.item(withTag: 750) {
-            hideItem.state = AnimationSettings.shared.hideWhenCollapsed ? .on : .off
-        }
-        if let statusItem = menu.item(withTag: 760) {
-            statusItem.state = AnimationSettings.shared.showStatusBar ? .on : .off
-        }
-        if let eventLogItem = menu.item(withTag: 770) {
-            eventLogItem.state = AnimationSettings.shared.showEventLog ? .on : .off
-        }
         if let pauseItem = menu.item(withTag: 800) {
             pauseItem.state = AnimationSettings.shared.isPaused ? .on : .off
         }

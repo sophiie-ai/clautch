@@ -10,6 +10,11 @@ struct SettingsView: View {
                     Label("General", systemImage: "gearshape")
                 }
 
+            AppearanceSettingsTab()
+                .tabItem {
+                    Label("Appearance", systemImage: "paintbrush")
+                }
+
             DisplaySettingsTab()
                 .tabItem {
                     Label("Display", systemImage: "rectangle.inset.filled")
@@ -20,7 +25,89 @@ struct SettingsView: View {
                     Label("Notifications", systemImage: "bell")
                 }
         }
-        .frame(width: 400, height: 260)
+        .frame(width: 440, height: 340)
+    }
+}
+
+// MARK: - Appearance
+
+private struct AppearanceSettingsTab: View {
+    @State private var selectedType: CreatureType = UserProfile.current?.creatureType ?? .ghost
+    @State private var colorPreset: CreatureColorPreset = UserProfile.current?.colorPreset ?? .none
+    @State private var accessory: CreatureAccessory = UserProfile.current?.accessory ?? .none
+    @State private var displayName: String = UserProfile.current?.displayName ?? ""
+
+    var body: some View {
+        Form {
+            Section("Creature") {
+                HStack(spacing: 16) {
+                    // Live preview
+                    TimelineView(.animation(minimumInterval: 1.0 / 4)) { timeline in
+                        let t = timeline.date.timeIntervalSinceReferenceDate
+                        let frame = Int(t * 3) % max(selectedType.frames.count, 1)
+                        PixelCreatureView(
+                            type: selectedType,
+                            frame: frame,
+                            task: .idle,
+                            emotion: .neutral,
+                            colorPreset: colorPreset,
+                            accessory: accessory
+                        )
+                        .frame(width: 40, height: 40)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Picker("Type", selection: $selectedType) {
+                            ForEach(CreatureType.allCases) { type in
+                                Text(type.displayName).tag(type)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        Picker("Color", selection: $colorPreset) {
+                            ForEach(CreatureColorPreset.allCases) { preset in
+                                Text(preset == .none ? "Default" : preset.rawValue.capitalized).tag(preset)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        Picker("Accessory", selection: $accessory) {
+                            ForEach(CreatureAccessory.allCases) { acc in
+                                Text(acc == .none ? "None" : "\(acc.emoji) \(acc.rawValue.capitalized)").tag(acc)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+                }
+            }
+
+            Section("Profile") {
+                TextField("Display Name", text: $displayName)
+            }
+        }
+        .formStyle(.grouped)
+        .padding(.vertical, 8)
+        .onChange(of: selectedType) { _, _ in saveProfile() }
+        .onChange(of: colorPreset) { _, _ in saveProfile() }
+        .onChange(of: accessory) { _, _ in saveProfile() }
+        .onChange(of: displayName) { _, newValue in
+            if !newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                saveProfile()
+            }
+        }
+    }
+
+    private func saveProfile() {
+        let name = displayName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        let peerId = UserProfile.current?.peerId ?? UUID().uuidString
+        UserProfile.current = UserProfile(
+            peerId: peerId,
+            displayName: name,
+            creatureType: selectedType,
+            colorPreset: colorPreset,
+            accessory: accessory
+        )
     }
 }
 
@@ -47,6 +134,9 @@ private struct GeneralSettingsTab: View {
 
             Toggle("Pause Clautch", isOn: $settings.isPaused)
                 .help("Hides the notch panel and pauses all processing to save CPU")
+
+            Toggle("Animated Menu Bar Icon", isOn: $settings.menuBarCreature)
+                .help("Show your creature as the menu bar icon instead of the default icon")
         }
         .formStyle(.grouped)
         .padding(.vertical, 8)

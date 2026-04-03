@@ -20,5 +20,16 @@
 	<string>https://clautch.app/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>C8RtmEJsbpvs1sd1b/SC5sUqQWx8uub6nsIGJ0a/SgM=</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.clautch.app.join</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>clautch</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
