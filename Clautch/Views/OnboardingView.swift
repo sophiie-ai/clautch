@@ -4,6 +4,7 @@ import SwiftUI
 struct OnboardingView: View {
     var onComplete: (UserProfile) -> Void
 
+    @State private var step = 0  // 0=creature, 1=style, 2=name
     @State private var selectedType: CreatureType = UserProfile.current?.creatureType ?? .ghost
     @State private var displayName: String = UserProfile.current?.displayName ?? ""
     @State private var colorPreset: CreatureColorPreset = UserProfile.current?.colorPreset ?? .none
@@ -11,27 +12,166 @@ struct OnboardingView: View {
     @State private var isHovering: CreatureType?
     @FocusState private var nameFieldFocused: Bool
 
+    private let stepTitles = ["Choose your creature", "Pick a style", "What's your name?"]
+    private let stepSubtitles = [
+        "This little friend will live in your notch",
+        "Give them some flair",
+        "So your teammates know who you are",
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
+            // Progress indicator
+            HStack(spacing: 0) {
+                ForEach(0..<3, id: \.self) { i in
+                    Circle()
+                        .fill(i <= step ? Color.accentColor : Color.primary.opacity(0.15))
+                        .frame(width: 8, height: 8)
+                    if i < 2 {
+                        Rectangle()
+                            .fill(i < step ? Color.accentColor : Color.primary.opacity(0.15))
+                            .frame(height: 2)
+                            .frame(maxWidth: 40)
+                    }
+                }
+            }
+            .padding(.top, 24)
+            .animation(.easeInOut(duration: 0.3), value: step)
+
             // Header
-            Text("Choose your creature")
+            Text(stepTitles[step])
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(.primary)
-                .padding(.top, 32)
+                .padding(.top, 20)
+                .id("title-\(step)")
+                .transition(.opacity)
 
-            Text("This little friend will live in your notch")
+            Text(stepSubtitles[step])
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
+                .id("subtitle-\(step)")
+                .transition(.opacity)
 
-            // Creature grid
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(120), spacing: 16), count: 3), spacing: 16) {
-                ForEach(CreatureType.allCases) { type in
-                    creatureCard(type)
+            // Step content
+            Group {
+                switch step {
+                case 0: creatureStep
+                case 1: styleStep
+                case 2: nameStep
+                default: EmptyView()
+                }
+            }
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
+            .id("step-\(step)")
+
+            Spacer()
+
+            // Navigation buttons
+            HStack(spacing: 12) {
+                if step > 0 {
+                    Button(action: { withAnimation { step -= 1 } }) {
+                        Text("Back")
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut(.leftArrow, modifiers: [])
+                }
+
+                Spacer()
+
+                // Skip (only on first launch, not when re-customizing)
+                if UserProfile.current == nil && step < 2 {
+                    Button(action: skipOnboarding) {
+                        Text("Skip")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if step < 2 {
+                    Button(action: { withAnimation { step += 1 } }) {
+                        Text("Next")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.accentColor)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut(.rightArrow, modifiers: [])
+                } else {
+                    Button(action: complete) {
+                        Text("Let's go!")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(canComplete ? Color.accentColor : Color.secondary.opacity(0.3))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!canComplete)
+                    .keyboardShortcut(.return, modifiers: [])
                 }
             }
             .padding(.horizontal, 32)
-            .padding(.top, 28)
+            .padding(.bottom, 28)
+        }
+        .frame(width: 440, height: 600)
+        .background(.background)
+    }
+
+    private var canComplete: Bool {
+        !displayName.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    // MARK: - Step 0: Creature
+
+    private var creatureStep: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.fixed(120), spacing: 16), count: 3), spacing: 16) {
+            ForEach(CreatureType.allCases) { type in
+                creatureCard(type)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, 28)
+    }
+
+    // MARK: - Step 1: Style
+
+    private var styleStep: some View {
+        VStack(spacing: 24) {
+            // Live preview
+            TimelineView(.animation(minimumInterval: 1.0 / 4)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                let frame = Int(t * 3) % max(selectedType.frames.count, 1)
+                let bob = BobAnimation.value(time: t, period: 1.5, amplitude: 1.0)
+
+                PixelCreatureView(
+                    type: selectedType,
+                    frame: frame,
+                    task: .idle,
+                    emotion: .neutral,
+                    colorPreset: colorPreset,
+                    accessory: accessory
+                )
+                .frame(width: 64, height: 64)
+                .offset(y: bob)
+            }
+            .frame(height: 72)
 
             // Color picker
             VStack(spacing: 8) {
@@ -45,7 +185,6 @@ struct OnboardingView: View {
                     }
                 }
             }
-            .padding(.top, 20)
 
             // Accessory picker
             VStack(spacing: 8) {
@@ -61,7 +200,7 @@ struct OnboardingView: View {
                             .frame(width: 28, height: 28)
                             .background(
                                 RoundedRectangle(cornerRadius: 6)
-                                    .fill(selected ? Color.accentColor.opacity(0.3) : Color.white.opacity(0.06))
+                                    .fill(selected ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.06))
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 6)
@@ -73,53 +212,51 @@ struct OnboardingView: View {
                     }
                 }
             }
-            .padding(.top, 12)
-
-            // Name field
-            HStack(spacing: 12) {
-                Text("Name")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.secondary)
-
-                TextField("What should we call you?", text: $displayName)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 14, design: .rounded))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.primary.opacity(0.08))
-                    .cornerRadius(8)
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: 200)
-                    .focused($nameFieldFocused)
-                    .onSubmit { complete() }
-            }
-            .padding(.top, 20)
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    nameFieldFocused = true
-                }
-            }
-
-            Spacer()
-
-            // Start button
-            Button(action: complete) {
-                Text("Let's go!")
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.accentColor)
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(displayName.trimmingCharacters(in: .whitespaces).isEmpty)
-            .padding(.bottom, 32)
         }
-        .frame(width: 440, height: 600)
-        .background(.background)
+        .padding(.top, 28)
+    }
+
+    // MARK: - Step 2: Name
+
+    private var nameStep: some View {
+        VStack(spacing: 20) {
+            // Preview with selected style
+            TimelineView(.animation(minimumInterval: 1.0 / 4)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                let frame = Int(t * 3) % max(selectedType.frames.count, 1)
+                let bob = BobAnimation.value(time: t, period: 1.5, amplitude: 1.0)
+
+                PixelCreatureView(
+                    type: selectedType,
+                    frame: frame,
+                    task: .idle,
+                    emotion: .happy,
+                    colorPreset: colorPreset,
+                    accessory: accessory
+                )
+                .frame(width: 48, height: 48)
+                .offset(y: bob)
+            }
+            .frame(height: 56)
+
+            TextField("Your name", text: $displayName)
+                .textFieldStyle(.plain)
+                .font(.system(size: 18, weight: .medium, design: .rounded))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.primary.opacity(0.08))
+                .cornerRadius(10)
+                .frame(maxWidth: 240)
+                .focused($nameFieldFocused)
+                .onSubmit { if canComplete { complete() } }
+        }
+        .padding(.top, 40)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                nameFieldFocused = true
+            }
+        }
     }
 
     // MARK: - Creature Card
@@ -139,8 +276,8 @@ struct OnboardingView: View {
                     frame: frame,
                     task: .idle,
                     emotion: .neutral,
-                    colorPreset: colorPreset,
-                    accessory: type == selectedType ? accessory : .none
+                    colorPreset: selected ? colorPreset : .none,
+                    accessory: selected ? accessory : .none
                 )
                 .frame(width: 48, height: 48)
                 .offset(y: bob)
@@ -213,6 +350,20 @@ struct OnboardingView: View {
             creatureType: selectedType,
             colorPreset: colorPreset,
             accessory: accessory
+        )
+        UserProfile.current = profile
+        onComplete(profile)
+    }
+
+    private func skipOnboarding() {
+        let peerId = UUID().uuidString
+        let name = NSFullUserName().components(separatedBy: " ").first ?? "User"
+        let profile = UserProfile(
+            peerId: peerId,
+            displayName: name,
+            creatureType: .ghost,
+            colorPreset: .none,
+            accessory: .none
         )
         UserProfile.current = profile
         onComplete(profile)

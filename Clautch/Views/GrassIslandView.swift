@@ -208,16 +208,18 @@ struct GrassIslandView: View {
                     : notchHeight + dropHeight
 
                 ForEach(creatures) { creature in
-                    CreatureSpriteView(
-                        state: creature.state,
-                        creatureType: creature.creatureType,
-                        colorPreset: creature.colorPreset,
-                        accessory: creature.accessory,
-                        isExpanded: isExpanded,
-                        isWalking: isWalking && creature.isLocal
-                    )
-                    .frame(width: creatureSize, height: creatureSize)
-                    .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
+                    HoverBounceView {
+                        CreatureSpriteView(
+                            state: creature.state,
+                            creatureType: creature.creatureType,
+                            colorPreset: creature.colorPreset,
+                            accessory: creature.accessory,
+                            isExpanded: isExpanded,
+                            isWalking: isWalking && creature.isLocal
+                        )
+                        .frame(width: creatureSize, height: creatureSize)
+                        .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
+                    }
                     .scaleEffect(
                         x: 1 + (1 - bounceScale) * 0.5,
                         y: bounceScale,
@@ -554,6 +556,34 @@ struct StatusBarOverlay: View {
         case .tired:           return .purple
         case .neutral:         return .gray
         }
+    }
+}
+
+// MARK: - Hover Bounce
+
+/// Wraps content with a hover-triggered bounce animation.
+struct HoverBounceView<Content: View>: View {
+    @ViewBuilder var content: Content
+    @State private var isHovered = false
+    @State private var hoverBounce: CGFloat = 0
+
+    var body: some View {
+        content
+            .offset(y: hoverBounce)
+            .onHover { hovering in
+                isHovered = hovering
+                if hovering {
+                    // Quick bounce: jump up then spring back
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        hoverBounce = -4
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.4)) {
+                            hoverBounce = 0
+                        }
+                    }
+                }
+            }
     }
 }
 
