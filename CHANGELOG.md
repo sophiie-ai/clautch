@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.46](https://github.com/sophiie-ai/clautch/compare/v0.2.45...v0.2.46) (2026-04-03)
+
+
+### Features
+
+* display picker in Settings for choosing which screen shows the notch panel ([57c0b54](https://github.com/sophiie-ai/clautch/commit/57c0b549a07ab58fe00882592b84fe5cd3aa40ed))
+* stepped onboarding flow with skip button, and creature hover bounce ([91dfab1](https://github.com/sophiie-ai/clautch/commit/91dfab1b15ca9ebb24b3a26c7401d9dfa12d8b4e))
+
+
+### Bug Fixes
+
+* settings window now centers on first open and comes to front reliably ([c41f770](https://github.com/sophiie-ai/clautch/commit/c41f7704206c417c6b96e0cd5151c6931c1499b7))
+
 ## [0.2.45](https://github.com/sophiie-ai/clautch/compare/v0.2.44...v0.2.45) (2026-04-03)
 
 
