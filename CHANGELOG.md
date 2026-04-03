@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.49](https://github.com/sophiie-ai/clautch/compare/v0.2.48...v0.2.49) (2026-04-03)
+
+
+### Bug Fixes
+
+* remove animated menu bar icon, keep default Clautch icon ([b664f06](https://github.com/sophiie-ai/clautch/commit/b664f065846bcfa5fa291101208ea34624eae7ff))
+* settings uses toolbar-style tab bar, and fix widget hit testing ([7a9d84e](https://github.com/sophiie-ai/clautch/commit/7a9d84e2d61452f647f580fd4aa4d39bbaa02438))
+
 ## [0.2.48](https://github.com/sophiie-ai/clautch/compare/v0.2.47...v0.2.48) (2026-04-03)
 
 
