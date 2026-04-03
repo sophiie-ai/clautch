@@ -21,19 +21,18 @@ struct SettingsView: View {
             // Tab bar
             HStack(spacing: 0) {
                 ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
-                    Button(action: { selectedTab = index }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: tab.1)
-                                .font(.system(size: 16))
-                            Text(tab.0)
-                                .font(.system(size: 10))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .background(selectedTab == index ? Color.accentColor.opacity(0.12) : Color.clear)
-                        .foregroundStyle(selectedTab == index ? Color.accentColor : .secondary)
+                    VStack(spacing: 4) {
+                        Image(systemName: tab.1)
+                            .font(.system(size: 16))
+                        Text(tab.0)
+                            .font(.system(size: 10))
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
+                    .background(selectedTab == index ? Color.accentColor.opacity(0.12) : Color.clear)
+                    .foregroundStyle(selectedTab == index ? Color.accentColor : .secondary)
+                    .onTapGesture { selectedTab = index }
                 }
             }
             .padding(.horizontal, 8)
