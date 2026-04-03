@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.51](https://github.com/sophiie-ai/clautch/compare/v0.2.50...v0.2.51) (2026-04-03)
+
+
+### Bug Fixes
+
+* collapsed widget clips to notch height and lowers window level ([534d0ea](https://github.com/sophiie-ai/clautch/commit/534d0ea8ec6b3db8a3e5247bf680d7c365e4dbbf))
+
 ## [0.2.50](https://github.com/sophiie-ai/clautch/compare/v0.2.49...v0.2.50) (2026-04-03)
 
 
