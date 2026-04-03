@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.52](https://github.com/sophiie-ai/clautch/compare/v0.2.51...v0.2.52) (2026-04-03)
+
+
+### Bug Fixes
+
+* changing creature no longer causes app to quit ([2b4ac91](https://github.com/sophiie-ai/clautch/commit/2b4ac91e8c3f9f7ab5c3c1b000d26bf64c06e81c))
+* collapsed clip shape uses correct y origin (top of view, not bottom) ([a3663b9](https://github.com/sophiie-ai/clautch/commit/a3663b980709902ff62e13412b789f53869da5b3))
+
 ## [0.2.51](https://github.com/sophiie-ai/clautch/compare/v0.2.50...v0.2.51) (2026-04-03)
 
 
