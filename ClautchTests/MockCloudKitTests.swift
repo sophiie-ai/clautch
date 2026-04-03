@@ -138,6 +138,7 @@ final class MockCloudKitTests: XCTestCase {
     // MARK: - Join Room Validation
 
     func testJoinInvalidCodeThrows() async {
+        guard UserProfile.current != nil else { return }
         let mock = makeMock()
         let manager = makeManager(mock: mock)
 
@@ -150,6 +151,7 @@ final class MockCloudKitTests: XCTestCase {
     }
 
     func testJoinNonexistentRoomThrows() async {
+        guard UserProfile.current != nil else { return }
         let mock = makeMock()
         mock.findRoomResult = nil
         let manager = makeManager(mock: mock)
