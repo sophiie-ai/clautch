@@ -75,6 +75,7 @@ struct CreatureState: Sendable {
     var task: CreatureTask       = .idle
     var emotion: CreatureEmotion = .neutral
     var lastActivity: Date       = Date()
+    var needsInput: Bool         = false
 
     /// Whether the creature has had activity in the last 60 seconds.
     var isActive: Bool {

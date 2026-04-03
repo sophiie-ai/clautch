@@ -32,6 +32,11 @@ final class SessionData: Identifiable {
     func applyEvent(_ event: HookEvent) {
         state.lastActivity = Date()
 
+        // Clear needsInput when user submits a prompt
+        if event.eventType == .promptSubmit || event.eventType == .sessionStart {
+            state.needsInput = false
+        }
+
         switch event.eventType {
         case .sessionStart:
             state.task = .idle
@@ -78,6 +83,7 @@ final class SessionData: Identifiable {
 
         case .stop:
             state.task = .idle
+            state.needsInput = true
             errorStreak = 0
             // Long session (>30 min) = tired, otherwise happy
             let sessionLength = Date().timeIntervalSince(startedAt)

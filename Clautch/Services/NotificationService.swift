@@ -31,6 +31,7 @@ final class NotificationService {
         case peerLeave
         case chatReceived
         case reactionReceived
+        case needsInput
 
         var systemSoundName: NSSound.Name {
             switch self {
@@ -38,6 +39,7 @@ final class NotificationService {
             case .peerLeave:         return "Tink"
             case .chatReceived:      return "Blow"
             case .reactionReceived:  return "Ping"
+            case .needsInput:        return "Glass"
             }
         }
     }

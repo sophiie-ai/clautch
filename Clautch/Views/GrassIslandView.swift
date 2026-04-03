@@ -258,6 +258,14 @@ struct GrassIslandView: View {
                         .offset(y: -18)
                         .fixedSize()
                     }
+                    // Needs-input indicator: pulsing dot beside the creature
+                    .overlay(alignment: .topTrailing) {
+                        if creature.isLocal && creature.state.needsInput {
+                            NeedsInputDot()
+                                .offset(x: 4, y: -2)
+                                .transition(.scale.combined(with: .opacity))
+                        }
+                    }
                     .position(
                         x: geo.size.width / 2 + creatureOffset(for: creature, in: geo.size.width),
                         y: grassLineY - creatureSize / 2 - 4
@@ -572,6 +580,26 @@ struct StatusBarOverlay: View {
         case .tired:           return .purple
         case .neutral:         return .gray
         }
+    }
+}
+
+// MARK: - Needs Input Dot
+
+/// A small pulsing dot indicating the session is waiting for user input.
+struct NeedsInputDot: View {
+    @State private var pulse = false
+
+    var body: some View {
+        Circle()
+            .fill(Color.orange)
+            .frame(width: 5, height: 5)
+            .shadow(color: .orange.opacity(0.6), radius: pulse ? 3 : 1)
+            .scaleEffect(pulse ? 1.3 : 1.0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    pulse = true
+                }
+            }
     }
 }
 
