@@ -54,9 +54,23 @@ struct CreatureSpriteView: View {
     var isExpanded: Bool = true
     var isWalking: Bool = false
 
+    /// Per-creature seed for random collapsed animations (stable across frames).
+    private var creatureSeed: Double {
+        Double(creatureType.rawValue.utf8.reduce(0) { ($0 &* 31) &+ UInt64($1) } % 1000) / 100.0
+    }
+
+    private func collapsedAnimations(t: Double) -> (hop: CGFloat, tilt: Double) {
+        let seed = creatureSeed
+        let hopCycle = (t + seed * 3).truncatingRemainder(dividingBy: 5 + seed)
+        let hop: CGFloat = hopCycle < 0.15 ? -2 : 0
+        let tiltCycle = (t + seed * 7).truncatingRemainder(dividingBy: 7 + seed * 0.5)
+        let tilt = tiltCycle > 6.5 ? sin(tiltCycle * 8) * 6 : 0
+        return (hop, tilt)
+    }
+
     var body: some View {
         let hidden = !isExpanded && AnimationSettings.shared.hideWhenCollapsed
-        let interval: Double = isExpanded ? (1.0 / 10) : 1.0  // 10 FPS expanded, 1 FPS collapsed
+        let interval: Double = isExpanded ? (1.0 / 10) : 1.0
 
         TimelineView(hidden ? .animation(minimumInterval: 10) : .animation(minimumInterval: interval)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
@@ -70,6 +84,7 @@ struct CreatureSpriteView: View {
                 : 0
             let activeFrames = isWalking ? creatureType.walkFrames : creatureType.frames
             let frame = Int(t * (isWalking ? 6 : state.task.fps)) % max(activeFrames.count, 1)
+            let collapsed = (!isExpanded && !isWalking) ? collapsedAnimations(t: t) : (hop: CGFloat(0), tilt: 0.0)
 
             PixelCreatureView(
                 type: creatureType,
@@ -83,8 +98,8 @@ struct CreatureSpriteView: View {
                 isExpanded: isExpanded
             )
             .frame(width: 32, height: 32)
-            .offset(y: bob + walkHop)
-            // Compacting: pulsing scale
+            .offset(y: bob + walkHop + collapsed.hop)
+            .rotationEffect(.degrees(collapsed.tilt))
             .scaleEffect(state.task == .compacting
                 ? 0.85 + 0.15 * abs(sin(t * 4))
                 : 1.0)
