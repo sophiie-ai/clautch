@@ -267,15 +267,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let hitTestView = NotchHitTestView(hostingView: hostingView)
         hitTestView.notchHeight = screen.safeAreaInsets.top
         hitTestView.isExpanded = NotchHoverState.shared.isHovered
-        hitTestView.onClicked = { [weak hitTestView] in
+        hitTestView.onClicked = { [weak self, weak hitTestView] in
             let expanding = !NotchHoverState.shared.isHovered
             hitTestView?.isExpanded = expanding
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 NotchHoverState.shared.isHovered = expanding
             }
+            // Collapsed: lower window level so it doesn't block other windows below the notch
+            // Expanded: raise to shielding level so the panel floats above everything
+            self?.notchPanel?.level = expanding
+                ? NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+                : .statusBar
             NSSound(named: expanding ? "Pop" : "Tink")?.play()
         }
         panel.contentView = hitTestView
+        // Start at appropriate level
+        if !NotchHoverState.shared.isHovered {
+            panel.level = .statusBar
+        }
         panel.orderFrontRegardless()
         self.notchPanel = panel
 
