@@ -210,97 +210,17 @@ struct GrassIslandView: View {
                 let layout = PanelLayout(viewHeight: geo.size.height, isExpanded: isExpanded)
                 let grassLineY = layout.grassLineY
 
-                ForEach(creatures) { creature in
-                    HoverBounceView {
-                        CreatureSpriteView(
-                            state: creature.state,
-                            creatureType: creature.creatureType,
-                            colorPreset: creature.colorPreset,
-                            accessory: creature.accessory,
-                            isExpanded: isExpanded,
-                            isWalking: isWalking && creature.isLocal
-                        )
-                        .frame(width: creatureSize, height: creatureSize)
-                        .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
-                    }
-                    .scaleEffect(
-                        x: 1 + (1 - bounceScale) * 0.5,
-                        y: bounceScale,
-                        anchor: .bottom
-                    )
-                    .offset(y: bounceOffset)
-                    .overlay(alignment: .top) {
-                        VStack(spacing: 2) {
-                            if isExpanded, let chat = creature.chatMessage {
-                                PixelChatBubble(text: String(chat.prefix(50)))
-                                    .transition(.asymmetric(
-                                        insertion: .scale(scale: 0.5).combined(with: .opacity),
-                                        removal: .opacity
-                                    ))
-                                    .id("chat-\(creature.id)-\(chat)")
-                            }
-
-                            if isExpanded && creature.isTyping && creature.chatMessage == nil {
-                                TypingIndicator()
-                                    .transition(.opacity)
-                            }
-
-                            if isExpanded, let reaction = creature.reaction,
-                               creature.reactionActive {
-                                ReactionFloater(reaction: reaction)
-                                    .id("reaction-\(creature.id)-\(reaction.rawValue)-\(creature.reactionActive)")
-                            }
-
-                            if isExpanded && creature.isLocal {
-                                Text(creature.state.task.displayLabel)
-                                    .font(.system(size: 7, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.white.opacity(0.7))
-                                    .transition(.opacity)
-                            }
-                        }
-                        .offset(y: -18)
-                        .fixedSize()
-                    }
-                    // Attention indicators
-                    .overlay(alignment: .topTrailing) {
-                        if creature.isLocal && creature.state.needsPermission {
-                            NeedsPermissionBadge()
-                                .offset(x: 4, y: -2)
-                                .transition(.scale.combined(with: .opacity))
-                        } else if creature.isLocal && creature.state.needsInput {
-                            NeedsInputDot()
-                                .offset(x: 4, y: -2)
-                                .transition(.scale.combined(with: .opacity))
-                        }
-                    }
-                    .position(
-                        x: geo.size.width / 2 + creatureOffset(for: creature, in: geo.size.width),
-                        y: grassLineY - creatureSize / 2 - 4
-                    )
-                    .animation(.spring(response: 1.8, dampingFraction: 0.85), value: creature.xPosition)
-                    .shadow(
-                        color: creature.isLocal ? .white.opacity(0.15) : .clear,
-                        radius: creature.isLocal ? 3 : 0
-                    )
-                    .help(creatureTooltip(creature))
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(creatureAccessibilityLabel(creature))
-                    .accessibilityHint(creature.isLocal ? "Right-click to send a reaction" : "Click to wave")
-                    .onTapGesture {
-                        if !creature.isLocal && isExpanded {
-                            RoomManager.shared.sendReaction(.wave)
-                        }
-                    }
-                    .contextMenu {
-                        if creature.isLocal {
-                            ForEach(PeerReaction.allCases) { reaction in
-                                Button("\(reaction.emoji)  \(reaction.rawValue.capitalized)") {
-                                    RoomManager.shared.sendReaction(reaction)
-                                }
-                            }
-                        }
-                    }
-                }
+                CreatureIslandOverlay(
+                    creatures: creatures,
+                    isExpanded: isExpanded,
+                    isWalking: isWalking,
+                    creatureSize: creatureSize,
+                    bounceScale: bounceScale,
+                    bounceOffset: bounceOffset,
+                    grassLineY: grassLineY,
+                    viewWidth: geo.size.width,
+                    notchWidthFn: notchWidthInWindow
+                )
             }
         }
         // Event log + status bar overlays (positioned within visible panel)
@@ -362,44 +282,6 @@ struct GrassIslandView: View {
         return m > 0 ? "\(m)m \(s)s" : "\(s)s"
     }
 
-    private func creatureAccessibilityLabel(_ creature: CreatureDisplay) -> String {
-        var parts = ["\(creature.displayName), \(creature.creatureType.displayName)"]
-        parts.append(creature.state.task.displayLabel)
-        if creature.state.emotion != .neutral {
-            parts.append(creature.state.emotion.rawValue)
-        }
-        if let chat = creature.chatMessage {
-            parts.append("says: \(chat)")
-        }
-        if let reaction = creature.reaction, creature.reactionActive {
-            parts.append("reacted with \(reaction.rawValue)")
-        }
-        return parts.joined(separator: ", ")
-    }
-
-    private func creatureTooltip(_ creature: CreatureDisplay) -> String {
-        var parts = [creature.displayName, creature.state.task.displayLabel]
-        if let duration = creature.sessionDuration {
-            parts.append(formatDuration(duration))
-        }
-        return parts.joined(separator: " · ")
-    }
-
-    private func creatureOffset(for creature: CreatureDisplay, in width: CGFloat) -> CGFloat {
-        if !isExpanded {
-            // When collapsed, position creatures beside the notch (left or right)
-            let notchW = notchWidthInWindow(totalWidth: width)
-            let notchHalf = notchW / 2
-            let sideMargin: CGFloat = 8
-            let idx = creatures.firstIndex(where: { $0.id == creature.id }) ?? 0
-            let side: CGFloat = idx % 2 == 0 ? -1 : 1  // alternate left/right
-            let slot = CGFloat(idx / 2)  // how far out from notch
-            return side * (notchHalf + sideMargin + creatureSize * slot + creatureSize / 2)
-        }
-        let usable = width - creatureSize - 20
-        return -usable / 2 + creature.xPosition * usable
-    }
-
     // Pre-computed values for the clip shape
     private var notchHeightForClip: CGFloat {
         NSScreen.screens.first(where: { $0.hasNotch })?.safeAreaInsets.top ?? 32
@@ -423,6 +305,156 @@ struct GrassIslandView: View {
               let notch = screen.notchSize,
               let win = screen.notchWindowFrame else { return totalWidth * 0.7 }
         return notch.width * totalWidth / win.width
+    }
+}
+
+// MARK: - Creature Island Overlay
+
+/// Renders all creatures with their overlays (chat, reactions, typing, attention indicators).
+/// Extracted from GrassIslandView to reduce file complexity.
+struct CreatureIslandOverlay: View {
+    let creatures: [CreatureDisplay]
+    let isExpanded: Bool
+    let isWalking: Bool
+    let creatureSize: CGFloat
+    let bounceScale: CGFloat
+    let bounceOffset: CGFloat
+    let grassLineY: CGFloat
+    let viewWidth: CGFloat
+    let notchWidthFn: (CGFloat) -> CGFloat
+
+    var body: some View {
+        ForEach(creatures) { creature in
+            HoverBounceView {
+                CreatureSpriteView(
+                    state: creature.state,
+                    creatureType: creature.creatureType,
+                    colorPreset: creature.colorPreset,
+                    accessory: creature.accessory,
+                    isExpanded: isExpanded,
+                    isWalking: isWalking && creature.isLocal
+                )
+                .frame(width: creatureSize, height: creatureSize)
+                .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
+                .animation(.easeInOut(duration: 0.3), value: creature.state.task)
+            }
+            .scaleEffect(
+                x: 1 + (1 - bounceScale) * 0.5,
+                y: bounceScale,
+                anchor: .bottom
+            )
+            .offset(y: bounceOffset)
+            .overlay(alignment: .top) {
+                VStack(spacing: 2) {
+                    if isExpanded, let chat = creature.chatMessage {
+                        PixelChatBubble(text: String(chat.prefix(50)))
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.5).combined(with: .opacity),
+                                removal: .opacity
+                            ))
+                            .id("chat-\(creature.id)-\(chat)")
+                    }
+
+                    if isExpanded && creature.isTyping && creature.chatMessage == nil {
+                        TypingIndicator()
+                            .transition(.opacity)
+                    }
+
+                    if isExpanded, let reaction = creature.reaction,
+                       creature.reactionActive {
+                        ReactionFloater(reaction: reaction)
+                            .id("reaction-\(creature.id)-\(reaction.rawValue)-\(creature.reactionActive)")
+                    }
+
+                    if isExpanded && creature.isLocal {
+                        Text(creature.state.task.displayLabel)
+                            .font(.system(size: 7, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .transition(.opacity)
+                    }
+                }
+                .offset(y: -18)
+                .fixedSize()
+            }
+            // Attention indicators
+            .overlay(alignment: .topTrailing) {
+                if creature.isLocal && creature.state.needsPermission {
+                    NeedsPermissionBadge()
+                        .offset(x: 4, y: -2)
+                        .transition(.scale.combined(with: .opacity))
+                } else if creature.isLocal && creature.state.needsInput {
+                    NeedsInputDot()
+                        .offset(x: 4, y: -2)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .position(
+                x: viewWidth / 2 + creatureOffset(for: creature),
+                y: grassLineY - creatureSize / 2 - 4
+            )
+            .animation(.spring(response: 1.8, dampingFraction: 0.85), value: creature.xPosition)
+            .shadow(
+                color: creature.isLocal ? .white.opacity(0.15) : .clear,
+                radius: creature.isLocal ? 3 : 0
+            )
+            .help(creatureTooltip(creature))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(creatureAccessibilityLabel(creature))
+            .accessibilityHint(creature.isLocal ? "Right-click to send a reaction" : "Click to wave")
+            .onTapGesture {
+                if !creature.isLocal && isExpanded {
+                    RoomManager.shared.sendReaction(.wave)
+                }
+            }
+            .contextMenu {
+                if creature.isLocal {
+                    ForEach(PeerReaction.allCases) { reaction in
+                        Button("\(reaction.emoji)  \(reaction.rawValue.capitalized)") {
+                            RoomManager.shared.sendReaction(reaction)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func creatureOffset(for creature: CreatureDisplay) -> CGFloat {
+        if !isExpanded {
+            let notchW = notchWidthFn(viewWidth)
+            let notchHalf = notchW / 2
+            let sideMargin: CGFloat = 8
+            let idx = creatures.firstIndex(where: { $0.id == creature.id }) ?? 0
+            let side: CGFloat = idx % 2 == 0 ? -1 : 1
+            let slot = CGFloat(idx / 2)
+            return side * (notchHalf + sideMargin + creatureSize * slot + creatureSize / 2)
+        }
+        let usable = viewWidth - creatureSize - 20
+        return -usable / 2 + creature.xPosition * usable
+    }
+
+    private func creatureTooltip(_ creature: CreatureDisplay) -> String {
+        var parts = [creature.displayName, creature.state.task.displayLabel]
+        if let duration = creature.sessionDuration {
+            let m = Int(duration) / 60
+            let s = Int(duration) % 60
+            parts.append(m > 0 ? "\(m)m \(s)s" : "\(s)s")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func creatureAccessibilityLabel(_ creature: CreatureDisplay) -> String {
+        var parts = ["\(creature.displayName), \(creature.creatureType.displayName)"]
+        parts.append(creature.state.task.displayLabel)
+        if creature.state.emotion != .neutral {
+            parts.append(creature.state.emotion.rawValue)
+        }
+        if let chat = creature.chatMessage {
+            parts.append("says: \(chat)")
+        }
+        if let reaction = creature.reaction, creature.reactionActive {
+            parts.append("reacted with \(reaction.rawValue)")
+        }
+        return parts.joined(separator: ", ")
     }
 }
 
