@@ -1,6 +1,10 @@
 import SwiftUI
 import ServiceManagement
 
+extension Notification.Name {
+    static let clautchPreferredScreenChanged = Notification.Name("com.clautch.preferredScreenChanged")
+}
+
 /// macOS Settings window with tabbed preferences.
 struct SettingsView: View {
     var body: some View {
@@ -183,9 +187,9 @@ private struct DisplaySettingsTab: View {
                     }
                     .pickerStyle(.radioGroup)
                     .onChange(of: preferredScreen) { _, _ in
-                        // Post notification so AppDelegate can recreate the panel
+                        // Notify AppDelegate to recreate the panel on the new screen
                         NotificationCenter.default.post(
-                            name: NSApplication.didChangeScreenParametersNotification,
+                            name: .clautchPreferredScreenChanged,
                             object: nil
                         )
                     }

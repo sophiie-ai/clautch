@@ -59,6 +59,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSWorkspace.didWakeNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(preferredScreenChanged),
+            name: .clautchPreferredScreenChanged,
+            object: nil
+        )
 
         // Clean up any mounted "Install Clautch" DMG volumes
         ejectInstallerVolumes()
@@ -280,6 +286,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notchPanel = nil
         setupNotchPanel()
         NotchHoverState.shared.isHovered = wasExpanded
+    }
+
+    @objc private func preferredScreenChanged() {
+        let wasExpanded = NotchHoverState.shared.isHovered
+        notchPanel?.close()
+        notchPanel = nil
+        setupNotchPanel()
+        NotchHoverState.shared.isHovered = wasExpanded
+        logger.info("Panel moved to preferred screen")
     }
 
     @objc private func didWake() {
