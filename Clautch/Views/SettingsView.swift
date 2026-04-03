@@ -5,29 +5,54 @@ extension Notification.Name {
     static let clautchPreferredScreenChanged = Notification.Name("com.clautch.preferredScreenChanged")
 }
 
-/// macOS Settings window with tabbed preferences.
+/// macOS Settings window with tabbed preferences using a toolbar-style tab bar.
 struct SettingsView: View {
+    @State private var selectedTab = 0
+
+    private let tabs: [(String, String)] = [
+        ("General", "gearshape"),
+        ("Appearance", "paintbrush"),
+        ("Display", "rectangle.inset.filled"),
+        ("Notifications", "bell"),
+    ]
+
     var body: some View {
-        TabView {
-            GeneralSettingsTab()
-                .tabItem {
-                    Label("General", systemImage: "gearshape")
+        VStack(spacing: 0) {
+            // Tab bar
+            HStack(spacing: 0) {
+                ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
+                    Button(action: { selectedTab = index }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: tab.1)
+                                .font(.system(size: 16))
+                            Text(tab.0)
+                                .font(.system(size: 10))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(selectedTab == index ? Color.accentColor.opacity(0.12) : Color.clear)
+                        .foregroundStyle(selectedTab == index ? Color.accentColor : .secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 4)
 
-            AppearanceSettingsTab()
-                .tabItem {
-                    Label("Appearance", systemImage: "paintbrush")
-                }
+            Divider()
+                .padding(.top, 4)
 
-            DisplaySettingsTab()
-                .tabItem {
-                    Label("Display", systemImage: "rectangle.inset.filled")
+            // Tab content
+            Group {
+                switch selectedTab {
+                case 0: GeneralSettingsTab()
+                case 1: AppearanceSettingsTab()
+                case 2: DisplaySettingsTab()
+                case 3: NotificationsSettingsTab()
+                default: EmptyView()
                 }
-
-            NotificationsSettingsTab()
-                .tabItem {
-                    Label("Notifications", systemImage: "bell")
-                }
+            }
+            .frame(maxHeight: .infinity)
         }
         .frame(width: 440, height: 380)
     }

@@ -16,12 +16,6 @@ final class NotchHitTestView: NSView {
     /// The height of the menu bar / notch safe area (set once on init).
     var notchHeight: CGFloat = 32
 
-    /// Half-width of the expanded panel (from center). Set from screen geometry.
-    var expandedPanelHalf: CGFloat = 150
-
-    /// The bottom edge of the expanded panel (distance from top of window).
-    var expandedPanelBottom: CGFloat = 160
-
     init<Content: View>(hostingView: NSHostingView<Content>) {
         self.hostingView = hostingView
         super.init(frame: .zero)
@@ -68,29 +62,27 @@ final class NotchHitTestView: NSView {
         guard bounds.contains(local) else { return nil }
 
         // NSView coordinates: y=0 is bottom, y increases upward.
-        // Window top = screen top (notch area), so maxY = top of screen.
-        let midX = bounds.midX
+        // Window top (maxY) = top of screen / notch area.
 
-        if isExpanded {
-            // Only accept clicks within the visible panel rectangle.
-            // Panel runs from top of window (maxY) down to expandedPanelBottom from top.
-            let panelTopY = bounds.maxY - expandedPanelBottom  // bottom edge of panel in view coords
-            let panelLeft = midX - expandedPanelHalf
-            let panelRight = midX + expandedPanelHalf
-
-            if local.y >= panelTopY && local.x >= panelLeft && local.x <= panelRight {
-                return self
-            }
-            return nil
+        if !isExpanded {
+            // Collapsed: only accept clicks in the notch strip + creature peek.
+            let collapsedClickableHeight = notchHeight + 20
+            let minY = bounds.maxY - collapsedClickableHeight
+            return local.y >= minY ? self : nil
         }
 
-        // Collapsed: only accept clicks in the notch/menubar strip + creature peek.
-        let collapsedClickableHeight = notchHeight + 20
-        let minY = bounds.maxY - collapsedClickableHeight
-
-        if local.y >= minY {
-            return self
+        // Expanded: check if the hosting view has opaque content at this point.
+        // The SwiftUI view clips to PanelClipShape, so subviews outside
+        // the visible island shape return nil from their own hitTest.
+        if let hit = hostingView.hitTest(convert(local, to: hostingView)) {
+            return hit === hostingView ? self : self
         }
-        return nil
+
+        // Fallback: accept clicks in the top portion where the panel is drawn.
+        // The panel extends from the top down; the bottom ~40% of the window
+        // frame is empty space below the island.
+        let panelMaxHeight = notchHeight + 120  // generous bound for panel content
+        let minY = bounds.maxY - panelMaxHeight
+        return local.y >= minY ? self : nil
     }
 }
