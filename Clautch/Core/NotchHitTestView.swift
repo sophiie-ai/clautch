@@ -16,6 +16,12 @@ final class NotchHitTestView: NSView {
     /// The height of the menu bar / notch safe area (set once on init).
     var notchHeight: CGFloat = 32
 
+    /// Half-width of the expanded panel (from center). Set from screen geometry.
+    var expandedPanelHalf: CGFloat = 150
+
+    /// The bottom edge of the expanded panel (distance from top of window).
+    var expandedPanelBottom: CGFloat = 160
+
     init<Content: View>(hostingView: NSHostingView<Content>) {
         self.hostingView = hostingView
         super.init(frame: .zero)
@@ -59,22 +65,30 @@ final class NotchHitTestView: NSView {
 
     override func hitTest(_ point: NSPoint) -> NSView? {
         let local = convert(point, from: superview)
+        guard bounds.contains(local) else { return nil }
+
+        // NSView coordinates: y=0 is bottom, y increases upward.
+        // Window top = screen top (notch area), so maxY = top of screen.
+        let midX = bounds.midX
 
         if isExpanded {
-            // When expanded, accept clicks on the full panel
-            return bounds.contains(local) ? self : nil
+            // Only accept clicks within the visible panel rectangle.
+            // Panel runs from top of window (maxY) down to expandedPanelBottom from top.
+            let panelTopY = bounds.maxY - expandedPanelBottom  // bottom edge of panel in view coords
+            let panelLeft = midX - expandedPanelHalf
+            let panelRight = midX + expandedPanelHalf
+
+            if local.y >= panelTopY && local.x >= panelLeft && local.x <= panelRight {
+                return self
+            }
+            return nil
         }
 
-        // When collapsed, only accept clicks in the notch/menubar strip.
-        // The creature peeks ~16px below the notch, so allow that too.
-        // View coordinate system: y=0 is top, y increases downward.
-        // But NSView flipped: y=0 is bottom by default.
-        // Our window frame: top = screen top, so higher y = lower on screen.
-        // In non-flipped coordinates: higher y = closer to top of window = closer to notch.
-        let collapsedClickableHeight = notchHeight + 20  // notch + creature peek area
-        let minY = bounds.maxY - collapsedClickableHeight  // bottom bound of clickable strip
+        // Collapsed: only accept clicks in the notch/menubar strip + creature peek.
+        let collapsedClickableHeight = notchHeight + 20
+        let minY = bounds.maxY - collapsedClickableHeight
 
-        if local.y >= minY && bounds.contains(local) {
+        if local.y >= minY {
             return self
         }
         return nil

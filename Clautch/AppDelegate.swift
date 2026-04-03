@@ -266,6 +266,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let hitTestView = NotchHitTestView(hostingView: hostingView)
         hitTestView.notchHeight = screen.safeAreaInsets.top
+
+        // Compute expanded panel geometry matching GrassIslandView layout
+        let windowFrame = screen.notchWindowFrame ?? panel.frame
+        let notchWidth = screen.notchSize?.width ?? (windowFrame.width * 0.7)
+        let notchHalf = notchWidth / 2
+        let panelHalf = min(windowFrame.width / 2 - 2, notchHalf + 50)
+        hitTestView.expandedPanelHalf = panelHalf
+
+        let notchH = screen.safeAreaInsets.top
+        let showLog = AnimationSettings.shared.showEventLog
+        let showStatus = AnimationSettings.shared.showStatusBar
+        let groundH: CGFloat = 7
+        let logSpace: CGFloat = showLog ? 56 : 0
+        let statusSpace: CGFloat = showStatus ? 8 : 0
+        let scenePad: CGFloat = 2
+        let minSky: CGFloat = 38
+        let fullDrop = windowFrame.height - notchH
+        let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
+        let maxDrop = min(fullDrop, neededDrop)
+        hitTestView.expandedPanelBottom = notchH + maxDrop
+
         hitTestView.isExpanded = NotchHoverState.shared.isHovered
         hitTestView.onClicked = { [weak hitTestView] in
             let expanding = !NotchHoverState.shared.isHovered
