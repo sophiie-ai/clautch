@@ -563,12 +563,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showSettings() {
-        // Open the SwiftUI Settings window (Cmd+,)
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        // NSApp.sendAction opens the Settings scene registered in ClautchApp
+        // Open the SwiftUI Settings scene
         NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        watchForResignActive()
+        // The Settings window is created lazily — find and bring it to front
+        DispatchQueue.main.async {
+            if let settingsWindow = NSApp.windows.first(where: {
+                $0.title.contains("Settings") || $0.frameAutosaveName == "com.apple.SwiftUI.Settings"
+            }) {
+                if !settingsWindow.isVisible {
+                    settingsWindow.center()
+                }
+                settingsWindow.makeKeyAndOrderFront(nil)
+                settingsWindow.orderFrontRegardless()
+            }
+            self.watchForResignActive()
+        }
     }
 
     @objc private func toggleLaunchAtLogin() {
