@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.45](https://github.com/sophiie-ai/clautch/compare/v0.2.44...v0.2.45) (2026-04-03)
+
+
+### Features
+
+* walk easing, mood sparkline, sound effects, WindowCoordinator, mock tests, and Swift 6 concurrency ([e125062](https://github.com/sophiie-ai/clautch/commit/e1250624c2a5f3a302b91bab8e9e3ce3dda80b35))
+
+
+### Bug Fixes
+
+* guard mock CloudKit tests for missing UserProfile on CI ([a7ac95c](https://github.com/sophiie-ai/clautch/commit/a7ac95c847de8f2416dfcbb95ed4beef51a36881))
+
 ## [0.2.44](https://github.com/sophiie-ai/clautch/compare/v0.2.43...v0.2.44) (2026-04-03)
 
 
