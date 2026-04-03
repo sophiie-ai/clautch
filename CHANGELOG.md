@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/sophiie-ai/clautch/compare/v0.5.0...v0.5.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* hide notch panel during Mission Control and Expose ([ac31d01](https://github.com/sophiie-ai/clautch/commit/ac31d015d36d0a02d6328e4eaf35658a17381f91))
+
 ## [0.5.0](https://github.com/sophiie-ai/clautch/compare/v0.4.0...v0.5.0) (2026-04-03)
 
 
