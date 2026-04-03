@@ -32,9 +32,10 @@ final class SessionData: Identifiable {
     func applyEvent(_ event: HookEvent) {
         state.lastActivity = Date()
 
-        // Clear needsInput when user submits a prompt
+        // Clear attention flags when user submits a prompt
         if event.eventType == .promptSubmit || event.eventType == .sessionStart {
             state.needsInput = false
+            state.needsPermission = false
         }
 
         switch event.eventType {
@@ -104,6 +105,7 @@ final class SessionData: Identifiable {
 
         case .permissionRequest:
             state.task = .thinking
+            state.needsPermission = true
             permissionRequestCount += 1
             if permissionRequestCount >= 3 {
                 setEmotionTemporarily(.confused, duration: 4.0)

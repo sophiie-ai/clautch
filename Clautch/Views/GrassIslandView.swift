@@ -1,5 +1,41 @@
 import SwiftUI
 
+/// Shared layout constants for the notch panel, computed once per frame.
+struct PanelLayout {
+    let notchHeight: CGFloat
+    let groundH: CGFloat = 7
+    let logH: CGFloat = 56
+    let scenePad: CGFloat = 2
+    let minSky: CGFloat = 38
+
+    let showLog: Bool
+    let showStatus: Bool
+    let logSpace: CGFloat
+    let statusSpace: CGFloat
+    let maxDrop: CGFloat
+    let grassLineY: CGFloat
+    let bottom: CGFloat
+
+    init(viewHeight: CGFloat, isExpanded: Bool) {
+        let screen = NSScreen.screens.first(where: { $0.hasNotch })
+        notchHeight = screen?.safeAreaInsets.top ?? 32
+        showLog = AnimationSettings.shared.showEventLog
+        showStatus = AnimationSettings.shared.showStatusBar
+        logSpace = showLog ? logH : 0
+        statusSpace = showStatus ? 8 : 0
+
+        let fullDrop = viewHeight - notchHeight
+        let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
+        maxDrop = min(fullDrop, neededDrop)
+
+        let dropHeight = isExpanded ? maxDrop : 0
+        bottom = notchHeight + dropHeight
+        grassLineY = isExpanded
+            ? bottom - groundH - logSpace - statusSpace - scenePad
+            : notchHeight
+    }
+}
+
 /// Renders a Dynamic-Island-style panel extending from the notch.
 /// Collapsed: small bump with creature head peeking out.
 /// Expanded: scenic panel with sky, grass, creatures, event log, status bar.
@@ -64,33 +100,17 @@ struct GrassIslandView: View {
     }
 
     var body: some View {
-        let screen = NSScreen.screens.first(where: { $0.hasNotch })
-        let notchHeight = screen?.safeAreaInsets.top ?? 32
-        let showLog = AnimationSettings.shared.showEventLog && isExpanded
-        let showStatus = AnimationSettings.shared.showStatusBar && isExpanded
-
+        let sky = skyTheme
         Canvas { ctx, size in
+            let layout = PanelLayout(viewHeight: size.height, isExpanded: isExpanded)
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
-            let fullDrop = size.height - notchHeight
-            let showLog = AnimationSettings.shared.showEventLog
-            let showStatus = AnimationSettings.shared.showStatusBar
-            // Layout constants — ground is always the same height
-            let groundH: CGFloat = 7
-            let logSpace: CGFloat = showLog ? 56 : 0
-            let statusSpace: CGFloat = showStatus ? 8 : 0
-            let scenePad: CGFloat = 2
-            let minSky: CGFloat = 38
-            let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
-            let maxDrop = min(fullDrop, neededDrop)
-            let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
-            let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 0
-            let dropHeight = isExpanded ? maxDrop : peekDrop
             let midX = size.width / 2
             let notchHalf = notchWidth / 2
             let expandedPanelHalf = min(size.width / 2 - 2, notchHalf + 50)
             let panelHalf = isExpanded ? expandedPanelHalf : notchHalf + 20
-            let bottom = notchHeight + dropHeight
+            let bottom = layout.bottom
             let r: CGFloat = isExpanded ? 8 : 6
+            let dropHeight = isExpanded ? layout.maxDrop : CGFloat(0)
             let cr = min(r, dropHeight / 2)
 
             // 1. Clip path for the island shape
@@ -122,11 +142,9 @@ struct GrassIslandView: View {
 
             if isExpanded {
                 // 2. Draw scenic background
-                // grassY calculated bottom-up so ground height is always constant
-                let grassY = bottom - groundH - logSpace - statusSpace - scenePad
+                let grassY = layout.grassLineY
 
                 // Sky gradient (fills from top of screen)
-                let sky = skyTheme
                 ctx.clip(to: path)
                 let skyGradient = Gradient(colors: [sky.top, sky.bottom])
                 ctx.fill(
@@ -135,9 +153,9 @@ struct GrassIslandView: View {
                 )
 
                 // Stars (tiny dots in sky) — count varies by time of day
-                let skyTop_y = notchHeight + 5
+                let skyTop_y = layout.notchHeight + 5
                 let skyBottom_y = grassY - 5
-                let starCount = showLog ? sky.stars + 6 : sky.stars
+                let starCount = layout.showLog ? sky.stars + 6 : sky.stars
                 if skyBottom_y > skyTop_y + 2 && starCount > 0 {
                     var starRng = StableRNG(seed: 77)
                     for _ in 0..<starCount {
@@ -168,13 +186,13 @@ struct GrassIslandView: View {
                 }
 
                 // Dark section below ground for event log + status bar
-                if showLog || showStatus {
-                    let darkY = grassY + groundH
+                if layout.showLog || layout.showStatus {
+                    let darkY = grassY + layout.groundH
                     ctx.fill(
                         Path(CGRect(x: midX - panelHalf, y: darkY, width: panelHalf * 2, height: bottom - darkY)),
                         with: .color(Color.black.opacity(0.85))
                     )
-                    if showLog {
+                    if layout.showLog {
                         ctx.fill(
                             Path(CGRect(x: midX - panelHalf + 8, y: darkY, width: panelHalf * 2 - 16, height: 1)),
                             with: .color(.white.opacity(0.1))
@@ -189,23 +207,8 @@ struct GrassIslandView: View {
         .overlay {
             // SwiftUI creature sprites
             GeometryReader { geo in
-                let fullDrop = geo.size.height - notchHeight
-                let showLog = AnimationSettings.shared.showEventLog
-                let showStatus = AnimationSettings.shared.showStatusBar
-                let groundH: CGFloat = 7
-                let logSpace: CGFloat = showLog ? 56 : 0
-                let statusSpace: CGFloat = showStatus ? 8 : 0
-                let scenePad: CGFloat = 2
-                let minSky: CGFloat = 38
-                let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
-                let maxDrop = min(fullDrop, neededDrop)
-                let hideWhenCollapsed = AnimationSettings.shared.hideWhenCollapsed
-                let peekDrop: CGFloat = hideWhenCollapsed ? 0 : 0
-                let dropHeight = isExpanded ? maxDrop : peekDrop
-                let bottom = notchHeight + dropHeight
-                let grassLineY = isExpanded
-                    ? bottom - groundH - logSpace - statusSpace - scenePad
-                    : notchHeight + dropHeight
+                let layout = PanelLayout(viewHeight: geo.size.height, isExpanded: isExpanded)
+                let grassLineY = layout.grassLineY
 
                 ForEach(creatures) { creature in
                     HoverBounceView {
@@ -258,9 +261,13 @@ struct GrassIslandView: View {
                         .offset(y: -18)
                         .fixedSize()
                     }
-                    // Needs-input indicator: pulsing dot beside the creature
+                    // Attention indicators
                     .overlay(alignment: .topTrailing) {
-                        if creature.isLocal && creature.state.needsInput {
+                        if creature.isLocal && creature.state.needsPermission {
+                            NeedsPermissionBadge()
+                                .offset(x: 4, y: -2)
+                                .transition(.scale.combined(with: .opacity))
+                        } else if creature.isLocal && creature.state.needsInput {
                             NeedsInputDot()
                                 .offset(x: 4, y: -2)
                                 .transition(.scale.combined(with: .opacity))
@@ -300,36 +307,22 @@ struct GrassIslandView: View {
         .overlay {
             if (AnimationSettings.shared.showEventLog || AnimationSettings.shared.showStatusBar) && isExpanded {
                 GeometryReader { geo in
-                    let nh = NSScreen.screens.first(where: { $0.hasNotch })?.safeAreaInsets.top ?? 32
-                    let showLog = AnimationSettings.shared.showEventLog
-                    let showStatus = AnimationSettings.shared.showStatusBar
-                    let groundH: CGFloat = 7
-                    let logH: CGFloat = 56
-                    let logSpace: CGFloat = showLog ? logH : 0
-                    let statusSpace: CGFloat = showStatus ? 8 : 0
-                    let scenePad: CGFloat = 2
-                    let minSky: CGFloat = 38
-                    let fullDrop = geo.size.height - nh
-                    let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
-                    let maxDrop = min(fullDrop, neededDrop)
-                    let bottom = nh + maxDrop
-                    let grassY = bottom - groundH - logSpace - statusSpace - scenePad
-                    let logTop = grassY + groundH
+                    let layout = PanelLayout(viewHeight: geo.size.height, isExpanded: true)
+                    let logTop = layout.grassLineY + layout.groundH
+                    let contentWidth = geo.size.width - 72
 
-                    let contentWidth = geo.size.width - 72 // 36px padding each side
-
-                    if showLog {
+                    if layout.showLog {
                         EventLogOverlay()
-                            .frame(width: contentWidth, height: logH, alignment: .top)
+                            .frame(width: contentWidth, height: layout.logH, alignment: .top)
                             .padding(.top, 2)
-                            .position(x: geo.size.width / 2, y: logTop + logH / 2)
+                            .position(x: geo.size.width / 2, y: logTop + layout.logH / 2)
                             .transition(.opacity.combined(with: .offset(y: 10)))
                     }
 
-                    if showStatus {
+                    if layout.showStatus {
                         StatusBarOverlay()
                             .frame(width: contentWidth)
-                            .position(x: geo.size.width / 2, y: bottom - scenePad - statusSpace / 2)
+                            .position(x: geo.size.width / 2, y: layout.bottom - layout.scenePad - layout.statusSpace / 2)
                             .transition(.opacity)
                     }
                 }
@@ -580,6 +573,26 @@ struct StatusBarOverlay: View {
         case .tired:           return .purple
         case .neutral:         return .gray
         }
+    }
+}
+
+// MARK: - Needs Permission Badge
+
+/// A pulsing yellow shield icon indicating the session needs tool approval.
+struct NeedsPermissionBadge: View {
+    @State private var pulse = false
+
+    var body: some View {
+        Image(systemName: "shield.fill")
+            .font(.system(size: 7))
+            .foregroundStyle(.yellow)
+            .shadow(color: .yellow.opacity(0.5), radius: pulse ? 3 : 1)
+            .scaleEffect(pulse ? 1.2 : 1.0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                    pulse = true
+                }
+            }
     }
 }
 

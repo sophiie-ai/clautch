@@ -154,7 +154,7 @@ struct OnboardingView: View {
 
     private var styleStep: some View {
         VStack(spacing: 24) {
-            // Live preview
+            // Live preview with contrast background
             TimelineView(.animation(minimumInterval: 1.0 / 4)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 let frame = Int(t * 3) % max(selectedType.frames.count, 1)
@@ -172,6 +172,11 @@ struct OnboardingView: View {
                 .offset(y: bob)
             }
             .frame(height: 72)
+            .background(
+                Circle()
+                    .fill(Color.primary.opacity(0.06))
+                    .frame(width: 80, height: 80)
+            )
 
             // Color picker
             VStack(spacing: 8) {
@@ -238,6 +243,11 @@ struct OnboardingView: View {
                 .offset(y: bob)
             }
             .frame(height: 56)
+            .background(
+                Circle()
+                    .fill(Color.primary.opacity(0.06))
+                    .frame(width: 64, height: 64)
+            )
 
             TextField("Your name", text: $displayName)
                 .textFieldStyle(.plain)

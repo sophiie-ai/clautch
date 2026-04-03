@@ -446,33 +446,97 @@ struct PixelCreatureView: View {
             }
         }
 
-        // Idle micro-animations: periodic visual variety every ~12s
+        // Idle personality animations: unique per creature type
         if task == .idle && emotion == .neutral {
-            let cycle = t.truncatingRemainder(dividingBy: 12.0)
+            drawPersonalityEffect(ctx: ctx, size: size, px: px, t: t)
+        }
+    }
+    // MARK: - Personality Effects
 
-            // Look-around: eyes shift left/right briefly (2.0-3.0s in cycle)
-            if cycle > 2.0 && cycle < 3.0 {
-                let progress = (cycle - 2.0) / 1.0
-                let shift = sin(progress * .pi) * 1.5
+    /// Each creature type has a unique idle micro-animation.
+    private func drawPersonalityEffect(ctx: GraphicsContext, size: CGSize, px: CGFloat, t: Double) {
+        let cycle = t.truncatingRemainder(dividingBy: 10.0)
+
+        switch type {
+        case .cat:
+            // Cat grooms: paw reaches to face (3-4s in cycle)
+            if cycle > 3.0 && cycle < 4.0 {
+                let progress = sin((cycle - 3.0) * .pi)
                 ctx.fill(
-                    Path(CGRect(x: size.width / 2 + shift - 0.5, y: 3 * px, width: 1, height: 1)),
-                    with: .color(.white.opacity(0.5))
+                    Path(CGRect(x: size.width / 2 + 2, y: 4 * px - progress * 2, width: px, height: px)),
+                    with: .color(colors.body.opacity(progress * 0.8))
                 )
             }
 
-            // Yawn: small "o" appears briefly (7.0-8.0s in cycle)
-            if cycle > 7.0 && cycle < 8.0 {
-                let progress = (cycle - 7.0) / 1.0
-                let alpha = sin(progress * .pi)
-                let s: CGFloat = 1.5 + alpha
+        case .owl:
+            // Owl turns head: eyes shift dramatically (2-3.5s)
+            if cycle > 2.0 && cycle < 3.5 {
+                let progress = (cycle - 2.0) / 1.5
+                let shift = sin(progress * .pi * 2) * 2.5
+                ctx.fill(
+                    Path(CGRect(x: size.width / 2 + shift - 0.5, y: 3 * px, width: 1.5, height: 1)),
+                    with: .color(.white.opacity(0.6))
+                )
+            }
+
+        case .mushroom:
+            // Mushroom bounces: squash and stretch (6-7s)
+            // Handled via the main bounce, but add a spore particle
+            if cycle > 6.0 && cycle < 7.0 {
+                let progress = (cycle - 6.0) / 1.0
+                let alpha = sin(progress * .pi) * 0.5
+                for i in 0..<3 {
+                    let dx = CGFloat(i - 1) * 3
+                    let dy = progress * 6
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(x: size.width / 2 + dx - 0.5, y: 1 - dy, width: 1, height: 1)),
+                        with: .color(.green.opacity(alpha))
+                    )
+                }
+            }
+
+        case .robot:
+            // Robot antenna flash (4-5s)
+            if cycle > 4.0 && cycle < 5.0 {
+                let blink = abs(sin((cycle - 4.0) * .pi * 4))
+                ctx.fill(
+                    Path(ellipseIn: CGRect(x: size.width / 2 - 1, y: 0, width: 2, height: 2)),
+                    with: .color(.cyan.opacity(blink * 0.7))
+                )
+            }
+
+        case .slime:
+            // Slime jiggles: wobbly outline (7-8.5s)
+            if cycle > 7.0 && cycle < 8.5 {
+                let wobble = sin((cycle - 7.0) * .pi * 3) * 1.5
                 ctx.fill(
                     Path(ellipseIn: CGRect(
-                        x: size.width / 2 - s / 2, y: 5 * px - s / 2,
-                        width: s, height: s
+                        x: size.width / 2 - 3 + wobble, y: size.height - 3 * px,
+                        width: 6, height: 2
                     )),
-                    with: .color(Color(red: 0.3, green: 0.3, blue: 0.3).opacity(alpha * 0.6))
+                    with: .color(colors.body.opacity(0.3))
                 )
             }
+
+        case .ghost:
+            // Ghost phases: opacity flicker (5-6s)
+            if cycle > 5.0 && cycle < 6.0 {
+                let flicker = abs(sin((cycle - 5.0) * .pi * 6))
+                ctx.fill(
+                    Path(CGRect(x: 0, y: 0, width: size.width, height: size.height)),
+                    with: .color(.white.opacity(flicker * 0.08))
+                )
+            }
+        }
+
+        // Common: look-around eyes (shared, but at different times per type)
+        let lookCycle = (t + Double(type.rawValue.count) * 2).truncatingRemainder(dividingBy: 12.0)
+        if lookCycle > 2.0 && lookCycle < 3.0 {
+            let shift = sin((lookCycle - 2.0) * .pi) * 1.5
+            ctx.fill(
+                Path(CGRect(x: size.width / 2 + shift - 0.5, y: 3 * px, width: 1, height: 1)),
+                with: .color(.white.opacity(0.5))
+            )
         }
     }
 }
