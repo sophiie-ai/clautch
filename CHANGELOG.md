@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.55](https://github.com/sophiie-ai/clautch/compare/v0.2.54...v0.2.55) (2026-04-03)
+
+
+### Features
+
+* needs-input indicator when session awaits human response ([1823b54](https://github.com/sophiie-ai/clautch/commit/1823b54032895da988b39605d0e0dda7d9487132))
+* random micro-animations when collapsed (hop and tilt) ([aa14eb5](https://github.com/sophiie-ai/clautch/commit/aa14eb5fb8b2f2afb8e6e46a9c0ae7aa728d9015))
+
 ## [0.2.54](https://github.com/sophiie-ai/clautch/compare/v0.2.53...v0.2.54) (2026-04-03)
 
 
