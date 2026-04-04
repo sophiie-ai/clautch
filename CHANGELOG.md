@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/sophiie-ai/clautch/compare/v0.6.0...v0.7.0) (2026-04-04)
+
+
+### Features
+
+* changelog page, pipeline diagram, overlay extraction, notification protocol, and 14 new tests ([a65d9b4](https://github.com/sophiie-ai/clautch/commit/a65d9b46fa47dde78f0cb198516a3a4587a5a2a6))
+* redesign landing page with animations, SEO, and responsive layout ([e123b8f](https://github.com/sophiie-ai/clautch/commit/e123b8ff272536adcbf5e07508a8e61caa14cae2))
+
+
+### Bug Fixes
+
+* add favicon and apple-touch-icon to website ([e5f8546](https://github.com/sophiie-ai/clautch/commit/e5f8546b249cd1ff527cc091d681f69327efb4c8))
+
 ## [0.6.0](https://github.com/sophiie-ai/clautch/compare/v0.5.1...v0.6.0) (2026-04-04)
 
 
