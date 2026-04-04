@@ -17,7 +17,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="256x256" href="/apple-touch-icon.png">
   <style>
-    :root { --bg: #0a0a0a; --card: #111; --border: #1a1a1a; --dim: #555; --muted: #888; }
+    :root { --bg: #0a0a0a; --card: #111; --border: #1a1a1a; --dim: #777; --muted: #999; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { height: 100%; }
     body { font-family: -apple-system, system-ui, 'Segoe UI', sans-serif; background: var(--bg); color: #fff; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
@@ -87,7 +87,7 @@
     .feature { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; transition: border-color 0.2s; }
     .feature:hover { border-color: #333; }
     .feature .icon { font-size: 1.2rem; margin-bottom: 0.3rem; }
-    .feature h3 { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.2rem; }
+    .feature h2 { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.2rem; }
     .feature p { color: var(--dim); font-size: 0.75rem; line-height: 1.4; }
 
     /* ── Install steps ── */
@@ -98,9 +98,9 @@
     .install-step .label strong { color: var(--muted); }
 
     /* ── Footer ── */
-    .footer { text-align: center; padding: 1rem 2rem; color: #333; font-size: 0.75rem; flex-shrink: 0; }
-    .footer a { color: #444; text-decoration: none; }
-    .footer a:hover { color: #666; }
+    .footer { text-align: center; padding: 1rem 2rem; color: #777; font-size: 0.75rem; flex-shrink: 0; }
+    .footer a { color: #999; text-decoration: underline; text-underline-offset: 2px; }
+    .footer a:hover { color: #ccc; }
 
     /* ── Responsive ── */
     @media (min-width: 1400px) {
@@ -141,7 +141,7 @@
   <div class="stars" id="stars"></div>
 
   <div class="page">
-    <div class="hero">
+    <main class="hero">
       <!-- Animated pixel ghost -->
       <div class="pixel-ghost">
         <div></div><div></div><div class="p"></div><div class="p"></div><div class="p"></div><div class="p"></div><div></div><div></div>
@@ -191,22 +191,22 @@
       <div class="features">
         <div class="feature">
           <div class="icon">🧠</div>
-          <h3>Claude Code Aware</h3>
+          <h2>Claude Code Aware</h2>
           <p>Reacts in real time to thinking, working, sleeping, and compacting states via hooks.</p>
         </div>
         <div class="feature">
           <div class="icon">💬</div>
-          <h3>Team Rooms</h3>
+          <h2>Team Rooms</h2>
           <p>Share an invite link, see teammates' creatures, chat, and send pixel-art reactions.</p>
         </div>
         <div class="feature">
           <div class="icon">🔔</div>
-          <h3>Needs Your Attention</h3>
+          <h2>Needs Your Attention</h2>
           <p>Pulsing indicator and sound when Claude finishes a turn and is waiting for your input.</p>
         </div>
         <div class="feature">
           <div class="icon">🎨</div>
-          <h3>6 Creatures &amp; Colors</h3>
+          <h2>6 Creatures &amp; Colors</h2>
           <p>Ghost, Cat, Robot, Mushroom, Slime, Owl. Each with unique personality animations.</p>
         </div>
       </div>
@@ -224,11 +224,11 @@
         <div class="pipe-step"><div class="pipe-icon">👻</div><div class="pipe-label">Creature</div></div>
       </div>
 
-    </div>
+    </main>
 
-    <div class="footer">
+    <footer class="footer">
       MacBook with notch ideal &middot; <a href="/changelog.html">Changelog</a> &middot; Made by <a href="https://sophiie.ai">Sophiie AI</a>
-    </div>
+    </footer>
   </div>
 
   <script>
