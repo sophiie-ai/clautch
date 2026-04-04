@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/sophiie-ai/clautch/compare/v0.5.1...v0.6.0) (2026-04-04)
+
+
+### Features
+
+* add Vercel Web Analytics to landing page ([3ba4cf0](https://github.com/sophiie-ai/clautch/commit/3ba4cf0299c79ec48b42584aa8bf7e339c5981ed))
+
+
+### Security
+
+* sanitize strings, expand signatures, pause sync, wire animation reduction ([7d884d7](https://github.com/sophiie-ai/clautch/commit/7d884d75460b82f6cd1ae19db1b38c5004611851))
+
 ## [0.5.1](https://github.com/sophiie-ai/clautch/compare/v0.5.0...v0.5.1) (2026-04-03)
 
 
