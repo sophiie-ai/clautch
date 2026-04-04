@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.0](https://github.com/sophiie-ai/clautch/compare/v0.7.0...v0.8.0) (2026-04-04)
+
+
+### Features
+
+* add screenshot of creature in notch to landing page ([b7a4690](https://github.com/sophiie-ai/clautch/commit/b7a469004b740409d416354f01284724934edcc0))
+* interactive notch simulation with 3 creatures, wandering, and reactions ([d398cea](https://github.com/sophiie-ai/clautch/commit/d398cea9f2a757031e754c8b7d1f7661439b587c))
+* replace screenshot with animated canvas notch simulation ([acba370](https://github.com/sophiie-ai/clautch/commit/acba37082c546ca596b91c623c8b54fba19e6504))
+
+
+### Bug Fixes
+
+* notch sim panel needs explicit width: 100% ([7230f4a](https://github.com/sophiie-ai/clautch/commit/7230f4a29c3b8e0bcd3119d8c9916137c13e6237))
+* notch simulation uses fixed height and border for visibility ([447b162](https://github.com/sophiie-ai/clautch/commit/447b162deed54e914b0884b38da509c930e85ca6))
+* remove install steps from landing page ([a7865a4](https://github.com/sophiie-ai/clautch/commit/a7865a478556e10fcc6f97ac64bf1c5f6de084ce))
+* update install steps and footer copy ([400705d](https://github.com/sophiie-ai/clautch/commit/400705d7c290504a9b7ef33bf73886a006d6a5f0))
+
 ## [0.7.0](https://github.com/sophiie-ai/clautch/compare/v0.6.0...v0.7.0) (2026-04-04)
 
 
