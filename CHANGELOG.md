@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/sophiie-ai/clautch/compare/v0.8.0...v0.9.0) (2026-04-04)
+
+
+### Features
+
+* add gamification system with streaks, achievements, and creature evolution ([300d615](https://github.com/sophiie-ai/clautch/commit/300d6159ca93f2e013e331a167cebe5919423bc1))
+
+
+### Bug Fixes
+
+* add sitemap.xml, robots.txt, and canonical tags for SEO ([2ee9c56](https://github.com/sophiie-ai/clautch/commit/2ee9c569ce6a84e462d2b1714d9c94744423ec6d))
+
 ## [0.8.0](https://github.com/sophiie-ai/clautch/compare/v0.7.0...v0.8.0) (2026-04-04)
 
 
