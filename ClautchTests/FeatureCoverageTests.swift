@@ -45,7 +45,7 @@ final class FeatureCoverageTests: XCTestCase {
         XCTAssertNil(PeerState(
             peerId: "p1", displayName: "Test", creatureType: .ghost,
             task: .idle, emotion: .neutral, colorPreset: .none, accessory: .none,
-            timestamp: Date()
+            evolution: .baby, timestamp: Date()
         ).isTyping)
     }
 
@@ -53,7 +53,7 @@ final class FeatureCoverageTests: XCTestCase {
         var a = PeerState(
             peerId: "p1", displayName: "Test", creatureType: .ghost,
             task: .idle, emotion: .neutral, colorPreset: .none, accessory: .none,
-            timestamp: Date(), isTyping: true
+            evolution: .baby, timestamp: Date(), isTyping: true
         )
         var b = a
         b.isTyping = false

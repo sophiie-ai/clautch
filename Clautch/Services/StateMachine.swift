@@ -76,6 +76,9 @@ final class StateMachine {
 
         // Update session stats tracking
         updateStatsTracking()
+
+        // Update gamification (streaks, achievements)
+        updateGamification(event)
     }
 
     /// Push the current effective session state to RoomManager for network broadcast.
@@ -87,6 +90,32 @@ final class StateMachine {
 
         // Record mood for sparkline
         SessionStats.shared.recordMood(emotion.rawValue)
+    }
+
+    private func updateGamification(_ event: HookEvent) {
+        let store = GamificationStore.shared
+        switch event.eventType {
+        case .sessionStart:
+            store.recordSessionStart()
+        case .sessionEnd:
+            let session = sessionStore.sessions.first { $0.id == event.sessionId }
+            let duration = session.map { Date().timeIntervalSince($0.startedAt) } ?? 0
+            let hour = Calendar.current.component(.hour, from: session?.startedAt ?? Date())
+            store.recordSessionEnd(duration: duration, startHour: hour)
+        case .preToolUse:
+            store.recordToolUse()
+            // Speed demon: check if session has 5+ tools in 30 seconds
+            if let session = sessionStore.sessions.first(where: { $0.id == event.sessionId }) {
+                let recentTools = session.recentToolTimes.filter {
+                    Date().timeIntervalSince($0) < 30
+                }
+                if recentTools.count >= 5 {
+                    store.recordSpeedBurst()
+                }
+            }
+        default:
+            break
+        }
     }
 
     private func updateStatsTracking() {

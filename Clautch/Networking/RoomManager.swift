@@ -154,6 +154,7 @@ final class RoomManager {
 
             try await fetchPeers()
 
+            GamificationStore.shared.recordRoomJoined()
             logger.info("Joined room: \(normalized)")
         } catch let error as RoomError {
             throw error
@@ -233,6 +234,7 @@ final class RoomManager {
             emotion: emotion,
             colorPreset: profile.colorPreset,
             accessory: profile.accessory,
+            evolution: GamificationStore.shared.evolution,
             timestamp: Date(),
             xPosition: existingPos,
             reaction: existingReaction,
@@ -277,6 +279,7 @@ final class RoomManager {
             emotion: state.emotion,
             colorPreset: state.colorPreset,
             accessory: state.accessory,
+            evolution: state.evolution,
             timestamp: Date(),
             xPosition: state.xPosition,
             reaction: state.reaction,
@@ -306,6 +309,7 @@ final class RoomManager {
             emotion: state.emotion,
             colorPreset: state.colorPreset,
             accessory: state.accessory,
+            evolution: state.evolution,
             timestamp: Date(),
             xPosition: state.xPosition,
             reaction: reaction,
@@ -314,6 +318,7 @@ final class RoomManager {
             chatTimestamp: state.chatTimestamp
         )
         localState = state
+        GamificationStore.shared.recordReactionSent()
 
         // Auto-clear after 4 seconds
         Task { @MainActor in
@@ -479,6 +484,7 @@ final class RoomManager {
             emotion: localState?.emotion ?? .neutral,
             colorPreset: profile.colorPreset,
             accessory: profile.accessory,
+            evolution: GamificationStore.shared.evolution,
             timestamp: Date()
         )
     }

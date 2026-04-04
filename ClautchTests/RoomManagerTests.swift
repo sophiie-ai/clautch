@@ -49,7 +49,7 @@ final class RoomManagerTests: XCTestCase {
         let stalePeer = PeerState(
             peerId: "stale", displayName: "Stale", creatureType: .ghost,
             task: .idle, emotion: .neutral, colorPreset: .none, accessory: .none,
-            timestamp: Date(timeIntervalSinceNow: -600) // 10 min ago
+            evolution: .baby, timestamp: Date(timeIntervalSinceNow: -600) // 10 min ago
         )
         store.update(with: [(makeFakeRecordID("r1"), stalePeer)])
         let visible = store.visiblePeers(excludingPeerId: "me")
@@ -143,7 +143,7 @@ final class RoomManagerTests: XCTestCase {
         PeerState(
             peerId: id, displayName: "Test", creatureType: .ghost,
             task: task, emotion: .neutral, colorPreset: .none, accessory: .none,
-            timestamp: Date()
+            evolution: .baby, timestamp: Date()
         )
     }
 

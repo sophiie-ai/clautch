@@ -51,6 +51,7 @@ struct CreatureSpriteView: View {
     var creatureType: CreatureType = .ghost
     var colorPreset: CreatureColorPreset = .none
     var accessory: CreatureAccessory = .none
+    var evolution: CreatureEvolution = .baby
     var isExpanded: Bool = true
     var isWalking: Bool = false
 
@@ -94,6 +95,7 @@ struct CreatureSpriteView: View {
                 emotion: state.emotion,
                 colorPreset: colorPreset,
                 accessory: accessory,
+                evolution: evolution,
                 isWalking: isWalking,
                 time: t,
                 isExpanded: isExpanded
@@ -191,6 +193,7 @@ struct PixelCreatureView: View {
     let emotion: CreatureEmotion
     var colorPreset: CreatureColorPreset = .none
     var accessory: CreatureAccessory = .none
+    var evolution: CreatureEvolution = .baby
     var isWalking: Bool = false
     var time: Double = 0
     var isExpanded: Bool = true
@@ -266,9 +269,52 @@ struct PixelCreatureView: View {
                 }
             }
 
+            // --- Evolution glow (grown/elder) ---
+            if evolution >= .grown {
+                drawEvolutionEffects(ctx: ctx, size: size, px: px)
+            }
+
             // --- State effects (expanded only) ---
             if isExpanded {
                 drawStateEffects(ctx: ctx, size: size, px: px)
+            }
+        }
+    }
+
+    // MARK: - Evolution Effects
+
+    private func drawEvolutionEffects(ctx: GraphicsContext, size: CGSize, px: CGFloat) {
+        let t = time
+        let midX = size.width / 2
+        let midY = size.height / 2
+
+        // Soft glow aura
+        let glowColor = evolution.glowColor
+        let radius = evolution.glowRadius
+        let pulse = 0.4 + 0.6 * abs(sin(t * 1.2))
+        ctx.fill(
+            Path(ellipseIn: CGRect(
+                x: midX - size.width / 2 - radius,
+                y: midY - size.height / 2 - radius,
+                width: size.width + radius * 2,
+                height: size.height + radius * 2
+            )),
+            with: .color(glowColor.opacity(0.12 * pulse))
+        )
+
+        // Elder: orbiting sparkle particles
+        if evolution == .elder {
+            let sparkles = 4
+            for i in 0..<sparkles {
+                let angle = t * 1.5 + Double(i) * (.pi * 2 / Double(sparkles))
+                let orbitX = midX + cos(angle) * (size.width / 2 + 2)
+                let orbitY = midY + sin(angle) * (size.height / 2 + 1)
+                let twinkle = abs(sin(t * 4 + Double(i) * 1.5))
+                let s: CGFloat = 1.5
+                ctx.fill(
+                    Path(CGRect(x: orbitX - s / 2, y: orbitY - s / 2, width: s, height: s)),
+                    with: .color(Color(red: 1.0, green: 0.95, blue: 0.5).opacity(twinkle * 0.7))
+                )
             }
         }
     }

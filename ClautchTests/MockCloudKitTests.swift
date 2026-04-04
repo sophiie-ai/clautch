@@ -173,7 +173,7 @@ final class MockCloudKitTests: XCTestCase {
         let state = PeerState(
             peerId: "p1", displayName: "Test", creatureType: .ghost,
             task: .idle, emotion: .neutral, colorPreset: .none, accessory: .none,
-            timestamp: Date()
+            evolution: .baby, timestamp: Date()
         )
         XCTAssertTrue(state.broadcastEquals(state))
     }

@@ -19,6 +19,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Initialize state machine (sets up socket event callback)
         _ = StateMachine.shared
 
+        // Initialize gamification (loads streak/achievements, checks streak)
+        _ = GamificationStore.shared
+
         // Install Claude Code hooks
         HookInstaller.shared.installIfNeeded()
         HookInstaller.shared.startPeriodicRepair()
@@ -243,6 +246,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    @objc private func showAchievementsWindow() {
+        windowCoordinator.show(
+            key: "achievements",
+            title: "Clautch Achievements",
+            size: NSSize(width: 400, height: 500),
+            minSize: NSSize(width: 360, height: 400),
+            resizable: true,
+            autosaveName: "ClautchAchievements",
+            content: { AchievementsView() }
+        )
+    }
+
     // MARK: - Notch Panel
 
     private static let preferredScreenKey = "com.clautch.preferredScreen"
@@ -367,8 +382,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // ── Header ──
         if let profile = UserProfile.current {
+            let evo = GamificationStore.shared.evolution
+            let evoLabel = evo == .baby ? "" : " (\(evo.displayName))"
             let profileItem = NSMenuItem(
-                title: "\(profile.creatureType.displayName) — \(profile.displayName)",
+                title: "\(profile.creatureType.displayName)\(evoLabel) — \(profile.displayName)",
                 action: nil, keyEquivalent: ""
             )
             menu.addItem(profileItem)
@@ -422,6 +439,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let statsWindowItem = NSMenuItem(title: "Usage Stats…", action: #selector(showStatsWindow), keyEquivalent: "")
         statsWindowItem.target = self
         menu.addItem(statsWindowItem)
+
+        let achievementsItem = NSMenuItem(title: "Achievements…", action: #selector(showAchievementsWindow), keyEquivalent: "")
+        achievementsItem.target = self
+        menu.addItem(achievementsItem)
 
         let changeItem = NSMenuItem(title: "Change Creature…", action: #selector(changeCreature), keyEquivalent: "")
         changeItem.target = self

@@ -110,6 +110,7 @@ struct PeerState: Codable, Sendable, Identifiable {
     let emotion: CreatureEmotion
     let colorPreset: CreatureColorPreset
     let accessory: CreatureAccessory
+    let evolution: CreatureEvolution
     let timestamp: Date
     var xPosition: CGFloat?
     var publicKey: String?
@@ -158,10 +159,37 @@ struct PeerState: Codable, Sendable, Identifiable {
         emotion == other.emotion &&
         colorPreset == other.colorPreset &&
         accessory == other.accessory &&
+        evolution == other.evolution &&
         reaction == other.reaction &&
         chatMessage == other.chatMessage &&
         isTyping == other.isTyping &&
         abs((xPosition ?? 0.5) - (other.xPosition ?? 0.5)) < 0.01
+    }
+}
+
+// MARK: - Backward-Compatible Decoding
+
+extension PeerState {
+    /// Default evolution to .baby for peers that don't have the field yet.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        peerId = try c.decode(String.self, forKey: .peerId)
+        displayName = try c.decode(String.self, forKey: .displayName)
+        creatureType = try c.decode(CreatureType.self, forKey: .creatureType)
+        task = try c.decode(CreatureTask.self, forKey: .task)
+        emotion = try c.decode(CreatureEmotion.self, forKey: .emotion)
+        colorPreset = try c.decode(CreatureColorPreset.self, forKey: .colorPreset)
+        accessory = try c.decodeIfPresent(CreatureAccessory.self, forKey: .accessory) ?? .none
+        evolution = try c.decodeIfPresent(CreatureEvolution.self, forKey: .evolution) ?? .baby
+        timestamp = try c.decode(Date.self, forKey: .timestamp)
+        xPosition = try c.decodeIfPresent(CGFloat.self, forKey: .xPosition)
+        publicKey = try c.decodeIfPresent(String.self, forKey: .publicKey)
+        signature = try c.decodeIfPresent(String.self, forKey: .signature)
+        reaction = try c.decodeIfPresent(PeerReaction.self, forKey: .reaction)
+        reactionTimestamp = try c.decodeIfPresent(Date.self, forKey: .reactionTimestamp)
+        chatMessage = try c.decodeIfPresent(String.self, forKey: .chatMessage)
+        chatTimestamp = try c.decodeIfPresent(Date.self, forKey: .chatTimestamp)
+        isTyping = try c.decodeIfPresent(Bool.self, forKey: .isTyping)
     }
 }
 
@@ -174,6 +202,7 @@ struct CreatureDisplay: Identifiable {
     let creatureType: CreatureType
     let colorPreset: CreatureColorPreset
     let accessory: CreatureAccessory
+    let evolution: CreatureEvolution
     let xPosition: CGFloat
     let isLocal: Bool
     let displayName: String

@@ -16,7 +16,7 @@ final class SessionData: Identifiable {
     private var errorStreak: Int = 0
 
     /// Recent tool timestamps for velocity detection.
-    private var recentToolTimes: [Date] = []
+    private(set) var recentToolTimes: [Date] = []
 
     /// Number of permission requests in this session.
     private var permissionRequestCount: Int = 0

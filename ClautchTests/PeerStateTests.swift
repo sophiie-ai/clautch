@@ -74,6 +74,7 @@ final class PeerStateTests: XCTestCase {
             emotion: .neutral,
             colorPreset: .none,
             accessory: .none,
+            evolution: .baby,
             timestamp: timestamp
         )
     }

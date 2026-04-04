@@ -182,7 +182,7 @@ final class SessionStats {
         saveToDefaults()
     }
 
-    private static func dateKey(for date: Date) -> String {
+    static func dateKey(for date: Date) -> String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         return f.string(from: date)

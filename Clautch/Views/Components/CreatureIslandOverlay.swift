@@ -14,6 +14,9 @@ struct CreatureIslandOverlay: View {
     let viewWidth: CGFloat
     let notchWidthFn: (CGFloat) -> CGFloat
 
+    @State private var gamification = GamificationStore.shared
+    @State private var currentCelebration: AchievementId?
+
     var body: some View {
         ForEach(creatures) { creature in
             HoverBounceView {
@@ -22,6 +25,7 @@ struct CreatureIslandOverlay: View {
                     creatureType: creature.creatureType,
                     colorPreset: creature.colorPreset,
                     accessory: creature.accessory,
+                    evolution: creature.evolution,
                     isExpanded: isExpanded,
                     isWalking: isWalking && creature.isLocal
                 )
@@ -63,6 +67,14 @@ struct CreatureIslandOverlay: View {
                             .foregroundStyle(.white.opacity(0.7))
                             .transition(.opacity)
                     }
+
+                    if isExpanded, creature.isLocal, let celebration = currentCelebration {
+                        AchievementFloater(achievementId: celebration) {
+                            currentCelebration = gamification.popCelebration()
+                        }
+                        .id("achievement-\(celebration.rawValue)")
+                        .transition(.scale.combined(with: .opacity))
+                    }
                 }
                 .offset(y: -18)
                 .fixedSize()
@@ -90,6 +102,11 @@ struct CreatureIslandOverlay: View {
                 radius: creature.isLocal ? 3 : 0
             )
             .help(creatureTooltip(creature))
+            .onChange(of: gamification.celebrationQueue.count) {
+                if currentCelebration == nil, creature.isLocal {
+                    currentCelebration = gamification.popCelebration()
+                }
+            }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(creatureAccessibilityLabel(creature))
             .accessibilityHint(creature.isLocal ? "Right-click to send a reaction" : "Click to wave")

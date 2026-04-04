@@ -32,6 +32,7 @@ struct EventLogOverlay: View {
 struct StatusBarOverlay: View {
     @State private var stateMachine = StateMachine.shared
     @State private var stats = SessionStats.shared
+    @State private var gamification = GamificationStore.shared
 
     var body: some View {
         HStack(spacing: 6) {
@@ -51,6 +52,10 @@ struct StatusBarOverlay: View {
                 Text(emotionLabel(emotion))
                     .font(.system(size: 5, weight: .medium))
                     .foregroundStyle(emotionColor(emotion).opacity(0.7))
+            }
+
+            if gamification.streak.currentStreak > 0 {
+                StreakIndicator(count: gamification.streak.currentStreak)
             }
 
             Spacer()

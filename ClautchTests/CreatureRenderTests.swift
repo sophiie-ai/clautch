@@ -88,6 +88,7 @@ final class CreatureRenderTests: XCTestCase {
                 creatureType: type,
                 colorPreset: .none,
                 accessory: .none,
+                evolution: .baby,
                 xPosition: 0.5,
                 isLocal: true,
                 displayName: "Test"
@@ -108,6 +109,7 @@ final class CreatureRenderTests: XCTestCase {
                 creatureType: .ghost,
                 colorPreset: preset,
                 accessory: .none,
+                evolution: .baby,
                 xPosition: 0.5,
                 isLocal: true,
                 displayName: "Test"
@@ -154,7 +156,7 @@ final class CreatureRenderTests: XCTestCase {
         let peer = PeerState(
             peerId: "p1", displayName: "Test", creatureType: .ghost,
             task: .idle, emotion: .neutral, colorPreset: .none, accessory: .none,
-            timestamp: Date()
+            evolution: .baby, timestamp: Date()
         )
         XCTAssertNil(peer.isTyping)
     }
@@ -163,7 +165,7 @@ final class CreatureRenderTests: XCTestCase {
         var a = PeerState(
             peerId: "p1", displayName: "Test", creatureType: .ghost,
             task: .idle, emotion: .neutral, colorPreset: .none, accessory: .none,
-            timestamp: Date(), isTyping: true
+            evolution: .baby, timestamp: Date(), isTyping: true
         )
         var b = a
         b.isTyping = false
