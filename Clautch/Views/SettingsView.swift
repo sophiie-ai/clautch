@@ -126,7 +126,9 @@ private struct AppearanceSettingsTab: View {
     }
 
     private func saveProfile() {
-        let name = displayName.trimmingCharacters(in: .whitespaces)
+        let name = NotificationService.sanitize(
+            displayName.trimmingCharacters(in: .whitespaces), maxLength: 50
+        )
         guard !name.isEmpty else { return }
         let peerId = UserProfile.current?.peerId ?? UUID().uuidString
         UserProfile.current = UserProfile(

@@ -266,7 +266,7 @@ final class RoomManager {
     /// Send a chat message — broadcast on next sync, auto-clear after 8s.
     func sendChat(_ message: String) {
         guard var state = ensureLocalState() else { return }
-        let trimmed = String(message.prefix(50))
+        let trimmed = NotificationService.sanitize(message, maxLength: 50)
         guard !trimmed.isEmpty else { return }
         setTyping(false)
         state = PeerState(
@@ -342,6 +342,22 @@ final class RoomManager {
     private func stopSyncTimer() {
         syncTimer?.invalidate()
         syncTimer = nil
+    }
+
+    /// Pause all CloudKit activity (sync timer + subscriptions). Called when app is paused.
+    func pauseSync() {
+        stopSyncTimer()
+        Task { await cloudKit.unsubscribeFromPresence() }
+        hasSubscription = false
+        logger.info("CloudKit sync paused")
+    }
+
+    /// Resume CloudKit activity after pause.
+    func resumeSync() {
+        guard let room = currentRoom else { return }
+        startSyncTimer()
+        Task { await setupSubscription(roomCode: room.roomCode) }
+        logger.info("CloudKit sync resumed")
     }
 
     /// Set up CloudKit subscription for push-based updates.

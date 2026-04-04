@@ -125,10 +125,14 @@ final class CloudKitService: CloudKitServiceProtocol, @unchecked Sendable {
             if let x = state.xPosition {
                 record["xPosition"] = x as NSNumber
             }
-            // Peer signing
+            // Peer signing — covers identity + display fields
             let sig = PeerSigner.sign(
                 peerId: state.peerId, task: state.task.rawValue,
-                emotion: state.emotion.rawValue, timestamp: Date()
+                emotion: state.emotion.rawValue, timestamp: Date(),
+                displayName: state.displayName,
+                chatMessage: state.chatMessage ?? "",
+                reaction: state.reaction?.rawValue ?? "",
+                isTyping: state.isTyping ?? false
             )
             record["publicKey"] = PeerSigner.publicKeyString
             record["signature"] = sig
@@ -346,14 +350,15 @@ extension PeerState {
         if let pubKey, let sig, !pubKey.isEmpty, !sig.isEmpty {
             let valid = PeerSigner.verify(
                 signature: sig, publicKey: pubKey,
-                peerId: peerId, task: taskRaw, emotion: emotionRaw, timestamp: heartbeat
+                peerId: peerId, task: taskRaw, emotion: emotionRaw, timestamp: heartbeat,
+                displayName: displayName, chatMessage: chatMsg, reaction: reactionRaw, isTyping: typing
             )
             if !valid { return nil }
         }
 
         self.init(
             peerId: peerId,
-            displayName: String(displayName.prefix(50)),
+            displayName: NotificationService.sanitize(displayName, maxLength: 50),
             creatureType: CreatureType(rawValue: creatureRaw)!,
             task: CreatureTask(rawValue: taskRaw)!,
             emotion: CreatureEmotion(rawValue: emotionRaw)!,
@@ -365,7 +370,7 @@ extension PeerState {
             signature: sig,
             reaction: reactionRaw.isEmpty ? nil : PeerReaction(rawValue: reactionRaw),
             reactionTimestamp: reactionTs,
-            chatMessage: chatMsg.isEmpty ? nil : String(chatMsg.prefix(50)),
+            chatMessage: chatMsg.isEmpty ? nil : NotificationService.sanitize(chatMsg, maxLength: 50),
             chatTimestamp: chatTs,
             isTyping: typing
         )

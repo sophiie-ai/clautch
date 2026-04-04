@@ -129,8 +129,12 @@ final class NotificationService {
     }
 
     private func sanitize(_ text: String, maxLength: Int) -> String {
+        Self.sanitize(text, maxLength: maxLength)
+    }
+
+    /// Strip control/bidi/formatting characters and truncate. Shared across the app.
+    nonisolated static func sanitize(_ text: String, maxLength: Int) -> String {
         let cleaned = text.unicodeScalars.filter { scalar in
-            // Remove control characters and invisible formatting
             let category = scalar.properties.generalCategory
             return category != .control && category != .format
         }

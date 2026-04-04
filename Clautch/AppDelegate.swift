@@ -533,6 +533,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             notchPanel = nil
             SocketServer.shared.stop()
             sessionBadgeTimer?.invalidate()
+            RoomManager.shared.pauseSync()
             Task { @MainActor in
                 SessionStats.shared.stopTracking()
             }
@@ -541,6 +542,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             SocketServer.shared.start()
             setupNotchPanel()
             startSessionBadgeTimer()
+            RoomManager.shared.resumeSync()
             logger.info("Clautch resumed")
         }
     }

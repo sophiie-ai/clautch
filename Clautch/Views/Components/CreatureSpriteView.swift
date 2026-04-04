@@ -70,11 +70,12 @@ struct CreatureSpriteView: View {
 
     var body: some View {
         let hidden = !isExpanded && AnimationSettings.shared.hideWhenCollapsed
-        let interval: Double = isExpanded ? (1.0 / 10) : 1.0
+        let reduced = !isExpanded && AnimationSettings.shared.reduceAnimationWhenCollapsed
+        let interval: Double = isExpanded ? (1.0 / 10) : (reduced ? 2.0 : 1.0)
 
         TimelineView(hidden ? .animation(minimumInterval: 10) : .animation(minimumInterval: interval)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
-            let bob = BobAnimation.value(
+            let bob = reduced ? 0.0 : BobAnimation.value(
                 time: t,
                 period: state.task.bobPeriod,
                 amplitude: state.task.bobAmplitude
@@ -84,7 +85,7 @@ struct CreatureSpriteView: View {
                 : 0
             let activeFrames = isWalking ? creatureType.walkFrames : creatureType.frames
             let frame = Int(t * (isWalking ? 6 : state.task.fps)) % max(activeFrames.count, 1)
-            let collapsed = (!isExpanded && !isWalking) ? collapsedAnimations(t: t) : (hop: CGFloat(0), tilt: 0.0)
+            let collapsed = (!isExpanded && !isWalking && !reduced) ? collapsedAnimations(t: t) : (hop: CGFloat(0), tilt: 0.0)
 
             PixelCreatureView(
                 type: creatureType,

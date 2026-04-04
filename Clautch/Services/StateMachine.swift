@@ -59,7 +59,7 @@ final class StateMachine {
             ActivityFeed.shared.add(icon: "▶", text: "Session started (\(shortId))")
         case .preToolUse:
             if let tool = event.toolName {
-                ActivityFeed.shared.add(icon: "⚡", text: tool)
+                ActivityFeed.shared.add(icon: "⚡", text: NotificationService.sanitize(tool, maxLength: 60))
             }
         case .stop:
             ActivityFeed.shared.add(icon: "✓", text: "Session complete")

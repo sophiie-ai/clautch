@@ -349,7 +349,9 @@ struct OnboardingView: View {
     // MARK: - Actions
 
     private func complete() {
-        let name = displayName.trimmingCharacters(in: .whitespaces)
+        let name = NotificationService.sanitize(
+            displayName.trimmingCharacters(in: .whitespaces), maxLength: 50
+        )
         guard !name.isEmpty else { return }
 
         // Preserve existing peerId if re-customizing (keeps room membership)
