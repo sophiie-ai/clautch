@@ -3,9 +3,21 @@ import Foundation
 import UserNotifications
 import os
 
+/// Protocol for notification operations — enables mock injection for testing.
+@MainActor
+protocol NotificationServiceProtocol {
+    var isEnabled: Bool { get set }
+    var soundEffectsEnabled: Bool { get set }
+    func playSound(_ kind: NotificationService.RoomSoundKind)
+    func postSessionFinished(sessionId: String)
+    func postToolError(sessionId: String, toolName: String?)
+    func postReactionReceived(from peerName: String, reaction: PeerReaction)
+    func postChatReceived(from peerName: String, message: String)
+}
+
 /// Sends macOS notifications for session events (completion, errors).
 @MainActor
-final class NotificationService {
+final class NotificationService: NotificationServiceProtocol {
     static let shared = NotificationService()
     private let logger = Logger(subsystem: "com.clautch.app", category: "Notifications")
 

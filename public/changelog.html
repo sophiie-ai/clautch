@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Changelog — Clautch</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+  <style>
+    :root { --bg: #0a0a0a; --card: #111; --border: #1a1a1a; --dim: #555; --muted: #888; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #ccc; min-height: 100vh; }
+    .container { max-width: 640px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .back { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); text-decoration: none; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    .back:hover { color: #fff; }
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.3rem; color: #fff; }
+    .subtitle { color: var(--dim); font-size: 0.9rem; margin-bottom: 2rem; }
+    .release { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    .release:last-child { border-bottom: none; }
+    .release-header { display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.6rem; }
+    .version { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .date { font-size: 0.8rem; color: var(--dim); }
+    .section-title { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0.6rem 0 0.3rem; }
+    .release ul { list-style: none; padding: 0; }
+    .release li { font-size: 0.85rem; color: #aaa; line-height: 1.5; padding: 0.15rem 0; padding-left: 1rem; position: relative; }
+    .release li::before { content: ""; position: absolute; left: 0; top: 0.55rem; width: 4px; height: 4px; border-radius: 50%; background: var(--dim); }
+    .tag { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+    .tag-feat { background: #1a2e1a; color: #4ade80; }
+    .tag-fix { background: #2e2a1a; color: #facc15; }
+    .tag-security { background: #2e1a1a; color: #f87171; }
+    .tag-perf { background: #1a1a2e; color: #60a5fa; }
+    a.commit { color: var(--dim); text-decoration: none; font-size: 0.75rem; font-family: monospace; }
+    a.commit:hover { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="/">&larr; Back to Clautch</a>
+    <h1>Changelog</h1>
+    <p class="subtitle">All notable changes to Clautch</p>
+    <div id="releases"></div>
+  </div>
+  <script>
+    // Fetch and parse CHANGELOG.md at runtime (avoids manual duplication)
+    fetch('https://raw.githubusercontent.com/sophiie-ai/clautch/main/CHANGELOG.md')
+      .then(r => r.text())
+      .then(md => {
+        const container = document.getElementById('releases');
+        const releases = [];
+        let current = null;
+        let currentSection = '';
+
+        for (const line of md.split('\n')) {
+          // Version header: ## [0.6.0](url) (2026-04-04)
+          const verMatch = line.match(/^## \[([^\]]+)\]\(([^)]+)\) \(([^)]+)\)/);
+          if (verMatch) {
+            if (current) releases.push(current);
+            current = { version: verMatch[1], url: verMatch[2], date: verMatch[3], sections: {} };
+            currentSection = '';
+            continue;
+          }
+          // Section header: ### Features
+          const secMatch = line.match(/^### (.+)/);
+          if (secMatch && current) {
+            currentSection = secMatch[1];
+            if (!current.sections[currentSection]) current.sections[currentSection] = [];
+            continue;
+          }
+          // List item: * thing ([hash](url))
+          const itemMatch = line.match(/^\* (.+?)(?:\s+\(([a-f0-9]+)\))?$/);
+          if (itemMatch && current && currentSection) {
+            // Extract commit link if present
+            const textMatch = itemMatch[1].match(/^(.+?)\s*\[([a-f0-9]+)\]\(([^)]+)\)$/);
+            if (textMatch) {
+              current.sections[currentSection].push({ text: textMatch[1], hash: textMatch[2], url: textMatch[3] });
+            } else {
+              current.sections[currentSection].push({ text: itemMatch[1] });
+            }
+          }
+        }
+        if (current) releases.push(current);
+
+        const tagClass = s => {
+          const l = s.toLowerCase();
+          if (l.includes('security')) return 'tag-security';
+          if (l.includes('fix')) return 'tag-fix';
+          if (l.includes('perf')) return 'tag-perf';
+          return 'tag-feat';
+        };
+
+        container.innerHTML = releases.map(r => `
+          <div class="release">
+            <div class="release-header">
+              <span class="version">v${r.version}</span>
+              <span class="date">${r.date}</span>
+            </div>
+            ${Object.entries(r.sections).map(([section, items]) => `
+              <div class="section-title">${section} <span class="tag ${tagClass(section)}">${section}</span></div>
+              <ul>${items.map(item => `
+                <li>${item.text}${item.hash ? ` <a class="commit" href="${item.url}">${item.hash.slice(0,7)}</a>` : ''}</li>
+              `).join('')}</ul>
+            `).join('')}
+          </div>
+        `).join('');
+      })
+      .catch(() => {
+        document.getElementById('releases').innerHTML = '<p style="color:#555">Failed to load changelog. <a href="https://github.com/sophiie-ai/clautch/blob/main/CHANGELOG.md" style="color:#888">View on GitHub</a></p>';
+      });
+  </script>
+</body>
+</html>
