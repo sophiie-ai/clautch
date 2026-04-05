@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/sophiie-ai/clautch/compare/v0.10.0...v0.11.0) (2026-04-05)
+
+
+### Features
+
+* support non-notch Macs with virtual top-center panel ([d963e85](https://github.com/sophiie-ai/clautch/commit/d963e85eb1bb8e2a2caec220ceaf413a1c401615))
+
 ## [0.10.0](https://github.com/sophiie-ai/clautch/compare/v0.9.1...v0.10.0) (2026-04-05)
 
 
