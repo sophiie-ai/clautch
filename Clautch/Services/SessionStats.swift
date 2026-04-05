@@ -22,6 +22,12 @@ final class SessionStats {
     private(set) var moodHistory: [MoodSample] = []
     private let maxMoodSamples = 20
 
+    /// Full daily mood history for the journal, keyed by date string.
+    private static let dailyMoodStorageKey = "com.clautch.dailyMoodHistory"
+    private(set) var dailyMoodHistory: [String: [MoodSample]] = [:]
+    private let maxSamplesPerDay = 200
+    private let journalRetentionDays = 7
+
     struct MoodSample: Codable {
         let emotion: String  // raw value of CreatureEmotion
         let timestamp: Date
@@ -42,6 +48,7 @@ final class SessionStats {
     private init() {
         loadFromDefaults()
         loadMoodHistory()
+        loadDailyMoodHistory()
     }
 
     // MARK: - Public
@@ -142,7 +149,7 @@ final class SessionStats {
         return "in \(daysUntil)d"
     }
 
-    /// Record a mood sample for the sparkline.
+    /// Record a mood sample for the sparkline and daily journal.
     func recordMood(_ emotion: String) {
         let sample = MoodSample(emotion: emotion, timestamp: Date())
         // Don't add duplicate consecutive emotions
@@ -152,6 +159,68 @@ final class SessionStats {
             moodHistory.removeFirst()
         }
         saveMoodHistory()
+
+        // Also record in daily mood journal
+        let key = Self.dateKey(for: Date())
+        var daySamples = dailyMoodHistory[key] ?? []
+        if daySamples.last?.emotion != emotion {
+            daySamples.append(sample)
+            if daySamples.count > maxSamplesPerDay {
+                daySamples.removeFirst()
+            }
+            dailyMoodHistory[key] = daySamples
+            saveDailyMoodHistory()
+        }
+    }
+
+    /// Returns sorted date keys available in the journal (most recent first).
+    var journalDates: [String] {
+        dailyMoodHistory.keys.sorted().reversed()
+    }
+
+    /// Summary stats for a given day's mood journal.
+    func journalSummary(for dateKey: String) -> MoodJournalSummary {
+        let samples = dailyMoodHistory[dateKey] ?? []
+        let activeTime = dailyTotals[dateKey] ?? 0
+
+        // Dominant mood (most frequent)
+        var emotionCounts: [String: Int] = [:]
+        for s in samples { emotionCounts[s.emotion, default: 0] += 1 }
+        let dominant = emotionCounts.max(by: { $0.value < $1.value })?.key ?? "neutral"
+
+        // Mood shifts (number of emotion changes)
+        var shifts = 0
+        for i in 1..<samples.count {
+            if samples[i].emotion != samples[i - 1].emotion { shifts += 1 }
+        }
+
+        // Longest streak of same emotion
+        var longestRun = 0, currentRun = 1
+        for i in 1..<samples.count {
+            if samples[i].emotion == samples[i - 1].emotion {
+                currentRun += 1
+            } else {
+                longestRun = max(longestRun, currentRun)
+                currentRun = 1
+            }
+        }
+        longestRun = max(longestRun, currentRun)
+
+        return MoodJournalSummary(
+            dominantMood: dominant,
+            moodShifts: shifts,
+            longestMoodStreak: longestRun,
+            activeTime: activeTime,
+            sampleCount: samples.count
+        )
+    }
+
+    struct MoodJournalSummary {
+        let dominantMood: String
+        let moodShifts: Int
+        let longestMoodStreak: Int
+        let activeTime: TimeInterval
+        let sampleCount: Int
     }
 
     private func loadMoodHistory() {
@@ -166,6 +235,26 @@ final class SessionStats {
     private func saveMoodHistory() {
         if let data = try? JSONEncoder().encode(moodHistory) {
             UserDefaults.standard.set(data, forKey: Self.moodStorageKey)
+        }
+    }
+
+    private func loadDailyMoodHistory() {
+        if let data = UserDefaults.standard.data(forKey: Self.dailyMoodStorageKey),
+           let decoded = try? JSONDecoder().decode([String: [MoodSample]].self, from: data) {
+            let cutoff = Calendar.current.date(byAdding: .day, value: -journalRetentionDays, to: Date()) ?? Date()
+            let cutoffKey = Self.dateKey(for: cutoff)
+            dailyMoodHistory = decoded.filter { $0.key >= cutoffKey }
+        }
+    }
+
+    private func saveDailyMoodHistory() {
+        // Prune old days before saving
+        let cutoff = Calendar.current.date(byAdding: .day, value: -journalRetentionDays, to: Date()) ?? Date()
+        let cutoffKey = Self.dateKey(for: cutoff)
+        dailyMoodHistory = dailyMoodHistory.filter { $0.key >= cutoffKey }
+
+        if let data = try? JSONEncoder().encode(dailyMoodHistory) {
+            UserDefaults.standard.set(data, forKey: Self.dailyMoodStorageKey)
         }
     }
 

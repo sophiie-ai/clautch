@@ -206,6 +206,26 @@ final class GamificationStore {
         return celebrationQueue.removeFirst()
     }
 
+    // MARK: - Accessory Unlocks
+
+    /// Returns the set of accessories the player has unlocked based on current progress.
+    var unlockedAccessories: Set<CreatureAccessory> {
+        Set(CreatureAccessory.allCases.filter { isAccessoryUnlocked($0) })
+    }
+
+    func isAccessoryUnlocked(_ accessory: CreatureAccessory) -> Bool {
+        switch accessory.unlockRequirement {
+        case .free:
+            return true
+        case .achievement(let id):
+            return isEarned(id)
+        case .streak(let days):
+            return streak.longestStreak >= days
+        case .xp(let amount):
+            return xp >= amount
+        }
+    }
+
     // MARK: - Persistence
 
     private func saveStreak() {

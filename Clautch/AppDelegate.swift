@@ -258,6 +258,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    @objc private func showMoodJournal() {
+        windowCoordinator.show(
+            key: "moodJournal",
+            title: "Mood Journal",
+            size: NSSize(width: 380, height: 380),
+            minSize: NSSize(width: 340, height: 320),
+            resizable: true,
+            autosaveName: "ClautchMoodJournal",
+            content: { MoodJournalView() }
+        )
+    }
+
+    @objc private func showShareCard() {
+        windowCoordinator.show(
+            key: "shareCard",
+            title: "Creature Card",
+            size: NSSize(width: 440, height: 560),
+            minSize: NSSize(width: 420, height: 520),
+            resizable: false,
+            autosaveName: "ClautchShareCard",
+            content: { ShareCardView() }
+        )
+    }
+
     // MARK: - Notch Panel
 
     private static let preferredScreenKey = "com.clautch.preferredScreen"
@@ -443,6 +467,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let achievementsItem = NSMenuItem(title: "Achievements…", action: #selector(showAchievementsWindow), keyEquivalent: "")
         achievementsItem.target = self
         menu.addItem(achievementsItem)
+
+        let journalItem = NSMenuItem(title: "Mood Journal…", action: #selector(showMoodJournal), keyEquivalent: "")
+        journalItem.target = self
+        menu.addItem(journalItem)
+
+        let shareItem = NSMenuItem(title: "Share Creature Card…", action: #selector(showShareCard), keyEquivalent: "")
+        shareItem.target = self
+        menu.addItem(shareItem)
 
         let changeItem = NSMenuItem(title: "Change Creature…", action: #selector(changeCreature), keyEquivalent: "")
         changeItem.target = self

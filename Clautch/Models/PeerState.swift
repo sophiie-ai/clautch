@@ -100,6 +100,34 @@ enum PeerReaction: String, Codable, Sendable, CaseIterable, Identifiable {
     }
 }
 
+/// Targeted interactions between two creatures.
+enum PeerInteraction: String, Codable, Sendable, CaseIterable, Identifiable {
+    case highFive
+    case nudge
+    case celebrate
+    case gift
+
+    var id: String { rawValue }
+
+    var emoji: String {
+        switch self {
+        case .highFive:  return "🙌"
+        case .nudge:     return "👉"
+        case .celebrate: return "🎊"
+        case .gift:      return "🎁"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .highFive:  return "High Five"
+        case .nudge:     return "Nudge"
+        case .celebrate: return "Celebrate"
+        case .gift:      return "Gift"
+        }
+    }
+}
+
 /// The state broadcast to other peers — intentionally abstract for privacy.
 /// No file paths, prompts, or code content.
 struct PeerState: Codable, Sendable, Identifiable {
@@ -120,6 +148,9 @@ struct PeerState: Codable, Sendable, Identifiable {
     var chatMessage: String?
     var chatTimestamp: Date?
     var isTyping: Bool?
+    var interaction: PeerInteraction?
+    var interactionTarget: String?
+    var interactionTimestamp: Date?
 
     var id: String { peerId }
 
@@ -145,6 +176,12 @@ struct PeerState: Codable, Sendable, Identifiable {
         return Date().timeIntervalSince(ct) < 8
     }
 
+    /// Whether the interaction is still fresh (show for 4 seconds).
+    var hasActiveInteraction: Bool {
+        guard let it = interactionTimestamp else { return false }
+        return Date().timeIntervalSince(it) < 4
+    }
+
     /// The active chat message, if still fresh.
     var activeChatMessage: String? {
         hasActiveChat ? chatMessage : nil
@@ -163,6 +200,8 @@ struct PeerState: Codable, Sendable, Identifiable {
         reaction == other.reaction &&
         chatMessage == other.chatMessage &&
         isTyping == other.isTyping &&
+        interaction == other.interaction &&
+        interactionTarget == other.interactionTarget &&
         abs((xPosition ?? 0.5) - (other.xPosition ?? 0.5)) < 0.01
     }
 }
@@ -190,6 +229,9 @@ extension PeerState {
         chatMessage = try c.decodeIfPresent(String.self, forKey: .chatMessage)
         chatTimestamp = try c.decodeIfPresent(Date.self, forKey: .chatTimestamp)
         isTyping = try c.decodeIfPresent(Bool.self, forKey: .isTyping)
+        interaction = try c.decodeIfPresent(PeerInteraction.self, forKey: .interaction)
+        interactionTarget = try c.decodeIfPresent(String.self, forKey: .interactionTarget)
+        interactionTimestamp = try c.decodeIfPresent(Date.self, forKey: .interactionTimestamp)
     }
 }
 
@@ -213,4 +255,7 @@ struct CreatureDisplay: Identifiable {
     var reactionActive: Bool = false
     var chatMessage: String?
     var isTyping: Bool = false
+    var interaction: PeerInteraction?
+    var interactionTarget: String?
+    var interactionActive: Bool = false
 }

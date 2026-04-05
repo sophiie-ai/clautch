@@ -117,9 +117,27 @@ struct CreatureIslandOverlay: View {
             }
             .contextMenu {
                 if creature.isLocal {
-                    ForEach(PeerReaction.allCases) { reaction in
-                        Button("\(reaction.emoji)  \(reaction.rawValue.capitalized)") {
-                            RoomManager.shared.sendReaction(reaction)
+                    Section("Reactions") {
+                        ForEach(PeerReaction.allCases) { reaction in
+                            Button("\(reaction.emoji)  \(reaction.rawValue.capitalized)") {
+                                RoomManager.shared.sendReaction(reaction)
+                            }
+                        }
+                    }
+                } else {
+                    Section("Interact") {
+                        ForEach(PeerInteraction.allCases) { interaction in
+                            Button("\(interaction.emoji)  \(interaction.displayName)") {
+                                let targetId = creature.id.replacingOccurrences(of: "remote-", with: "")
+                                RoomManager.shared.sendInteraction(interaction, to: targetId)
+                            }
+                        }
+                    }
+                    Section("Reactions") {
+                        ForEach(PeerReaction.allCases) { reaction in
+                            Button("\(reaction.emoji)  \(reaction.rawValue.capitalized)") {
+                                RoomManager.shared.sendReaction(reaction)
+                            }
                         }
                     }
                 }
@@ -164,6 +182,115 @@ struct CreatureIslandOverlay: View {
             parts.append("reacted with \(reaction.rawValue)")
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+// MARK: - Proximity Effects
+
+/// Renders passive effects (hearts, sparkles) between nearby creatures.
+struct ProximityEffectsView: View {
+    let creatures: [CreatureDisplay]
+    let isExpanded: Bool
+    let creatureSize: CGFloat
+    let grassLineY: CGFloat
+    let viewWidth: CGFloat
+
+    private let proximityThreshold: CGFloat = 0.15  // xPosition distance
+
+    var body: some View {
+        if isExpanded && creatures.count >= 2 {
+            TimelineView(.animation(minimumInterval: 0.1)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                Canvas { ctx, size in
+                    let pairs = nearbyPairs()
+                    for (a, b) in pairs {
+                        let ax = size.width / 2 + xOffset(a)
+                        let bx = size.width / 2 + xOffset(b)
+                        let midX = (ax + bx) / 2
+                        let y = grassLineY - creatureSize / 2 - 4
+
+                        // Cycle through effects based on pair seed
+                        let seed = abs(a.id.hashValue ^ b.id.hashValue)
+                        let effectType = seed % 3
+                        let cycle = 6.0
+                        let phase = t.truncatingRemainder(dividingBy: cycle) / cycle
+
+                        switch effectType {
+                        case 0: // Floating hearts
+                            for i in 0..<3 {
+                                let offset = Double(i) / 3.0
+                                let p = (phase + offset).truncatingRemainder(dividingBy: 1.0)
+                                let hx = midX + CGFloat(sin(t * 1.5 + Double(i) * 2.0)) * 4
+                                let hy = y - CGFloat(p) * 16 - 8
+                                let alpha = 1.0 - p
+                                ctx.fill(
+                                    heartPath(at: CGPoint(x: hx, y: hy), size: 3),
+                                    with: .color(Color.pink.opacity(alpha * 0.6))
+                                )
+                            }
+                        case 1: // Sparkle trail
+                            for i in 0..<4 {
+                                let frac = CGFloat(i) / 4.0
+                                let sx = ax + (bx - ax) * frac
+                                let sy = y - 6 + CGFloat(sin(t * 3.0 + Double(i) * 1.5)) * 4
+                                let pulse = 0.3 + 0.7 * abs(sin(t * 2.5 + Double(i)))
+                                ctx.fill(
+                                    Path(CGRect(x: sx - 0.5, y: sy - 0.5, width: 1, height: 1)),
+                                    with: .color(Color.yellow.opacity(pulse * 0.5))
+                                )
+                            }
+                        default: // Musical notes
+                            for i in 0..<2 {
+                                let offset = Double(i) * 0.5
+                                let p = (phase + offset).truncatingRemainder(dividingBy: 1.0)
+                                let nx = midX + CGFloat(sin(t * 0.8 + Double(i) * 3.0)) * 6
+                                let ny = y - CGFloat(p) * 14 - 10
+                                let alpha = 0.5 + 0.5 * (1.0 - p)
+                                ctx.fill(
+                                    Path(CGRect(x: nx, y: ny, width: 2, height: 2)),
+                                    with: .color(Color.cyan.opacity(alpha * 0.5))
+                                )
+                                ctx.fill(
+                                    Path(CGRect(x: nx + 2, y: ny - 1, width: 0.5, height: 3)),
+                                    with: .color(Color.cyan.opacity(alpha * 0.4))
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func nearbyPairs() -> [(CreatureDisplay, CreatureDisplay)] {
+        var pairs: [(CreatureDisplay, CreatureDisplay)] = []
+        for i in 0..<creatures.count {
+            for j in (i + 1)..<creatures.count {
+                let dist = abs(creatures[i].xPosition - creatures[j].xPosition)
+                if dist < proximityThreshold {
+                    pairs.append((creatures[i], creatures[j]))
+                }
+            }
+        }
+        return pairs
+    }
+
+    private func xOffset(_ creature: CreatureDisplay) -> CGFloat {
+        let usable = viewWidth - creatureSize - 20
+        return -usable / 2 + creature.xPosition * usable
+    }
+
+    private func heartPath(at center: CGPoint, size: CGFloat) -> Path {
+        // Simple pixel heart: 3x3
+        var p = Path()
+        let s = size / 3
+        p.addRect(CGRect(x: center.x - s, y: center.y - s / 2, width: s, height: s))
+        p.addRect(CGRect(x: center.x, y: center.y - s / 2, width: s, height: s))
+        p.addRect(CGRect(x: center.x - s * 1.5, y: center.y, width: s, height: s))
+        p.addRect(CGRect(x: center.x + s * 0.5, y: center.y, width: s, height: s))
+        p.addRect(CGRect(x: center.x - s, y: center.y + s * 0.5, width: 2 * s, height: s))
+        p.addRect(CGRect(x: center.x - s / 2, y: center.y + s * 1.5, width: s, height: s / 2))
+        return p
     }
 }
 

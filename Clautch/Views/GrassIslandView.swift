@@ -36,6 +36,61 @@ struct PanelLayout {
     }
 }
 
+// MARK: - Season
+
+enum Season: String, CaseIterable {
+    case spring, summer, autumn, winter
+
+    static var current: Season {
+        let month = Calendar.current.component(.month, from: Date())
+        let southern = UserDefaults.standard.bool(forKey: "com.clautch.southernHemisphere")
+        let base: Season = switch month {
+        case 3...5:  .spring
+        case 6...8:  .summer
+        case 9...11: .autumn
+        default:     .winter
+        }
+        // Flip for southern hemisphere
+        if southern {
+            return switch base {
+            case .spring: .autumn
+            case .summer: .winter
+            case .autumn: .spring
+            case .winter: .summer
+            }
+        }
+        return base
+    }
+
+    var grassColor: (blade: Color, ground: Color) {
+        switch self {
+        case .spring: return (Color(red: 0.25, green: 0.6, blue: 0.3), Color(red: 0.14, green: 0.4, blue: 0.18))
+        case .summer: return (Color(red: 0.2, green: 0.5, blue: 0.25), Color(red: 0.12, green: 0.35, blue: 0.15))
+        case .autumn: return (Color(red: 0.6, green: 0.4, blue: 0.15), Color(red: 0.35, green: 0.22, blue: 0.1))
+        case .winter: return (Color(red: 0.35, green: 0.5, blue: 0.4), Color(red: 0.18, green: 0.28, blue: 0.25))
+        }
+    }
+
+    /// Sky tint shift applied on top of time-of-day interpolation.
+    var skyTint: (r: Double, g: Double, b: Double) {
+        switch self {
+        case .spring: return (0.03, 0.0, 0.02)    // slightly pink
+        case .summer: return (0.0, 0.0, 0.0)      // no shift (baseline)
+        case .autumn: return (0.04, 0.01, -0.03)   // warmer
+        case .winter: return (-0.02, 0.0, 0.04)    // cooler/bluer
+        }
+    }
+
+    var particleCount: Int {
+        switch self {
+        case .spring: return 10
+        case .summer: return 8
+        case .autumn: return 12
+        case .winter: return 14
+        }
+    }
+}
+
 /// Renders a Dynamic-Island-style panel extending from the notch.
 /// Collapsed: small bump with creature head peeking out.
 /// Expanded: scenic panel with sky, grass, creatures, event log, status bar.
@@ -57,10 +112,7 @@ struct GrassIslandView: View {
         }
     }
 
-    private let grassGreen = Color(red: 0.2, green: 0.5, blue: 0.25)
-    private let grassDark = Color(red: 0.12, green: 0.35, blue: 0.15)
-
-    /// Sky colors and star count, smoothly interpolated by time of day.
+    /// Sky colors and star count, smoothly interpolated by time of day with seasonal tint.
     private var skyTheme: (top: Color, bottom: Color, stars: Int) {
         let cal = Calendar.current
         let now = Date()
@@ -89,18 +141,28 @@ struct GrassIslandView: View {
         }
         let span = hi.h - lo.h
         let f = span > 0 ? (t - lo.h) / span : 0  // blend factor 0..1
-        let top = Color(red: lo.tr + (hi.tr - lo.tr) * f,
-                        green: lo.tg + (hi.tg - lo.tg) * f,
-                        blue: lo.tb + (hi.tb - lo.tb) * f)
-        let bot = Color(red: lo.br + (hi.br - lo.br) * f,
-                        green: lo.bg + (hi.bg - lo.bg) * f,
-                        blue: lo.bb + (hi.bb - lo.bb) * f)
-        let stars = Int((lo.s + (hi.s - lo.s) * f).rounded())
+
+        // Apply seasonal tint
+        let tint = Season.current.skyTint
+        func clamp(_ v: Double) -> Double { min(1, max(0, v)) }
+
+        let top = Color(red: clamp(lo.tr + (hi.tr - lo.tr) * f + tint.r),
+                        green: clamp(lo.tg + (hi.tg - lo.tg) * f + tint.g),
+                        blue: clamp(lo.tb + (hi.tb - lo.tb) * f + tint.b))
+        let bot = Color(red: clamp(lo.br + (hi.br - lo.br) * f + tint.r),
+                        green: clamp(lo.bg + (hi.bg - lo.bg) * f + tint.g),
+                        blue: clamp(lo.bb + (hi.bb - lo.bb) * f + tint.b))
+        let starBase = Int((lo.s + (hi.s - lo.s) * f).rounded())
+        // Winter gets more stars, summer fewer
+        let starAdjust = Season.current == .winter ? 3 : (Season.current == .summer ? -2 : 0)
+        let stars = max(0, starBase + starAdjust)
         return (top, bot, stars)
     }
 
     var body: some View {
         let sky = skyTheme
+        let season = Season.current
+        let grass = season.grassColor
         Canvas { ctx, size in
             let layout = PanelLayout(viewHeight: size.height, isExpanded: isExpanded)
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
@@ -166,10 +228,24 @@ struct GrassIslandView: View {
                     }
                 }
 
+                // Weather particles — seasonal effects in the sky
+                let t = Date.timeIntervalSinceReferenceDate
+                let pCount = season.particleCount
+                let leftEdge = midX - panelHalf
+                let width = panelHalf * 2
+                for i in 0..<pCount {
+                    let seed = Double(i) * 137.5  // golden angle offset per particle
+                    Self.drawWeatherParticle(
+                        ctx: &ctx, season: season, index: i, seed: seed, time: t,
+                        left: leftEdge, width: width,
+                        skyTop: skyTop_y, skyBottom: grassY, starCount: starCount
+                    )
+                }
+
                 // Ground — fixed height
                 ctx.fill(
                     Path(CGRect(x: midX - panelHalf, y: grassY, width: panelHalf * 2, height: bottom - grassY)),
-                    with: .color(grassDark)
+                    with: .color(grass.ground)
                 )
 
                 // Grass blades
@@ -182,8 +258,20 @@ struct GrassIslandView: View {
                     let h = CGFloat.random(in: 4...10, using: &rng)
                     let rect = CGRect(x: bx, y: grassY - h + 2, width: 1.5, height: h)
                     let opacity = Double.random(in: 0.4...0.9, using: &rng)
-                    ctx.fill(Path(rect), with: .color(grassGreen.opacity(opacity)))
+                    ctx.fill(Path(rect), with: .color(grass.blade.opacity(opacity)))
+
+                    // Winter: frost-white tips on some blades
+                    if season == .winter && i % 3 == 0 {
+                        let frostRect = CGRect(x: bx, y: grassY - h + 2, width: 1.5, height: 2)
+                        ctx.fill(Path(frostRect), with: .color(Color.white.opacity(0.5 * opacity)))
+                    }
                 }
+
+                // Seasonal ground accents
+                Self.drawSeasonalAccents(
+                    ctx: &ctx, season: season,
+                    grassX: grassX, grassY: grassY, grassWidth: grassWidth
+                )
 
                 // Dark section below ground for event log + status bar
                 if layout.showLog || layout.showStatus {
@@ -220,6 +308,14 @@ struct GrassIslandView: View {
                     grassLineY: grassLineY,
                     viewWidth: geo.size.width,
                     notchWidthFn: notchWidthInWindow
+                )
+
+                ProximityEffectsView(
+                    creatures: creatures,
+                    isExpanded: isExpanded,
+                    creatureSize: creatureSize,
+                    grassLineY: grassLineY,
+                    viewWidth: geo.size.width
                 )
             }
         }
@@ -335,6 +431,135 @@ struct PanelClipShape: Shape {
         }
         path.closeSubpath()
         return path
+    }
+}
+
+// MARK: - Weather Particles
+
+extension GrassIslandView {
+    /// Draw a single weather particle. Uses time + seed for deterministic, smooth animation.
+    static func drawWeatherParticle(
+        ctx: inout GraphicsContext, season: Season, index: Int, seed: Double, time: Double,
+        left: CGFloat, width: CGFloat, skyTop: CGFloat, skyBottom: CGFloat, starCount: Int
+    ) {
+        let skyH = skyBottom - skyTop
+        guard skyH > 4 else { return }
+
+        switch season {
+        case .spring:
+            // Cherry blossom petals — gentle sway + slow fall
+            let cycle = 8.0  // seconds per full descent
+            let phase = (time + seed).truncatingRemainder(dividingBy: cycle) / cycle  // 0..1
+            let x = left + CGFloat((seed * 0.618).truncatingRemainder(dividingBy: 1.0)) * width
+                + CGFloat(sin((time + seed) * 1.2)) * 6  // horizontal sway
+            let y = skyTop + CGFloat(phase) * skyH
+            let alpha = 1.0 - abs(phase - 0.5) * 0.6  // fade at edges
+            let petalColor = index % 2 == 0
+                ? Color(red: 1.0, green: 0.7, blue: 0.8)
+                : Color(red: 1.0, green: 0.8, blue: 0.85)
+            ctx.fill(Path(CGRect(x: x, y: y, width: 2, height: 1.5)),
+                     with: .color(petalColor.opacity(alpha * 0.7)))
+
+        case .summer:
+            // Fireflies — random float with glow, only at night (when stars are visible)
+            guard starCount > 2 else { return }
+            let cx = left + CGFloat((seed * 0.618).truncatingRemainder(dividingBy: 1.0)) * width
+            let baseY = skyTop + CGFloat((seed * 0.382).truncatingRemainder(dividingBy: 1.0)) * skyH
+            let x = cx + CGFloat(sin(time * 0.8 + seed)) * 8
+            let y = baseY + CGFloat(cos(time * 0.6 + seed * 1.3)) * 5
+            let pulse = 0.3 + 0.7 * abs(sin(time * 2.0 + seed))
+            // Glow
+            ctx.fill(Path(CGRect(x: x - 1, y: y - 1, width: 3, height: 3)),
+                     with: .color(Color(red: 1.0, green: 1.0, blue: 0.5).opacity(pulse * 0.2)))
+            // Core
+            ctx.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)),
+                     with: .color(Color(red: 1.0, green: 0.95, blue: 0.4).opacity(pulse * 0.8)))
+
+        case .autumn:
+            // Falling leaves — rotation implied by alternating shape, drift + tumble
+            let cycle = 6.0
+            let phase = (time + seed).truncatingRemainder(dividingBy: cycle) / cycle
+            let baseX = left + CGFloat((seed * 0.618).truncatingRemainder(dividingBy: 1.0)) * width
+            let drift = CGFloat(sin(time * 0.9 + seed * 2.1)) * 10
+            let x = baseX + drift
+            let y = skyTop + CGFloat(phase) * skyH
+            let alpha = 1.0 - abs(phase - 0.5) * 0.8
+            let leafColors: [Color] = [
+                Color(red: 0.8, green: 0.4, blue: 0.1),
+                Color(red: 0.9, green: 0.5, blue: 0.15),
+                Color(red: 0.7, green: 0.25, blue: 0.1),
+            ]
+            let color = leafColors[index % leafColors.count]
+            // Tumbling leaf — swap width/height periodically
+            let tumble = sin(time * 3.0 + seed)
+            let w: CGFloat = tumble > 0 ? 2.5 : 1.5
+            let h: CGFloat = tumble > 0 ? 1.5 : 2.5
+            ctx.fill(Path(CGRect(x: x, y: y, width: w, height: h)),
+                     with: .color(color.opacity(alpha * 0.75)))
+
+        case .winter:
+            // Snowflakes — slow descent, slight sway, varied sizes
+            let cycle = 10.0  // slower than other particles
+            let phase = (time + seed).truncatingRemainder(dividingBy: cycle) / cycle
+            let baseX = left + CGFloat((seed * 0.618).truncatingRemainder(dividingBy: 1.0)) * width
+            let sway = CGFloat(sin(time * 0.5 + seed)) * 4
+            let x = baseX + sway
+            let y = skyTop + CGFloat(phase) * skyH
+            let alpha = 0.5 + 0.5 * (1.0 - abs(phase - 0.5) * 1.2)
+            let sz: CGFloat = index % 3 == 0 ? 2 : 1  // some flakes larger
+            ctx.fill(Path(CGRect(x: x, y: y, width: sz, height: sz)),
+                     with: .color(Color.white.opacity(min(1, alpha) * 0.7)))
+        }
+    }
+
+    /// Draw small seasonal accents on the ground near the grass line.
+    static func drawSeasonalAccents(
+        ctx: inout GraphicsContext, season: Season,
+        grassX: CGFloat, grassY: CGFloat, grassWidth: CGFloat
+    ) {
+        var rng = StableRNG(seed: 99)
+
+        switch season {
+        case .spring:
+            // Small flowers on the ground
+            for _ in 0..<3 {
+                let fx = grassX + CGFloat.random(in: 4...(grassWidth - 4), using: &rng)
+                let fy = grassY - CGFloat.random(in: 1...4, using: &rng)
+                let colors: [Color] = [
+                    Color(red: 1.0, green: 0.6, blue: 0.7),
+                    Color(red: 1.0, green: 0.9, blue: 0.3),
+                    Color(red: 0.7, green: 0.6, blue: 1.0),
+                ]
+                let color = colors[Int.random(in: 0..<3, using: &rng)]
+                ctx.fill(Path(CGRect(x: fx, y: fy, width: 1.5, height: 1.5)),
+                         with: .color(color.opacity(0.8)))
+            }
+
+        case .summer:
+            break  // fireflies are drawn as particles above
+
+        case .autumn:
+            // Small mushroom or pumpkin shapes at ground level
+            for _ in 0..<2 {
+                let mx = grassX + CGFloat.random(in: 8...(grassWidth - 8), using: &rng)
+                let my = grassY - 1
+                // Stem
+                ctx.fill(Path(CGRect(x: mx + 0.5, y: my - 2, width: 1, height: 2)),
+                         with: .color(Color(red: 0.7, green: 0.55, blue: 0.35).opacity(0.7)))
+                // Cap
+                ctx.fill(Path(CGRect(x: mx - 0.5, y: my - 3, width: 3, height: 1.5)),
+                         with: .color(Color(red: 0.8, green: 0.3, blue: 0.15).opacity(0.7)))
+            }
+
+        case .winter:
+            // Small snowdrift bumps on the grass line
+            for _ in 0..<4 {
+                let dx = grassX + CGFloat.random(in: 2...(grassWidth - 2), using: &rng)
+                let dw = CGFloat.random(in: 3...6, using: &rng)
+                ctx.fill(Path(CGRect(x: dx, y: grassY - 1, width: dw, height: 1.5)),
+                         with: .color(Color.white.opacity(0.35)))
+            }
+        }
     }
 }
 

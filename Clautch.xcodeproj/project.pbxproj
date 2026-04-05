@@ -10,6 +10,7 @@
 		0A302FDE7BF39EAB340C7750 /* StreakIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3907CE0A070B4429795B2A6 /* StreakIndicator.swift */; };
 		0A377F6A4CD2FE55E3A818B7 /* PeerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4390BDECDDDCC6FCE400ED40 /* PeerState.swift */; };
 		0B343DB0F499DBCD1F6326A0 /* MockCloudKitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E394D94D0162CFE0F56FC505 /* MockCloudKitTests.swift */; };
+		105504BBDC625888785B0056 /* MoodJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4C493C315325ABF3F2438C /* MoodJournalView.swift */; };
 		1103AA7B710E2F26C6D029CB /* ActivityFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72DA42A6EC862A03CE4FAB8E /* ActivityFeed.swift */; };
 		112DADB586E7D2057D166849 /* CloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD912A5F01994C9E24785F8F /* CloudKitService.swift */; };
 		142CCCB57341EA96272F042E /* BobAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A24772089DC4C3D8257AFED /* BobAnimation.swift */; };
@@ -21,6 +22,7 @@
 		3B1C12A4D7BB5FD75C3D3779 /* GrassIslandView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9737E9CAA66D882E4E9BB53A /* GrassIslandView.swift */; };
 		3C0FAB57243E1ABF9687216A /* RoomInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0C6B8FD06DF6B10CCB6A961 /* RoomInfo.swift */; };
 		408CF3EE9DDD32B85496EF63 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A52988507ABC2C284D6DAF7 /* AchievementsView.swift */; };
+		49088031B7574DC85798EC60 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C79657527C26C6CE517517 /* ShareCardView.swift */; };
 		4B47143E75DF85C227120C41 /* PeerSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD8EB93627CF73ABB8107A80 /* PeerSigner.swift */; };
 		5066CF7DDA67521EB52CBAE7 /* SessionStatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6309D7AE6562CF28192822 /* SessionStatsTests.swift */; };
 		5A223B21633B38EE580AA9A6 /* HookEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3AAB35F796235E7F1580F4C /* HookEvent.swift */; };
@@ -89,6 +91,7 @@
 		35B322233C180E7390E3E334 /* CreatureSpriteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureSpriteView.swift; sourceTree = "<group>"; };
 		37A05E9A0BB497F97DCA2375 /* NotchContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchContentView.swift; sourceTree = "<group>"; };
 		3999AF3656ACC6EEA809E4A1 /* CreatureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureState.swift; sourceTree = "<group>"; };
+		3B4C493C315325ABF3F2438C /* MoodJournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodJournalView.swift; sourceTree = "<group>"; };
 		435CA37D802F20490420EF91 /* Clautch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Clautch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4390BDECDDDCC6FCE400ED40 /* PeerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerState.swift; sourceTree = "<group>"; };
 		48EEA97069510BF43AEF4A0F /* PeerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerStore.swift; sourceTree = "<group>"; };
@@ -100,6 +103,7 @@
 		668377B4E6CDB23F75C0607F /* StateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateMachine.swift; sourceTree = "<group>"; };
 		67A8DD3AA0D132F5E06187E6 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		72DA42A6EC862A03CE4FAB8E /* ActivityFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityFeed.swift; sourceTree = "<group>"; };
+		78C79657527C26C6CE517517 /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
 		7A24772089DC4C3D8257AFED /* BobAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BobAnimation.swift; sourceTree = "<group>"; };
 		7A52988507ABC2C284D6DAF7 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
 		7A6999253CA6EA31609F60BB /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
@@ -174,10 +178,12 @@
 			children = (
 				7A52988507ABC2C284D6DAF7 /* AchievementsView.swift */,
 				9737E9CAA66D882E4E9BB53A /* GrassIslandView.swift */,
+				3B4C493C315325ABF3F2438C /* MoodJournalView.swift */,
 				37A05E9A0BB497F97DCA2375 /* NotchContentView.swift */,
 				9612774E06FC2528A320C225 /* OnboardingView.swift */,
 				F53EC35E5F3EE5039009E917 /* RoomView.swift */,
 				4B8F984F272A10BCE8F12852 /* SettingsView.swift */,
+				78C79657527C26C6CE517517 /* ShareCardView.swift */,
 				D72078A7FD34B39EF7580A90 /* StatsView.swift */,
 				D9236698D70945CE1CAFB898 /* Components */,
 			);
@@ -420,6 +426,7 @@
 				3B1C12A4D7BB5FD75C3D3779 /* GrassIslandView.swift in Sources */,
 				5A223B21633B38EE580AA9A6 /* HookEvent.swift in Sources */,
 				F2C4B920C09A812FBEC8A82B /* HookInstaller.swift in Sources */,
+				105504BBDC625888785B0056 /* MoodJournalView.swift in Sources */,
 				677CF550801E8265788605DD /* NSScreen+Notch.swift in Sources */,
 				7CE35954FCD5225CECEE5218 /* NotchContentView.swift in Sources */,
 				71865577E19CCAC699C4BC42 /* NotchHitTestView.swift in Sources */,
@@ -438,6 +445,7 @@
 				CF2A287CEF7133514A48A36E /* SessionStats.swift in Sources */,
 				76BBFC0A3FD6F9F465229AB4 /* SessionStore.swift in Sources */,
 				219A0F3E326B1774586EFDDB /* SettingsView.swift in Sources */,
+				49088031B7574DC85798EC60 /* ShareCardView.swift in Sources */,
 				C59FF3BA1A0679902FCB5BF6 /* SocketServer.swift in Sources */,
 				ABA1A08C987E488DF347FF54 /* StateMachine.swift in Sources */,
 				CE96A169BD85A26B09493F9A /* StatsView.swift in Sources */,
@@ -616,7 +624,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.7.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};
@@ -677,7 +685,7 @@
 				INFOPLIST_FILE = Clautch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.7.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.clautch.app;
 				SDKROOT = macosx;
 			};

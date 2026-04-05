@@ -64,6 +64,7 @@ private struct AppearanceSettingsTab: View {
     @State private var colorPreset: CreatureColorPreset = UserProfile.current?.colorPreset ?? .none
     @State private var accessory: CreatureAccessory = UserProfile.current?.accessory ?? .none
     @State private var displayName: String = UserProfile.current?.displayName ?? ""
+    @State private var gamification = GamificationStore.shared
 
     var body: some View {
         Form {
@@ -101,10 +102,23 @@ private struct AppearanceSettingsTab: View {
 
                         Picker("Accessory", selection: $accessory) {
                             ForEach(CreatureAccessory.allCases) { acc in
-                                Text(acc == .none ? "None" : "\(acc.emoji) \(acc.rawValue.capitalized)").tag(acc)
+                                let unlocked = gamification.isAccessoryUnlocked(acc)
+                                if unlocked {
+                                    Text(acc == .none ? "None" : "\(acc.emoji) \(acc.displayName)").tag(acc)
+                                } else {
+                                    Text("🔒 \(acc.displayName) — \(acc.unlockRequirement.hintText)")
+                                        .foregroundStyle(.secondary)
+                                        .tag(acc)
+                                }
                             }
                         }
                         .pickerStyle(.menu)
+                        .onChange(of: accessory) { _, newValue in
+                            // Revert to previous if trying to select a locked accessory
+                            if !gamification.isAccessoryUnlocked(newValue) {
+                                accessory = UserProfile.current?.accessory ?? .none
+                            }
+                        }
                     }
                 }
             }
@@ -117,7 +131,11 @@ private struct AppearanceSettingsTab: View {
         .padding(.vertical, 8)
         .onChange(of: selectedType) { _, _ in saveProfile() }
         .onChange(of: colorPreset) { _, _ in saveProfile() }
-        .onChange(of: accessory) { _, _ in saveProfile() }
+        .onChange(of: accessory) { _, newValue in
+            if gamification.isAccessoryUnlocked(newValue) {
+                saveProfile()
+            }
+        }
         .onChange(of: displayName) { _, newValue in
             if !newValue.trimmingCharacters(in: .whitespaces).isEmpty {
                 saveProfile()
@@ -146,6 +164,7 @@ private struct AppearanceSettingsTab: View {
 private struct GeneralSettingsTab: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var settings = AnimationSettings.shared
+    @AppStorage("com.clautch.southernHemisphere") private var southernHemisphere = false
 
     var body: some View {
         Form {
@@ -164,6 +183,9 @@ private struct GeneralSettingsTab: View {
 
             Toggle("Pause Clautch", isOn: $settings.isPaused)
                 .help("Hides the notch panel and pauses all processing to save CPU")
+
+            Toggle("Southern Hemisphere", isOn: $southernHemisphere)
+                .help("Flip seasons for the southern hemisphere (e.g. December = summer)")
 
         }
         .formStyle(.grouped)

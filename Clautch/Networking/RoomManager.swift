@@ -220,12 +220,15 @@ final class RoomManager {
 
     func broadcastState(task: CreatureTask, emotion: CreatureEmotion) {
         guard let profile = UserProfile.current else { return }
-        // Preserve active reaction, chat, and position when updating state
+        // Preserve active reaction, chat, interaction, and position when updating state
         let existingReaction = localState?.reaction
         let existingReactionTs = localState?.reactionTimestamp
         let existingChat = localState?.chatMessage
         let existingChatTs = localState?.chatTimestamp
         let existingPos = localState?.xPosition
+        let existingInteraction = localState?.interaction
+        let existingInteractionTarget = localState?.interactionTarget
+        let existingInteractionTs = localState?.interactionTimestamp
         localState = PeerState(
             peerId: profile.peerId,
             displayName: profile.displayName,
@@ -240,7 +243,10 @@ final class RoomManager {
             reaction: existingReaction,
             reactionTimestamp: existingReactionTs,
             chatMessage: existingChat,
-            chatTimestamp: existingChatTs
+            chatTimestamp: existingChatTs,
+            interaction: existingInteraction,
+            interactionTarget: existingInteractionTarget,
+            interactionTimestamp: existingInteractionTs
         )
     }
 
@@ -326,6 +332,40 @@ final class RoomManager {
             if localState?.reaction == reaction {
                 localState?.reaction = nil
                 localState?.reactionTimestamp = nil
+            }
+        }
+    }
+
+    /// Send a targeted interaction to another peer — broadcast on next sync, auto-clear after 4s.
+    func sendInteraction(_ type: PeerInteraction, to targetPeerId: String) {
+        guard let state = ensureLocalState() else { return }
+        localState = PeerState(
+            peerId: state.peerId,
+            displayName: state.displayName,
+            creatureType: state.creatureType,
+            task: state.task,
+            emotion: state.emotion,
+            colorPreset: state.colorPreset,
+            accessory: state.accessory,
+            evolution: state.evolution,
+            timestamp: Date(),
+            xPosition: state.xPosition,
+            reaction: state.reaction,
+            reactionTimestamp: state.reactionTimestamp,
+            chatMessage: state.chatMessage,
+            chatTimestamp: state.chatTimestamp,
+            interaction: type,
+            interactionTarget: targetPeerId,
+            interactionTimestamp: Date()
+        )
+
+        // Auto-clear after 4 seconds
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(4))
+            if localState?.interaction == type {
+                localState?.interaction = nil
+                localState?.interactionTarget = nil
+                localState?.interactionTimestamp = nil
             }
         }
     }

@@ -80,6 +80,7 @@ struct NotchContentView: View {
         let effective = stateMachine.sessionStore.effectiveSession
         let localReaction = roomManager.localState?.reaction
         let localReactionActive = roomManager.localState?.hasActiveReaction ?? false
+        let localInteractionActive = roomManager.localState?.hasActiveInteraction ?? false
         creatures.append(CreatureDisplay(
             id: "local",
             state: effective?.state ?? CreatureState(),
@@ -94,7 +95,10 @@ struct NotchContentView: View {
             lastToolName: effective?.lastToolName,
             reaction: localReactionActive ? localReaction : nil,
             reactionActive: localReactionActive,
-            chatMessage: roomManager.localState?.activeChatMessage
+            chatMessage: roomManager.localState?.activeChatMessage,
+            interaction: localInteractionActive ? roomManager.localState?.interaction : nil,
+            interactionTarget: localInteractionActive ? roomManager.localState?.interactionTarget : nil,
+            interactionActive: localInteractionActive
         ))
 
         if let myId = profile?.peerId {
@@ -118,7 +122,10 @@ struct NotchContentView: View {
                     reaction: peer.hasActiveReaction ? peer.reaction : nil,
                     reactionActive: peer.hasActiveReaction,
                     chatMessage: peer.activeChatMessage,
-                    isTyping: peer.isTyping ?? false
+                    isTyping: peer.isTyping ?? false,
+                    interaction: peer.hasActiveInteraction ? peer.interaction : nil,
+                    interactionTarget: peer.hasActiveInteraction ? peer.interactionTarget : nil,
+                    interactionActive: peer.hasActiveInteraction
                 ))
             }
         }
