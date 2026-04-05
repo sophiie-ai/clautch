@@ -211,7 +211,7 @@ private struct DisplaySettingsTab: View {
         Form {
             Section("Screen") {
                 if availableScreens.isEmpty {
-                    Text("No screens with a notch detected")
+                    Text("No screens detected")
                         .foregroundStyle(.secondary)
                 } else if availableScreens.count == 1 {
                     HStack {
@@ -264,7 +264,7 @@ private struct DisplaySettingsTab: View {
     }
 
     private func refreshScreens() {
-        availableScreens = NSScreen.screens.filter { $0.hasNotch }.map { screen in
+        availableScreens = NSScreen.screens.map { screen in
             let w = Int(screen.frame.width)
             let h = Int(screen.frame.height)
             return ScreenInfo(
@@ -274,8 +274,8 @@ private struct DisplaySettingsTab: View {
                 resolution: "\(w)×\(h)"
             )
         }
-        // If no preference set, default to first screen
-        if preferredScreen.isEmpty, let first = availableScreens.first {
+        // If no preference set, default to first notch screen or primary
+        if preferredScreen.isEmpty, let first = availableScreens.first(where: { $0.hasNotch }) ?? availableScreens.first {
             preferredScreen = first.id
         }
     }

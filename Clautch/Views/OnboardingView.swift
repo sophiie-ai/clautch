@@ -14,7 +14,7 @@ struct OnboardingView: View {
 
     private let stepTitles = ["Choose your creature", "Pick a style", "What's your name?"]
     private let stepSubtitles = [
-        "This little friend will live in your notch",
+        "This little friend will live at the top of your screen",
         "Give them some flair",
         "So your teammates know who you are",
     ]

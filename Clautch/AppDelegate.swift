@@ -149,11 +149,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Animate a creature sprite from screen center up to the notch area, then set up the real panel.
     private func animateCreatureToNotch(completion: @escaping () -> Void) {
         guard let screen = preferredScreen(),
-              let notchFrame = screen.notchFrame,
               let profile = UserProfile.current else {
             completion()
             return
         }
+        let notchFrame = screen.effectiveNotchFrame
 
         // Create a small borderless window with the creature
         let spriteSize: CGFloat = 48
@@ -286,21 +286,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private static let preferredScreenKey = "com.clautch.preferredScreen"
 
-    /// Find the preferred screen: user's saved choice, or first screen with a notch.
+    /// Find the preferred screen: user's saved choice, notch screens first, then any screen.
     private func preferredScreen() -> NSScreen? {
-        let screens = NSScreen.screens.filter { $0.hasNotch }
         if let savedId = UserDefaults.standard.string(forKey: Self.preferredScreenKey),
-           let match = screens.first(where: { $0.localizedName == savedId }) {
+           let match = NSScreen.screens.first(where: { $0.localizedName == savedId }) {
             return match
         }
-        return screens.first
+        // Prefer notch screens, fall back to primary display
+        return NSScreen.screens.first(where: { $0.hasNotch }) ?? NSScreen.main ?? NSScreen.screens.first
     }
 
     private func setupNotchPanel() {
         NSApp.setActivationPolicy(.accessory)
 
         guard let screen = preferredScreen() else {
-            logger.info("No notch detected on any screen")
+            logger.info("No screen available for panel")
             return
         }
 
@@ -310,7 +310,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hostingView.layer?.backgroundColor = .clear
 
         let hitTestView = NotchHitTestView(hostingView: hostingView)
-        hitTestView.notchHeight = screen.safeAreaInsets.top
+        hitTestView.notchHeight = screen.effectiveNotchHeight
         hitTestView.isExpanded = NotchHoverState.shared.isHovered
         hitTestView.onClicked = { [weak self, weak hitTestView] in
             let expanding = !NotchHoverState.shared.isHovered
@@ -480,14 +480,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         changeItem.target = self
         menu.addItem(changeItem)
 
-        // ── Display (notch screens only) ──
-        let notchScreens = NSScreen.screens.filter { $0.hasNotch }
-        if notchScreens.count > 1 {
+        // ── Display ──
+        let allScreens = NSScreen.screens
+        if allScreens.count > 1 {
             menu.addItem(.separator())
             let displayItem = NSMenuItem(title: "Display", action: nil, keyEquivalent: "")
             displayItem.tag = 850
             let displayMenu = NSMenu()
-            for screen in notchScreens {
+            for screen in allScreens {
                 let item = NSMenuItem(
                     title: screen.localizedName,
                     action: #selector(selectDisplay(_:)),

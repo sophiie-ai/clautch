@@ -17,8 +17,8 @@ struct PanelLayout {
     let bottom: CGFloat
 
     init(viewHeight: CGFloat, isExpanded: Bool) {
-        let screen = NSScreen.screens.first(where: { $0.hasNotch })
-        notchHeight = screen?.safeAreaInsets.top ?? 32
+        let screen = NSScreen.screens.first(where: { $0.hasNotch }) ?? NSScreen.main
+        notchHeight = screen?.effectiveNotchHeight ?? 24
         showLog = AnimationSettings.shared.showEventLog
         showStatus = AnimationSettings.shared.showStatusBar
         logSpace = showLog ? logH : 0
@@ -372,28 +372,31 @@ struct GrassIslandView: View {
         }
     }
 
-    // Pre-computed values for the clip shape
+    // Pre-computed values for the clip shape (works on both notch and non-notch screens)
+    private var activeScreen: NSScreen? {
+        NSScreen.screens.first(where: { $0.hasNotch }) ?? NSScreen.main
+    }
     private var notchHeightForClip: CGFloat {
-        NSScreen.screens.first(where: { $0.hasNotch })?.safeAreaInsets.top ?? 32
+        activeScreen?.effectiveNotchHeight ?? 24
     }
     private var notchHalfForClip: CGFloat {
-        guard let screen = NSScreen.screens.first(where: { $0.hasNotch }),
-              let notch = screen.notchSize,
+        guard let screen = activeScreen,
               let win = screen.notchWindowFrame else { return 0 }
+        let notch = screen.effectiveNotchSize
         return (notch.width * win.width / win.width) / 2
     }
     private var panelHalfForClip: CGFloat {
-        guard let screen = NSScreen.screens.first(where: { $0.hasNotch }),
-              let notch = screen.notchSize,
+        guard let screen = activeScreen,
               let win = screen.notchWindowFrame else { return 100 }
+        let notch = screen.effectiveNotchSize
         let notchHalf = (notch.width * win.width / win.width) / 2
         return min(win.width / 2 - 2, notchHalf + 50)
     }
 
     private func notchWidthInWindow(totalWidth: CGFloat) -> CGFloat {
-        guard let screen = NSScreen.screens.first(where: { $0.hasNotch }),
-              let notch = screen.notchSize,
+        guard let screen = activeScreen,
               let win = screen.notchWindowFrame else { return totalWidth * 0.7 }
+        let notch = screen.effectiveNotchSize
         return notch.width * totalWidth / win.width
     }
 }
