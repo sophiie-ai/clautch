@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/sophiie-ai/clautch/compare/v0.9.1...v0.10.0) (2026-04-05)
+
+
+### Features
+
+* add 5 new creature features — accessories, seasons, mood journal, interactions, sharing ([f413582](https://github.com/sophiie-ai/clautch/commit/f413582531b3895f2b30eb4237eaf17ea3a27583))
+
 ## [0.9.1](https://github.com/sophiie-ai/clautch/compare/v0.9.0...v0.9.1) (2026-04-04)
 
 
