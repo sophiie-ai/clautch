@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/sophiie-ai/clautch/compare/v0.9.0...v0.9.1) (2026-04-04)
+
+
+### Bug Fixes
+
+* improve accessibility score — contrast, headings, landmarks ([652e159](https://github.com/sophiie-ai/clautch/commit/652e159b16985ffe2b36391d4cfd977bb62ebe37))
+* raise contrast ratios to pass WCAG AA (4.5:1 minimum) ([9813b27](https://github.com/sophiie-ai/clautch/commit/9813b274ee61969fa73353030f4200aabcb4a056))
+
 ## [0.9.0](https://github.com/sophiie-ai/clautch/compare/v0.8.0...v0.9.0) (2026-04-04)
 
 
