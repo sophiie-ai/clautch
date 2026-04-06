@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/sophiie-ai/clautch/compare/v0.11.0...v0.12.0) (2026-04-06)
+
+
+### Features
+
+* deepen gamification — XP scaling, 11 new achievements, daily quests, 6 evolution stages ([1fb9e0f](https://github.com/sophiie-ai/clautch/commit/1fb9e0f4820803cf275818780da015c4b7f1dd46))
+
 ## [0.11.0](https://github.com/sophiie-ai/clautch/compare/v0.10.0...v0.11.0) (2026-04-05)
 
 
