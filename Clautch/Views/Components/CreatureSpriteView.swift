@@ -269,8 +269,8 @@ struct PixelCreatureView: View {
                 }
             }
 
-            // --- Evolution glow (grown/elder) ---
-            if evolution >= .grown {
+            // --- Evolution glow (juvenile+) ---
+            if evolution >= .juvenile {
                 drawEvolutionEffects(ctx: ctx, size: size, px: px)
             }
 
@@ -302,20 +302,31 @@ struct PixelCreatureView: View {
             with: .color(glowColor.opacity(0.12 * pulse))
         )
 
-        // Elder: orbiting sparkle particles
-        if evolution == .elder {
-            let sparkles = 4
+        // Mature+: orbiting sparkle particles (more and faster at higher stages)
+        if evolution >= .mature {
+            let sparkles = evolution == .ancient ? 6 : (evolution == .elder ? 5 : 4)
+            let speed = evolution == .ancient ? 2.5 : (evolution == .elder ? 2.0 : 1.5)
+            let sparkleColor = evolution.glowColor
             for i in 0..<sparkles {
-                let angle = t * 1.5 + Double(i) * (.pi * 2 / Double(sparkles))
+                let angle = t * speed + Double(i) * (.pi * 2 / Double(sparkles))
                 let orbitX = midX + cos(angle) * (size.width / 2 + 2)
                 let orbitY = midY + sin(angle) * (size.height / 2 + 1)
                 let twinkle = abs(sin(t * 4 + Double(i) * 1.5))
-                let s: CGFloat = 1.5
+                let s: CGFloat = evolution >= .elder ? 1.5 : 1.0
                 ctx.fill(
                     Path(CGRect(x: orbitX - s / 2, y: orbitY - s / 2, width: s, height: s)),
-                    with: .color(Color(red: 1.0, green: 0.95, blue: 0.5).opacity(twinkle * 0.7))
+                    with: .color(sparkleColor.opacity(twinkle * 0.7))
                 )
             }
+        }
+
+        // Ancient: shimmer overlay
+        if evolution == .ancient {
+            let shimmer = 0.03 * abs(sin(t * 3.0))
+            ctx.fill(
+                Path(CGRect(x: 0, y: 0, width: size.width, height: size.height)),
+                with: .color(Color.white.opacity(shimmer))
+            )
         }
     }
 

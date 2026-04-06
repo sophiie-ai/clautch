@@ -88,9 +88,13 @@ final class StateMachine {
         let emotion = effective?.state.emotion ?? .neutral
         RoomManager.shared.broadcastState(task: task, emotion: emotion)
 
-        // Record mood for sparkline
+        // Record mood for sparkline and gamification
         SessionStats.shared.recordMood(emotion.rawValue)
+        GamificationStore.shared.recordMoodSample(emotion.rawValue)
     }
+
+    /// Track per-session error streaks for recovery detection.
+    private var sessionErrorStreaks: [String: Int] = [:]
 
     private func updateGamification(_ event: HookEvent) {
         let store = GamificationStore.shared
@@ -102,15 +106,33 @@ final class StateMachine {
             let duration = session.map { Date().timeIntervalSince($0.startedAt) } ?? 0
             let hour = Calendar.current.component(.hour, from: session?.startedAt ?? Date())
             store.recordSessionEnd(duration: duration, startHour: hour)
+            // Record coding time for time-based achievements
+            store.recordCodingTime(duration)
+            sessionErrorStreaks.removeValue(forKey: event.sessionId)
         case .preToolUse:
             store.recordToolUse()
-            // Speed demon: check if session has 5+ tools in 30 seconds
+            // Speed demon + velocity bonus: check if session has 5+ tools in 30 seconds
             if let session = sessionStore.sessions.first(where: { $0.id == event.sessionId }) {
                 let recentTools = session.recentToolTimes.filter {
                     Date().timeIntervalSince($0) < 30
                 }
                 if recentTools.count >= 5 {
                     store.recordSpeedBurst()
+                    store.recordToolVelocityBonus()
+                }
+            }
+        case .postToolUse:
+            // Track error recovery: 3+ errors → success = recovery
+            let sid = event.sessionId
+            if let status = event.status {
+                if status == "error" || status == "failure" {
+                    sessionErrorStreaks[sid, default: 0] += 1
+                } else if status == "success" {
+                    let previousErrors = sessionErrorStreaks[sid] ?? 0
+                    if previousErrors >= 3 {
+                        store.recordErrorRecovery()
+                    }
+                    sessionErrorStreaks[sid] = 0
                 }
             }
         default:

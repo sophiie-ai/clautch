@@ -31,6 +31,9 @@ final class GamificationStore {
         var totalReactionsSent: Int = 0
         var hasJoinedRoom: Bool = false
         var hadSpeedBurst: Bool = false
+        var hasRecoveredFromErrors: Bool = false
+        var longestPositiveMoodRun: Int = 0
+        var totalCodingSeconds: TimeInterval = 0
     }
 
     private init() {
@@ -39,6 +42,7 @@ final class GamificationStore {
         counters = Self.loadJSON(key: Self.countersKey) ?? AchievementCounters()
         xp = UserDefaults.standard.integer(forKey: Self.xpKey)
         checkAndUpdateStreak()
+        loadQuests()
     }
 
     /// Test-only initializer with injected state.
@@ -64,9 +68,16 @@ final class GamificationStore {
 
         saveCounters()
         checkAchievements()
+        updateQuestProgress()
     }
 
     func recordSessionEnd(duration: TimeInterval, startHour: Int) {
+        // Session length bonus: +1 XP per 10 minutes, capped at +12
+        let lengthBonus = min(Int(duration / 600), 12)
+        if lengthBonus > 0 {
+            addXP(lengthBonus)
+        }
+
         // Marathon: 4+ hour session
         if duration >= 4 * 3600 {
             unlockIfNew(.marathon)
@@ -86,6 +97,7 @@ final class GamificationStore {
         addXP(1) // +1 XP per tool use
         saveCounters()
         checkAchievements()
+        updateQuestProgress()
     }
 
     func recordSpeedBurst() {
@@ -106,11 +118,46 @@ final class GamificationStore {
         checkAchievements()
     }
 
+    /// Bonus XP when recovering from 3+ consecutive errors.
+    func recordErrorRecovery() {
+        addXP(3)
+        counters.hasRecoveredFromErrors = true
+        saveCounters()
+        checkAchievements()
+    }
+
+    /// Bonus XP for sustained tool velocity (5+ tools in 30s).
+    func recordToolVelocityBonus() {
+        addXP(2)
+    }
+
+    /// Record coding time for time-based achievements.
+    func recordCodingTime(_ seconds: TimeInterval) {
+        counters.totalCodingSeconds += seconds
+        saveCounters()
+        checkAchievements()
+    }
+
+    /// Track positive mood runs for Zen Master achievement.
+    func recordMoodSample(_ emotion: String) {
+        let isPositive = emotion == "happy" || emotion == "excited" || emotion == "neutral"
+        if isPositive {
+            counters.longestPositiveMoodRun += 1
+        } else {
+            counters.longestPositiveMoodRun = 0
+        }
+        saveCounters()
+        checkAchievements()
+    }
+
     // MARK: - XP
 
     private func addXP(_ amount: Int) {
         let oldStage = evolution
-        xp += amount
+        // Streak multiplier: 1.0 at 0 days, +5% per streak day, capped at 2.0×
+        let multiplier = min(2.0, 1.0 + Double(streak.currentStreak) * 0.05)
+        let effectiveAmount = max(1, Int(ceil(Double(amount) * multiplier)))
+        xp += effectiveAmount
         saveXP()
         let newStage = evolution
         if newStage != oldStage {
@@ -165,17 +212,34 @@ final class GamificationStore {
             guard !isEarned(id) else { continue }
             let earned: Bool
             switch id {
-            case .firstSession:     earned = counters.totalSessions >= 1
-            case .tenSessions:      earned = counters.totalSessions >= 10
-            case .fiftySessions:    earned = counters.totalSessions >= 50
-            case .bugSquasher:      earned = counters.totalToolUses >= 100
-            case .speedDemon:       earned = counters.hadSpeedBurst
-            case .teamPlayer:       earned = counters.hasJoinedRoom
-            case .socialButterfly:  earned = counters.totalReactionsSent >= 10
-            case .streakThree:      earned = streak.currentStreak >= 3
-            case .streakSeven:      earned = streak.currentStreak >= 7
-            case .streakThirty:     earned = streak.currentStreak >= 30
-            // These are checked explicitly in their record* methods
+            // Session milestones
+            case .firstSession:         earned = counters.totalSessions >= 1
+            case .fiveSessions:         earned = counters.totalSessions >= 5
+            case .tenSessions:          earned = counters.totalSessions >= 10
+            case .twentyFiveSessions:   earned = counters.totalSessions >= 25
+            case .fiftySessions:        earned = counters.totalSessions >= 50
+            case .hundredSessions:      earned = counters.totalSessions >= 100
+            // Tool milestones
+            case .bugSquasher:          earned = counters.totalToolUses >= 100
+            case .toolsmith:            earned = counters.totalToolUses >= 250
+            case .prolific:             earned = counters.totalToolUses >= 500
+            case .speedDemon:           earned = counters.hadSpeedBurst
+            // Coding time
+            case .centurion:            earned = counters.totalCodingSeconds >= 3600
+            case .dedicated:            earned = counters.totalCodingSeconds >= 36000
+            case .ironclad:             earned = counters.totalCodingSeconds >= 180000
+            // Resilience & mood
+            case .resilient:            earned = counters.hasRecoveredFromErrors
+            case .zenMaster:            earned = counters.longestPositiveMoodRun >= 20
+            // Social
+            case .teamPlayer:           earned = counters.hasJoinedRoom
+            case .socialButterfly:      earned = counters.totalReactionsSent >= 10
+            // Streaks
+            case .streakThree:          earned = streak.currentStreak >= 3
+            case .streakSeven:          earned = streak.currentStreak >= 7
+            case .streakFourteen:       earned = streak.currentStreak >= 14
+            case .streakThirty:         earned = streak.currentStreak >= 30
+            // Checked explicitly in their record* methods
             case .marathon, .nightOwl, .earlyBird:
                 earned = false
             }
@@ -224,6 +288,99 @@ final class GamificationStore {
         case .xp(let amount):
             return xp >= amount
         }
+    }
+
+    // MARK: - Daily Quests
+
+    struct DailyQuest: Codable, Identifiable {
+        let id: String
+        let title: String
+        let target: Int
+        var progress: Int = 0
+        var completed: Bool = false
+    }
+
+    private static let questsKey = "com.clautch.dailyQuests"
+    private static let questDateKey = "com.clautch.questDate"
+    private(set) var dailyQuests: [DailyQuest] = []
+    private var questDate: String = ""
+
+    var completedQuestCount: Int {
+        dailyQuests.filter(\.completed).count
+    }
+
+    private func loadQuests() {
+        questDate = UserDefaults.standard.string(forKey: Self.questDateKey) ?? ""
+        dailyQuests = Self.loadJSON(key: Self.questsKey) ?? []
+        refreshQuestsIfNeeded()
+    }
+
+    private func refreshQuestsIfNeeded() {
+        let today = SessionStats.dateKey(for: Date())
+        guard questDate != today else { return }
+
+        // Generate 3 quests from pool, seeded by date
+        let pool: [(id: String, title: String, target: Int)] = [
+            ("tools15",   "Use 15 tools today",            15),
+            ("time30",    "Code for 30 minutes",           30),
+            ("morning",   "Start a session before 9 AM",    1),
+            ("mood10",    "10 positive mood samples",       10),
+            ("tools25",   "Use 25 tools today",            25),
+            ("time60",    "Code for 1 hour",               60),
+            ("sessions2", "Complete 2 sessions",             2),
+            ("reaction",  "Send a reaction in a room",       1),
+        ]
+
+        var seed = today.hashValue
+        var indices: Set<Int> = []
+        while indices.count < 3 {
+            seed = seed &* 6364136223846793005 &+ 1
+            let idx = abs(seed) % pool.count
+            indices.insert(idx)
+        }
+
+        dailyQuests = indices.sorted().map { idx in
+            let q = pool[idx]
+            return DailyQuest(id: q.id, title: q.title, target: q.target)
+        }
+        questDate = today
+        saveQuests()
+    }
+
+    /// Update quest progress after any gamification event.
+    func updateQuestProgress() {
+        refreshQuestsIfNeeded()
+        let today = SessionStats.dateKey(for: Date())
+        let todaySeconds = SessionStats.shared.dailyTotals[today] ?? 0
+        let todayMinutes = Int(todaySeconds / 60)
+
+        for i in dailyQuests.indices {
+            guard !dailyQuests[i].completed else { continue }
+            let oldProgress = dailyQuests[i].progress
+            switch dailyQuests[i].id {
+            case "tools15":   dailyQuests[i].progress = min(counters.totalToolUses, 15) // approximate with daily
+            case "tools25":   dailyQuests[i].progress = min(counters.totalToolUses, 25)
+            case "time30":    dailyQuests[i].progress = min(todayMinutes, 30)
+            case "time60":    dailyQuests[i].progress = min(todayMinutes, 60)
+            case "mood10":    dailyQuests[i].progress = min(counters.longestPositiveMoodRun, 10)
+            case "sessions2": dailyQuests[i].progress = min(counters.totalSessions, 2)
+            case "morning":   dailyQuests[i].progress = Calendar.current.component(.hour, from: Date()) < 9 && counters.totalSessions > 0 ? 1 : dailyQuests[i].progress
+            case "reaction":  dailyQuests[i].progress = min(counters.totalReactionsSent, 1)
+            default: break
+            }
+
+            if dailyQuests[i].progress >= dailyQuests[i].target && oldProgress < dailyQuests[i].target {
+                dailyQuests[i].completed = true
+                addXP(5)
+                ActivityFeed.shared.add(icon: "✅", text: "Quest complete: \(dailyQuests[i].title)")
+            }
+        }
+        saveQuests()
+    }
+
+    private func saveQuests() {
+        Self.saveJSON(dailyQuests, key: Self.questsKey)
+        UserDefaults.standard.set(questDate, forKey: Self.questDateKey)
     }
 
     // MARK: - Persistence

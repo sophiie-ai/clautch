@@ -671,7 +671,9 @@ extension AppDelegate: NSMenuDelegate {
             let today = SessionStats.format(SessionStats.shared.todayTotal)
             let week = SessionStats.format(SessionStats.shared.weekTotal)
             let reset = SessionStats.weekResetLabel
-            statsItem.title = "Usage: \(today) today · \(week) this week · Resets \(reset)"
+            let quests = GamificationStore.shared
+            let questStr = "Quests: \(quests.completedQuestCount)/\(quests.dailyQuests.count)"
+            statsItem.title = "\(today) today · \(week) this week · \(questStr)"
         }
         if let reactItem = menu.item(withTag: 250) {
             reactItem.isHidden = RoomManager.shared.currentRoom == nil

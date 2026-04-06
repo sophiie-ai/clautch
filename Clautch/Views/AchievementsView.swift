@@ -23,6 +23,7 @@ struct AchievementsView: View {
 
             ScrollView {
                 VStack(spacing: 20) {
+                    dailyQuestsSection
                     evolutionSection
                     streakSection
                     achievementsGrid
@@ -31,6 +32,63 @@ struct AchievementsView: View {
             }
         }
         .frame(minWidth: 360, minHeight: 400)
+    }
+
+    // MARK: - Daily Quests Section
+
+    private var dailyQuestsSection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Daily Quests")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                Spacer()
+                Text("\(gamification.completedQuestCount)/\(gamification.dailyQuests.count)")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+
+            if gamification.dailyQuests.isEmpty {
+                Text("Quests will appear when you start coding")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                    .padding(.vertical, 4)
+            } else {
+                ForEach(gamification.dailyQuests) { quest in
+                    HStack(spacing: 10) {
+                        Image(systemName: quest.completed ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 14))
+                            .foregroundStyle(quest.completed ? .green : .secondary)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(quest.title)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(quest.completed ? .secondary : .primary)
+                                .strikethrough(quest.completed)
+
+                            GeometryReader { geo in
+                                let progress = quest.target > 0 ? min(CGFloat(quest.progress) / CGFloat(quest.target), 1.0) : 0
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.primary.opacity(0.06))
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(quest.completed ? Color.green.opacity(0.5) : Color.accentColor.opacity(0.6))
+                                        .frame(width: geo.size.width * progress)
+                                }
+                            }
+                            .frame(height: 3)
+                        }
+
+                        Text("\(quest.progress)/\(quest.target)")
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.primary.opacity(0.04))
+        .cornerRadius(10)
     }
 
     // MARK: - Evolution Section
@@ -81,18 +139,13 @@ struct AchievementsView: View {
             .frame(height: 6)
 
             // Stage labels
-            HStack {
-                Text("Baby")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(evo == .baby ? .primary : .tertiary)
-                Spacer()
-                Text("Grown")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(evo == .grown ? .primary : .tertiary)
-                Spacer()
-                Text("Elder")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(evo == .elder ? .primary : .tertiary)
+            HStack(spacing: 0) {
+                ForEach(CreatureEvolution.allCases, id: \.rawValue) { stage in
+                    Text(stage.displayName)
+                        .font(.system(size: 7, weight: .medium))
+                        .foregroundStyle(evo == stage ? .primary : .tertiary)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
         .padding(16)

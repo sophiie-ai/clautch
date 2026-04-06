@@ -216,8 +216,8 @@ struct ShareCardContent: View {
                 }
 
                 GeometryReader { geo in
-                    let nextThreshold = evolution == .baby ? 100 : (evolution == .grown ? 500 : 1000)
-                    let progress = min(CGFloat(xp) / CGFloat(nextThreshold), 1.0)
+                    let nextThreshold = evolution.nextThreshold ?? evolution.xpThreshold
+                    let progress = nextThreshold > 0 ? min(CGFloat(xp) / CGFloat(nextThreshold), 1.0) : 1.0
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 3)
                             .fill(Color.primary.opacity(0.08))
