@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/sophiie-ai/clautch/compare/v0.12.0...v0.13.0) (2026-04-06)
+
+
+### Features
+
+* add prestige system, weekly challenges, and exponential XP curve ([c749905](https://github.com/sophiie-ai/clautch/commit/c7499052b18706b0fa7a9249a81ac76ae42cfacb))
+
 ## [0.12.0](https://github.com/sophiie-ai/clautch/compare/v0.11.0...v0.12.0) (2026-04-06)
 
 
