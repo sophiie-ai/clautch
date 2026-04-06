@@ -54,6 +54,8 @@ struct CreatureSpriteView: View {
     var evolution: CreatureEvolution = .baby
     var isExpanded: Bool = true
     var isWalking: Bool = false
+    var needsInput: Bool = false
+    var needsPermission: Bool = false
 
     /// Per-creature seed for random collapsed animations (stable across frames).
     private var creatureSeed: Double {
@@ -98,7 +100,9 @@ struct CreatureSpriteView: View {
                 evolution: evolution,
                 isWalking: isWalking,
                 time: t,
-                isExpanded: isExpanded
+                isExpanded: isExpanded,
+                needsInput: needsInput,
+                needsPermission: needsPermission
             )
             .frame(width: 32, height: 32)
             .offset(y: bob + walkHop + collapsed.hop)
@@ -197,6 +201,8 @@ struct PixelCreatureView: View {
     var isWalking: Bool = false
     var time: Double = 0
     var isExpanded: Bool = true
+    var needsInput: Bool = false
+    var needsPermission: Bool = false
 
     private var colors: CreatureColors {
         let key = CreatureColors.Key(type: type, colorPreset: colorPreset, task: task, emotion: emotion)
@@ -504,9 +510,68 @@ struct PixelCreatureView: View {
             }
         }
 
+        // Needs permission: pixel-art shield in top-right
+        if needsPermission {
+            drawAttentionPixels(ctx: ctx, size: size, px: px, t: t, style: .permission)
+        } else if needsInput {
+            drawAttentionPixels(ctx: ctx, size: size, px: px, t: t, style: .input)
+        }
+
         // Idle personality animations: unique per creature type
         if task == .idle && emotion == .neutral {
             drawPersonalityEffect(ctx: ctx, size: size, px: px, t: t)
+        }
+    }
+
+    private enum AttentionStyle { case input, permission }
+
+    /// Draw a pixel-art attention indicator in the top-right corner of the creature.
+    private func drawAttentionPixels(ctx: GraphicsContext, size: CGSize, px: CGFloat, t: Double, style: AttentionStyle) {
+        let pulse = 0.5 + 0.5 * abs(sin(t * 3.0))
+
+        // 3x5 pixel art: "!" for input, shield for permission
+        let pixels: [[Int]]
+        let color: Color
+        switch style {
+        case .input:
+            // Pixel "!" mark
+            pixels = [
+                [0, 1, 0],
+                [0, 1, 0],
+                [0, 1, 0],
+                [0, 0, 0],
+                [0, 1, 0],
+            ]
+            color = Color.orange
+        case .permission:
+            // Pixel shield
+            pixels = [
+                [1, 1, 1],
+                [1, 2, 1],
+                [1, 2, 1],
+                [0, 1, 0],
+                [0, 1, 0],
+            ]
+            color = Color.yellow
+        }
+
+        let dotPx = px * 0.75
+        let originX = size.width - CGFloat(pixels[0].count) * dotPx
+        let originY: CGFloat = 0
+
+        for (r, row) in pixels.enumerated() {
+            for (c, cell) in row.enumerated() {
+                guard cell != 0 else { continue }
+                let rect = CGRect(
+                    x: originX + CGFloat(c) * dotPx,
+                    y: originY + CGFloat(r) * dotPx,
+                    width: dotPx + 0.5, height: dotPx + 0.5
+                )
+                let pixelColor = cell == 2
+                    ? Color.black.opacity(pulse)
+                    : color.opacity(pulse)
+                ctx.fill(Path(rect), with: .color(pixelColor))
+            }
         }
     }
     // MARK: - Personality Effects

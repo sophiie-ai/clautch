@@ -27,7 +27,9 @@ struct CreatureIslandOverlay: View {
                     accessory: creature.accessory,
                     evolution: creature.evolution,
                     isExpanded: isExpanded,
-                    isWalking: isWalking && creature.isLocal
+                    isWalking: isWalking && creature.isLocal,
+                    needsInput: creature.isLocal && creature.state.needsInput,
+                    needsPermission: creature.isLocal && creature.state.needsPermission
                 )
                 .frame(width: creatureSize, height: creatureSize)
                 .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
@@ -79,18 +81,7 @@ struct CreatureIslandOverlay: View {
                 .offset(y: -18)
                 .fixedSize()
             }
-            // Attention indicators
-            .overlay(alignment: .topTrailing) {
-                if creature.isLocal && creature.state.needsPermission {
-                    NeedsPermissionBadge()
-                        .offset(x: 4, y: -2)
-                        .transition(.scale.combined(with: .opacity))
-                } else if creature.isLocal && creature.state.needsInput {
-                    NeedsInputDot()
-                        .offset(x: 4, y: -2)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
+            // Attention indicators are now rendered as pixel art inside CreatureSpriteView
             .position(
                 x: viewWidth / 2 + creatureOffset(for: creature),
                 y: grassLineY - creatureSize / 2 - 4
@@ -291,44 +282,6 @@ struct ProximityEffectsView: View {
         p.addRect(CGRect(x: center.x - s, y: center.y + s * 0.5, width: 2 * s, height: s))
         p.addRect(CGRect(x: center.x - s / 2, y: center.y + s * 1.5, width: s, height: s / 2))
         return p
-    }
-}
-
-// MARK: - Needs Permission Badge
-
-struct NeedsPermissionBadge: View {
-    @State private var pulse = false
-
-    var body: some View {
-        Image(systemName: "shield.fill")
-            .font(.system(size: 7))
-            .foregroundStyle(.yellow)
-            .shadow(color: .yellow.opacity(0.5), radius: pulse ? 3 : 1)
-            .scaleEffect(pulse ? 1.2 : 1.0)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
-                    pulse = true
-                }
-            }
-    }
-}
-
-// MARK: - Needs Input Dot
-
-struct NeedsInputDot: View {
-    @State private var pulse = false
-
-    var body: some View {
-        Circle()
-            .fill(Color.orange)
-            .frame(width: 5, height: 5)
-            .shadow(color: .orange.opacity(0.6), radius: pulse ? 3 : 1)
-            .scaleEffect(pulse ? 1.3 : 1.0)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-                    pulse = true
-                }
-            }
     }
 }
 
