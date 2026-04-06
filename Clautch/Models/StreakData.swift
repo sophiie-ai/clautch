@@ -7,3 +7,9 @@ struct StreakData: Codable {
     var lastActiveDate: String?   // "yyyy-MM-dd" — matches SessionStats.dateKey
     var streakStartDate: String?  // when the current streak began
 }
+
+/// Persisted prestige state for the rebirth system.
+struct PrestigeData: Codable {
+    var level: Int = 0            // number of times reborn
+    var lifetimeXP: Int = 0       // total XP earned across all lives
+}

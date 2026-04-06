@@ -26,10 +26,10 @@ enum CreatureEvolution: String, Codable, Sendable, Comparable, CaseIterable {
 
     /// Compute evolution stage from XP total.
     static func from(xp: Int) -> CreatureEvolution {
-        if xp >= 1000 { return .ancient }
-        if xp >= 600  { return .elder }
-        if xp >= 350  { return .mature }
-        if xp >= 150  { return .grown }
+        if xp >= 5000 { return .ancient }
+        if xp >= 1500 { return .elder }
+        if xp >= 500  { return .mature }
+        if xp >= 200  { return .grown }
         if xp >= 50   { return .juvenile }
         return .baby
     }
@@ -39,10 +39,10 @@ enum CreatureEvolution: String, Codable, Sendable, Comparable, CaseIterable {
         switch self {
         case .baby:     return 0
         case .juvenile: return 50
-        case .grown:    return 150
-        case .mature:   return 350
-        case .elder:    return 600
-        case .ancient:  return 1000
+        case .grown:    return 200
+        case .mature:   return 500
+        case .elder:    return 1500
+        case .ancient:  return 5000
         }
     }
 
@@ -50,10 +50,10 @@ enum CreatureEvolution: String, Codable, Sendable, Comparable, CaseIterable {
     var nextThreshold: Int? {
         switch self {
         case .baby:     return 50
-        case .juvenile: return 150
-        case .grown:    return 350
-        case .mature:   return 600
-        case .elder:    return 1000
+        case .juvenile: return 200
+        case .grown:    return 500
+        case .mature:   return 1500
+        case .elder:    return 5000
         case .ancient:  return nil
         }
     }

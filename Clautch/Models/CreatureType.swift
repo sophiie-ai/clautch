@@ -432,6 +432,7 @@ enum AccessoryRequirement: Sendable {
     case achievement(AchievementId)
     case streak(Int)
     case xp(Int)
+    case prestige(Int)
 
     var hintText: String {
         switch self {
@@ -443,6 +444,8 @@ enum AccessoryRequirement: Sendable {
             return "\(days)-day streak"
         case .xp(let amount):
             return "\(amount) XP"
+        case .prestige(let level):
+            return "Prestige \(level)"
         }
     }
 }
@@ -456,7 +459,6 @@ enum CreatureAccessory: String, CaseIterable, Codable, Identifiable, Sendable {
     case glasses
     case hardhat
     case halo
-    // New accessories
     case scarf
     case headphones
     case wizardHat
@@ -465,46 +467,56 @@ enum CreatureAccessory: String, CaseIterable, Codable, Identifiable, Sendable {
     case antlers
     case partyHat
     case monocle
+    // Prestige accessories
+    case starAura
+    case phoenixCrest
+    case celestialRing
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .none:        return "None"
-        case .topHat:      return "Top Hat"
-        case .crown:       return "Crown"
-        case .bow:         return "Bow"
-        case .glasses:     return "Glasses"
-        case .hardhat:     return "Hard Hat"
-        case .halo:        return "Halo"
-        case .scarf:       return "Scarf"
-        case .headphones:  return "Headphones"
-        case .wizardHat:   return "Wizard Hat"
-        case .flowerCrown: return "Flower Crown"
-        case .bandana:     return "Bandana"
-        case .antlers:     return "Antlers"
-        case .partyHat:    return "Party Hat"
-        case .monocle:     return "Monocle"
+        case .none:          return "None"
+        case .topHat:        return "Top Hat"
+        case .crown:         return "Crown"
+        case .bow:           return "Bow"
+        case .glasses:       return "Glasses"
+        case .hardhat:       return "Hard Hat"
+        case .halo:          return "Halo"
+        case .scarf:         return "Scarf"
+        case .headphones:    return "Headphones"
+        case .wizardHat:     return "Wizard Hat"
+        case .flowerCrown:   return "Flower Crown"
+        case .bandana:       return "Bandana"
+        case .antlers:       return "Antlers"
+        case .partyHat:      return "Party Hat"
+        case .monocle:       return "Monocle"
+        case .starAura:      return "Star Aura"
+        case .phoenixCrest:  return "Phoenix Crest"
+        case .celestialRing: return "Celestial Ring"
         }
     }
 
     var emoji: String {
         switch self {
-        case .none:        return "❌"
-        case .topHat:      return "🎩"
-        case .crown:       return "👑"
-        case .bow:         return "🎀"
-        case .glasses:     return "🤓"
-        case .hardhat:     return "⛑️"
-        case .halo:        return "😇"
-        case .scarf:       return "🧣"
-        case .headphones:  return "🎧"
-        case .wizardHat:   return "🧙"
-        case .flowerCrown: return "🌸"
-        case .bandana:     return "🏴"
-        case .antlers:     return "🦌"
-        case .partyHat:    return "🥳"
-        case .monocle:     return "🧐"
+        case .none:          return "❌"
+        case .topHat:        return "🎩"
+        case .crown:         return "👑"
+        case .bow:           return "🎀"
+        case .glasses:       return "🤓"
+        case .hardhat:       return "⛑️"
+        case .halo:          return "😇"
+        case .scarf:         return "🧣"
+        case .headphones:    return "🎧"
+        case .wizardHat:     return "🧙"
+        case .flowerCrown:   return "🌸"
+        case .bandana:       return "🏴"
+        case .antlers:       return "🦌"
+        case .partyHat:      return "🥳"
+        case .monocle:       return "🧐"
+        case .starAura:      return "⭐"
+        case .phoenixCrest:  return "🔥"
+        case .celestialRing: return "💫"
         }
     }
 
@@ -523,6 +535,9 @@ enum CreatureAccessory: String, CaseIterable, Codable, Identifiable, Sendable {
         case .crown:                    return .achievement(.fiftySessions)
         case .halo:                     return .streak(30)
         case .wizardHat:                return .xp(500)
+        case .starAura:                 return .prestige(1)
+        case .phoenixCrest:             return .prestige(2)
+        case .celestialRing:            return .prestige(3)
         }
     }
 
@@ -601,48 +616,69 @@ enum CreatureAccessory: String, CaseIterable, Codable, Identifiable, Sendable {
             ..6.
             .676
             """)
+        case .starAura: return Self.parse("""
+            .77.
+            7667
+            .77.
+            """)
+        case .phoenixCrest: return Self.parse("""
+            .67.
+            6776
+            .66.
+            """)
+        case .celestialRing: return Self.parse("""
+            7667
+            6..6
+            7667
+            """)
         }
     }
 
     /// Primary color for pixel type 6.
     var primaryColor: Color {
         switch self {
-        case .none:        return .clear
-        case .topHat:      return Color(red: 0.2, green: 0.2, blue: 0.2)
-        case .crown:       return Color(red: 1.0, green: 0.85, blue: 0.1)
-        case .bow:         return Color(red: 1.0, green: 0.3, blue: 0.5)
-        case .glasses:     return Color(red: 0.3, green: 0.3, blue: 0.3)
-        case .hardhat:     return Color(red: 1.0, green: 0.8, blue: 0.0)
-        case .halo:        return Color(red: 1.0, green: 1.0, blue: 0.7)
-        case .scarf:       return Color(red: 0.8, green: 0.2, blue: 0.2)
-        case .headphones:  return Color(red: 0.25, green: 0.25, blue: 0.3)
-        case .wizardHat:   return Color(red: 0.3, green: 0.2, blue: 0.6)
-        case .flowerCrown: return Color(red: 0.3, green: 0.7, blue: 0.3)
-        case .bandana:     return Color(red: 0.15, green: 0.15, blue: 0.15)
-        case .antlers:     return Color(red: 0.55, green: 0.35, blue: 0.2)
-        case .partyHat:    return Color(red: 0.2, green: 0.6, blue: 0.9)
-        case .monocle:     return Color(red: 0.7, green: 0.6, blue: 0.3)
+        case .none:          return .clear
+        case .topHat:        return Color(red: 0.2, green: 0.2, blue: 0.2)
+        case .crown:         return Color(red: 1.0, green: 0.85, blue: 0.1)
+        case .bow:           return Color(red: 1.0, green: 0.3, blue: 0.5)
+        case .glasses:       return Color(red: 0.3, green: 0.3, blue: 0.3)
+        case .hardhat:       return Color(red: 1.0, green: 0.8, blue: 0.0)
+        case .halo:          return Color(red: 1.0, green: 1.0, blue: 0.7)
+        case .scarf:         return Color(red: 0.8, green: 0.2, blue: 0.2)
+        case .headphones:    return Color(red: 0.25, green: 0.25, blue: 0.3)
+        case .wizardHat:     return Color(red: 0.3, green: 0.2, blue: 0.6)
+        case .flowerCrown:   return Color(red: 0.3, green: 0.7, blue: 0.3)
+        case .bandana:       return Color(red: 0.15, green: 0.15, blue: 0.15)
+        case .antlers:       return Color(red: 0.55, green: 0.35, blue: 0.2)
+        case .partyHat:      return Color(red: 0.2, green: 0.6, blue: 0.9)
+        case .monocle:       return Color(red: 0.7, green: 0.6, blue: 0.3)
+        case .starAura:      return Color(red: 1.0, green: 0.85, blue: 0.0)
+        case .phoenixCrest:  return Color(red: 0.9, green: 0.2, blue: 0.1)
+        case .celestialRing: return Color(red: 0.6, green: 0.4, blue: 1.0)
         }
     }
 
     /// Secondary color for pixel type 7.
     var secondaryColor: Color {
         switch self {
-        case .none:        return .clear
-        case .topHat:      return Color(red: 0.35, green: 0.35, blue: 0.35)
-        case .crown:       return Color(red: 1.0, green: 0.4, blue: 0.3)
-        case .bow:         return Color(red: 1.0, green: 0.5, blue: 0.7)
-        case .glasses:     return Color(red: 0.5, green: 0.8, blue: 1.0)
-        case .hardhat:     return Color(red: 1.0, green: 0.6, blue: 0.0)
-        case .halo:        return Color(red: 1.0, green: 1.0, blue: 0.9)
-        case .scarf:       return Color(red: 0.9, green: 0.85, blue: 0.8)
-        case .headphones:  return Color(red: 0.5, green: 0.8, blue: 1.0)
-        case .wizardHat:   return Color(red: 0.9, green: 0.8, blue: 0.2)
-        case .flowerCrown: return Color(red: 1.0, green: 0.5, blue: 0.7)
-        case .bandana:     return Color(red: 0.6, green: 0.1, blue: 0.1)
-        case .antlers:     return Color(red: 0.75, green: 0.55, blue: 0.35)
-        case .partyHat:    return Color(red: 1.0, green: 0.9, blue: 0.2)
-        case .monocle:     return Color(red: 0.85, green: 0.75, blue: 0.5)
+        case .none:          return .clear
+        case .topHat:        return Color(red: 0.35, green: 0.35, blue: 0.35)
+        case .crown:         return Color(red: 1.0, green: 0.4, blue: 0.3)
+        case .bow:           return Color(red: 1.0, green: 0.5, blue: 0.7)
+        case .glasses:       return Color(red: 0.5, green: 0.8, blue: 1.0)
+        case .hardhat:       return Color(red: 1.0, green: 0.6, blue: 0.0)
+        case .halo:          return Color(red: 1.0, green: 1.0, blue: 0.9)
+        case .scarf:         return Color(red: 0.9, green: 0.85, blue: 0.8)
+        case .headphones:    return Color(red: 0.5, green: 0.8, blue: 1.0)
+        case .wizardHat:     return Color(red: 0.9, green: 0.8, blue: 0.2)
+        case .flowerCrown:   return Color(red: 1.0, green: 0.5, blue: 0.7)
+        case .bandana:       return Color(red: 0.6, green: 0.1, blue: 0.1)
+        case .antlers:       return Color(red: 0.75, green: 0.55, blue: 0.35)
+        case .partyHat:      return Color(red: 1.0, green: 0.9, blue: 0.2)
+        case .monocle:       return Color(red: 0.85, green: 0.75, blue: 0.5)
+        case .starAura:      return Color(red: 1.0, green: 1.0, blue: 0.6)
+        case .phoenixCrest:  return Color(red: 1.0, green: 0.5, blue: 0.2)
+        case .celestialRing: return Color(red: 0.8, green: 0.7, blue: 1.0)
         }
     }
 

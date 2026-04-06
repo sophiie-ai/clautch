@@ -8,9 +8,10 @@ final class GamificationStoreTests: XCTestCase {
         streak: StreakData = StreakData(),
         achievements: [EarnedAchievement] = [],
         counters: GamificationStore.AchievementCounters = .init(),
-        xp: Int = 0
+        xp: Int = 0,
+        prestige: PrestigeData = PrestigeData()
     ) -> GamificationStore {
-        GamificationStore(streak: streak, achievements: achievements, counters: counters, xp: xp)
+        GamificationStore(streak: streak, achievements: achievements, counters: counters, xp: xp, prestige: prestige)
     }
 
     // MARK: - Streak Tests
@@ -162,15 +163,15 @@ final class GamificationStoreTests: XCTestCase {
         XCTAssertEqual(CreatureEvolution.from(xp: 0), .baby)
         XCTAssertEqual(CreatureEvolution.from(xp: 49), .baby)
         XCTAssertEqual(CreatureEvolution.from(xp: 50), .juvenile)
-        XCTAssertEqual(CreatureEvolution.from(xp: 149), .juvenile)
-        XCTAssertEqual(CreatureEvolution.from(xp: 150), .grown)
-        XCTAssertEqual(CreatureEvolution.from(xp: 349), .grown)
-        XCTAssertEqual(CreatureEvolution.from(xp: 350), .mature)
-        XCTAssertEqual(CreatureEvolution.from(xp: 599), .mature)
-        XCTAssertEqual(CreatureEvolution.from(xp: 600), .elder)
-        XCTAssertEqual(CreatureEvolution.from(xp: 999), .elder)
-        XCTAssertEqual(CreatureEvolution.from(xp: 1000), .ancient)
-        XCTAssertEqual(CreatureEvolution.from(xp: 9999), .ancient)
+        XCTAssertEqual(CreatureEvolution.from(xp: 199), .juvenile)
+        XCTAssertEqual(CreatureEvolution.from(xp: 200), .grown)
+        XCTAssertEqual(CreatureEvolution.from(xp: 499), .grown)
+        XCTAssertEqual(CreatureEvolution.from(xp: 500), .mature)
+        XCTAssertEqual(CreatureEvolution.from(xp: 1499), .mature)
+        XCTAssertEqual(CreatureEvolution.from(xp: 1500), .elder)
+        XCTAssertEqual(CreatureEvolution.from(xp: 4999), .elder)
+        XCTAssertEqual(CreatureEvolution.from(xp: 5000), .ancient)
+        XCTAssertEqual(CreatureEvolution.from(xp: 99999), .ancient)
     }
 
     func testEvolutionDerivedFromXP() {
@@ -178,5 +179,42 @@ final class GamificationStoreTests: XCTestCase {
         XCTAssertEqual(store.evolution, .baby)
         store.recordToolUse() // +1 XP (with multiplier) → 50+
         XCTAssertEqual(store.evolution, .juvenile)
+    }
+
+    // MARK: - Prestige Tests
+
+    func testCannotPrestigeBeforeAncient() {
+        let store = makeStore(xp: 4999)
+        XCTAssertFalse(store.canPrestige)
+        store.performPrestige()
+        XCTAssertEqual(store.prestige.level, 0, "Should not prestige below Ancient")
+    }
+
+    func testPrestigeResetsXPAndIncrementsLevel() {
+        let store = makeStore(xp: 5000)
+        XCTAssertTrue(store.canPrestige)
+        store.performPrestige()
+        XCTAssertEqual(store.prestige.level, 1)
+        XCTAssertEqual(store.prestige.lifetimeXP, 5000)
+        XCTAssertEqual(store.xp, 0)
+        XCTAssertEqual(store.evolution, .baby)
+    }
+
+    func testMultiplePrestiges() {
+        let store = makeStore(xp: 5000, prestige: PrestigeData(level: 2, lifetimeXP: 10000))
+        store.performPrestige()
+        XCTAssertEqual(store.prestige.level, 3)
+        XCTAssertEqual(store.prestige.lifetimeXP, 15000)
+        XCTAssertEqual(store.xp, 0)
+    }
+
+    // MARK: - Weekly Challenge Tests
+
+    func testWeeklyChallengeStructure() {
+        let challenge = GamificationStore.WeeklyChallenge(
+            id: "w_tools200", title: "Use 200 tools this week", target: 200
+        )
+        XCTAssertEqual(challenge.progress, 0)
+        XCTAssertFalse(challenge.completed)
     }
 }

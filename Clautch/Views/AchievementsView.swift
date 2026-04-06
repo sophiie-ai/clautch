@@ -24,7 +24,9 @@ struct AchievementsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     dailyQuestsSection
+                    weeklyChallengesSection
                     evolutionSection
+                    prestigeSection
                     streakSection
                     achievementsGrid
                 }
@@ -91,6 +93,70 @@ struct AchievementsView: View {
         .cornerRadius(10)
     }
 
+    // MARK: - Weekly Challenges Section
+
+    private var weeklyChallengesSection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Weekly Challenges")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                Spacer()
+                Text("\(gamification.completedWeeklyCount)/\(gamification.weeklyChallenges.count)")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+
+            if gamification.weeklyChallenges.isEmpty {
+                Text("Challenges will appear when you start coding")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                    .padding(.vertical, 4)
+            } else {
+                ForEach(gamification.weeklyChallenges) { challenge in
+                    HStack(spacing: 10) {
+                        Image(systemName: challenge.completed ? "trophy.fill" : "trophy")
+                            .font(.system(size: 14))
+                            .foregroundStyle(challenge.completed ? .yellow : .secondary)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(challenge.title)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(challenge.completed ? .secondary : .primary)
+                                .strikethrough(challenge.completed)
+
+                            GeometryReader { geo in
+                                let progress = challenge.target > 0 ? min(CGFloat(challenge.progress) / CGFloat(challenge.target), 1.0) : 0
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.primary.opacity(0.06))
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(challenge.completed ? Color.yellow.opacity(0.5) : Color.orange.opacity(0.6))
+                                        .frame(width: geo.size.width * progress)
+                                }
+                            }
+                            .frame(height: 3)
+                        }
+
+                        Text("\(challenge.progress)/\(challenge.target)")
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
+            HStack {
+                Spacer()
+                Text("+25 XP each")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(16)
+        .background(Color.primary.opacity(0.04))
+        .cornerRadius(10)
+    }
+
     // MARK: - Evolution Section
 
     private var evolutionSection: some View {
@@ -146,6 +212,87 @@ struct AchievementsView: View {
                         .foregroundStyle(evo == stage ? .primary : .tertiary)
                         .frame(maxWidth: .infinity)
                 }
+            }
+        }
+        .padding(16)
+        .background(Color.primary.opacity(0.04))
+        .cornerRadius(10)
+    }
+
+    // MARK: - Prestige Section
+
+    @State private var showPrestigeConfirm = false
+
+    private var prestigeSection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Prestige")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                Spacer()
+                if gamification.prestige.level > 0 {
+                    HStack(spacing: 2) {
+                        ForEach(0..<gamification.prestige.level, id: \.self) { _ in
+                            Text("★")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color(red: 1.0, green: 0.85, blue: 0.0))
+                        }
+                    }
+                }
+            }
+
+            if gamification.prestige.level > 0 {
+                HStack(spacing: 16) {
+                    VStack(spacing: 2) {
+                        Text("\(gamification.prestige.level)")
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                        Text("Rebirths")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    VStack(spacing: 2) {
+                        Text("\(gamification.prestige.lifetimeXP + gamification.xp)")
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                        Text("Lifetime XP")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+            }
+
+            if gamification.canPrestige {
+                Button {
+                    showPrestigeConfirm = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("★")
+                            .font(.system(size: 12))
+                        Text("Rebirth")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 1.0, green: 0.85, blue: 0.0), Color(red: 1.0, green: 0.6, blue: 0.0)],
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                        .opacity(0.2)
+                    )
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .alert("Rebirth?", isPresented: $showPrestigeConfirm) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Rebirth") { gamification.performPrestige() }
+                } message: {
+                    Text("Reset to Baby and earn Prestige \(gamification.prestige.level + 1). Achievements and streaks are kept. Unlocks exclusive accessories.")
+                }
+            } else if gamification.prestige.level == 0 {
+                Text("Reach Ancient to unlock Rebirth")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
             }
         }
         .padding(16)
