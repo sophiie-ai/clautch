@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/sophiie-ai/clautch/compare/v0.14.0...v0.15.0) (2026-04-06)
+
+
+### Features
+
+* fix daily quest counters, lock indicators in onboarding, creature pet interaction ([1548f0a](https://github.com/sophiie-ai/clautch/commit/1548f0a99c1ad15f43c948a68443270cc67a5237))
+
 ## [0.14.0](https://github.com/sophiie-ai/clautch/compare/v0.13.1...v0.14.0) (2026-04-06)
 
 
