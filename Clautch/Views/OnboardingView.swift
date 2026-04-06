@@ -200,20 +200,30 @@ struct OnboardingView: View {
                 HStack(spacing: 8) {
                     ForEach(CreatureAccessory.allCases) { acc in
                         let selected = acc == accessory
-                        Text(acc == .none ? "✕" : acc.emoji)
-                            .font(.system(size: 14))
-                            .frame(width: 28, height: 28)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(selected ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.06))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 1.5)
-                            )
-                            .onTapGesture { accessory = acc }
-                            .accessibilityLabel(acc == .none ? "No accessory" : "\(acc.rawValue) accessory")
-                            .accessibilityAddTraits(acc == accessory ? .isSelected : [])
+                        let unlocked = GamificationStore.shared.isAccessoryUnlocked(acc)
+                        ZStack {
+                            Text(acc == .none ? "✕" : acc.emoji)
+                                .font(.system(size: 14))
+                                .opacity(unlocked ? 1 : 0.3)
+                            if !unlocked {
+                                Text("🔒")
+                                    .font(.system(size: 8))
+                                    .offset(x: 8, y: -8)
+                            }
+                        }
+                        .frame(width: 28, height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(selected ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.06))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 1.5)
+                        )
+                        .onTapGesture { if unlocked { accessory = acc } }
+                        .help(unlocked ? acc.displayName : "Locked: \(acc.unlockRequirement.hintText)")
+                        .accessibilityLabel(acc == .none ? "No accessory" : "\(acc.rawValue) accessory")
+                        .accessibilityAddTraits(acc == accessory ? .isSelected : [])
                     }
                 }
             }

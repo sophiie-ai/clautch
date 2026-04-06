@@ -12,12 +12,14 @@ final class GamificationStore {
     private static let countersKey = "com.clautch.achievementCounters"
     private static let xpKey = "com.clautch.xp"
     private static let prestigeKey = "com.clautch.prestige"
+    private static let dailyCountersKey = "com.clautch.dailyCounters"
 
     private let logger = Logger(subsystem: "com.clautch.app", category: "Gamification")
 
     private(set) var streak: StreakData
     private(set) var earnedAchievements: [EarnedAchievement]
     private(set) var counters: AchievementCounters
+    private(set) var dailyCounters: DailyCounters
     private(set) var xp: Int
     private(set) var prestige: PrestigeData
 
@@ -38,12 +40,23 @@ final class GamificationStore {
         var totalCodingSeconds: TimeInterval = 0
     }
 
+    /// Counters scoped to the current day, used for daily quest progress.
+    struct DailyCounters: Codable {
+        var date: String = ""  // "yyyy-MM-dd"
+        var toolUses: Int = 0
+        var sessions: Int = 0
+        var reactionsSent: Int = 0
+        var positiveMoodRun: Int = 0
+    }
+
     private init() {
         streak = Self.loadJSON(key: Self.streakKey) ?? StreakData()
         earnedAchievements = Self.loadJSON(key: Self.achievementsKey) ?? []
         counters = Self.loadJSON(key: Self.countersKey) ?? AchievementCounters()
+        dailyCounters = Self.loadJSON(key: Self.dailyCountersKey) ?? DailyCounters()
         xp = UserDefaults.standard.integer(forKey: Self.xpKey)
         prestige = Self.loadJSON(key: Self.prestigeKey) ?? PrestigeData()
+        resetDailyCountersIfNeeded()
         checkAndUpdateStreak()
         loadQuests()
         loadWeeklyChallenges()
@@ -54,14 +67,30 @@ final class GamificationStore {
         self.streak = streak
         self.earnedAchievements = achievements
         self.counters = counters
+        self.dailyCounters = DailyCounters(date: SessionStats.dateKey(for: Date()))
         self.xp = xp
         self.prestige = prestige
+    }
+
+    // MARK: - Daily Counter Reset
+
+    private func resetDailyCountersIfNeeded() {
+        let today = SessionStats.dateKey(for: Date())
+        guard dailyCounters.date != today else { return }
+        dailyCounters = DailyCounters(date: today)
+        saveDailyCounters()
+    }
+
+    private func saveDailyCounters() {
+        Self.saveJSON(dailyCounters, key: Self.dailyCountersKey)
     }
 
     // MARK: - Event Recording
 
     func recordSessionStart() {
+        resetDailyCountersIfNeeded()
         counters.totalSessions += 1
+        dailyCounters.sessions += 1
         addXP(5) // +5 XP per session
         checkAndUpdateStreak()
 
@@ -72,6 +101,7 @@ final class GamificationStore {
         }
 
         saveCounters()
+        saveDailyCounters()
         checkAchievements()
         updateQuestProgress()
         updateWeeklyChallengeProgress()
@@ -99,9 +129,12 @@ final class GamificationStore {
     }
 
     func recordToolUse() {
+        resetDailyCountersIfNeeded()
         counters.totalToolUses += 1
+        dailyCounters.toolUses += 1
         addXP(1) // +1 XP per tool use
         saveCounters()
+        saveDailyCounters()
         checkAchievements()
         updateQuestProgress()
         updateWeeklyChallengeProgress()
@@ -120,8 +153,11 @@ final class GamificationStore {
     }
 
     func recordReactionSent() {
+        resetDailyCountersIfNeeded()
         counters.totalReactionsSent += 1
+        dailyCounters.reactionsSent += 1
         saveCounters()
+        saveDailyCounters()
         checkAchievements()
     }
 
@@ -147,13 +183,17 @@ final class GamificationStore {
 
     /// Track positive mood runs for Zen Master achievement.
     func recordMoodSample(_ emotion: String) {
+        resetDailyCountersIfNeeded()
         let isPositive = emotion == "happy" || emotion == "excited" || emotion == "neutral"
         if isPositive {
             counters.longestPositiveMoodRun += 1
+            dailyCounters.positiveMoodRun += 1
         } else {
             counters.longestPositiveMoodRun = 0
+            dailyCounters.positiveMoodRun = 0
         }
         saveCounters()
+        saveDailyCounters()
         checkAchievements()
     }
 
@@ -386,14 +426,14 @@ final class GamificationStore {
             guard !dailyQuests[i].completed else { continue }
             let oldProgress = dailyQuests[i].progress
             switch dailyQuests[i].id {
-            case "tools15":   dailyQuests[i].progress = min(counters.totalToolUses, 15) // approximate with daily
-            case "tools25":   dailyQuests[i].progress = min(counters.totalToolUses, 25)
+            case "tools15":   dailyQuests[i].progress = min(dailyCounters.toolUses, 15)
+            case "tools25":   dailyQuests[i].progress = min(dailyCounters.toolUses, 25)
             case "time30":    dailyQuests[i].progress = min(todayMinutes, 30)
             case "time60":    dailyQuests[i].progress = min(todayMinutes, 60)
-            case "mood10":    dailyQuests[i].progress = min(counters.longestPositiveMoodRun, 10)
-            case "sessions2": dailyQuests[i].progress = min(counters.totalSessions, 2)
-            case "morning":   dailyQuests[i].progress = Calendar.current.component(.hour, from: Date()) < 9 && counters.totalSessions > 0 ? 1 : dailyQuests[i].progress
-            case "reaction":  dailyQuests[i].progress = min(counters.totalReactionsSent, 1)
+            case "mood10":    dailyQuests[i].progress = min(dailyCounters.positiveMoodRun, 10)
+            case "sessions2": dailyQuests[i].progress = min(dailyCounters.sessions, 2)
+            case "morning":   dailyQuests[i].progress = dailyCounters.sessions > 0 && Calendar.current.component(.hour, from: Date()) < 9 ? 1 : dailyQuests[i].progress
+            case "reaction":  dailyQuests[i].progress = min(dailyCounters.reactionsSent, 1)
             default: break
             }
 

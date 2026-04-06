@@ -37,8 +37,6 @@ struct StatusBarOverlay: View {
     var body: some View {
         HStack(spacing: 6) {
             let task = stateMachine.sessionStore.effectiveSession?.state.task ?? .idle
-            let emotion = stateMachine.sessionStore.effectiveSession?.state.emotion ?? .neutral
-
             HStack(spacing: 3) {
                 Circle()
                     .fill(taskColor(task))
@@ -46,12 +44,6 @@ struct StatusBarOverlay: View {
                 Text(task.displayLabel)
                     .font(.system(size: 6, weight: .medium))
                     .foregroundStyle(.white.opacity(0.6))
-            }
-
-            if emotion != .neutral {
-                Text(emotionLabel(emotion))
-                    .font(.system(size: 5, weight: .medium))
-                    .foregroundStyle(emotionColor(emotion).opacity(0.7))
             }
 
             if gamification.streak.currentStreak > 0 {
@@ -92,26 +84,4 @@ struct StatusBarOverlay: View {
         }
     }
 
-    private func emotionLabel(_ emotion: CreatureEmotion) -> String {
-        switch emotion {
-        case .happy:      return "happy"
-        case .sad:        return "sad"
-        case .frustrated: return "frustrated"
-        case .excited:    return "excited!"
-        case .confused:   return "confused"
-        case .tired:      return "tired"
-        case .neutral:    return ""
-        }
-    }
-
-    private func emotionColor(_ emotion: CreatureEmotion) -> Color {
-        switch emotion {
-        case .happy, .excited: return .green
-        case .sad:             return .blue
-        case .frustrated:      return .red
-        case .confused:        return .yellow
-        case .tired:           return .purple
-        case .neutral:         return .gray
-        }
-    }
 }

@@ -16,6 +16,13 @@ struct CreatureIslandOverlay: View {
 
     @State private var gamification = GamificationStore.shared
     @State private var currentCelebration: AchievementId?
+    @State private var petHearts: [PetHeart] = []
+
+    struct PetHeart: Identifiable {
+        let id = UUID()
+        let xOffset: CGFloat
+        let createdAt: Date
+    }
 
     var body: some View {
         ForEach(creatures) { creature in
@@ -82,6 +89,13 @@ struct CreatureIslandOverlay: View {
                 .fixedSize()
             }
             // Attention indicators are now rendered as pixel art inside CreatureSpriteView
+            .overlay {
+                if creature.isLocal {
+                    ForEach(petHearts) { heart in
+                        HeartFloater(heart: heart)
+                    }
+                }
+            }
             .position(
                 x: viewWidth / 2 + creatureOffset(for: creature),
                 y: grassLineY - creatureSize / 2 - 4
@@ -104,6 +118,8 @@ struct CreatureIslandOverlay: View {
             .onTapGesture {
                 if !creature.isLocal && isExpanded {
                     RoomManager.shared.sendReaction(.wave)
+                } else if creature.isLocal && isExpanded {
+                    petCreature()
                 }
             }
             .contextMenu {
@@ -148,6 +164,19 @@ struct CreatureIslandOverlay: View {
         }
         let usable = viewWidth - creatureSize - 20
         return -usable / 2 + creature.xPosition * usable
+    }
+
+    private func petCreature() {
+        let heart = PetHeart(
+            xOffset: CGFloat.random(in: -10...10),
+            createdAt: Date()
+        )
+        withAnimation { petHearts.append(heart) }
+        NSSound(named: "Pop")?.play()
+        // Remove after animation completes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            withAnimation { petHearts.removeAll { $0.id == heart.id } }
+        }
     }
 
     private func creatureTooltip(_ creature: CreatureDisplay) -> String {
@@ -282,6 +311,27 @@ struct ProximityEffectsView: View {
         p.addRect(CGRect(x: center.x - s, y: center.y + s * 0.5, width: 2 * s, height: s))
         p.addRect(CGRect(x: center.x - s / 2, y: center.y + s * 1.5, width: s, height: s / 2))
         return p
+    }
+}
+
+// MARK: - Heart Floater
+
+struct HeartFloater: View {
+    let heart: CreatureIslandOverlay.PetHeart
+    @State private var animate = false
+
+    var body: some View {
+        Text("♥")
+            .font(.system(size: 10))
+            .foregroundStyle(.pink)
+            .offset(x: heart.xOffset, y: animate ? -20 : 0)
+            .opacity(animate ? 0 : 1)
+            .scaleEffect(animate ? 1.3 : 0.5)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.9)) {
+                    animate = true
+                }
+            }
     }
 }
 
