@@ -209,13 +209,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func changeCreature() {
         if windowCoordinator.isOpen("onboarding") {
-            // Just re-show it
             showOnboarding()
             return
         }
         notchPanel?.close()
         notchPanel = nil
-        showOnboarding()
+
+        var didComplete = false
+        windowCoordinator.show(
+            key: "onboarding",
+            title: "Welcome to Clautch",
+            size: NSSize(width: 440, height: 600),
+            content: {
+                OnboardingView { [weak self] _ in
+                    didComplete = true
+                    DispatchQueue.main.async {
+                        self?.rebuildMenu()
+                        self?.windowCoordinator.suppressAccessoryTransition = true
+                        self?.windowCoordinator.close(key: "onboarding")
+                        self?.animateCreatureToNotch {
+                            self?.setupNotchPanel()
+                            NSApp.setActivationPolicy(.accessory)
+                        }
+                    }
+                }
+            },
+            onClose: { [weak self] in
+                // Dismissed without completing — restore the panel
+                if !didComplete {
+                    self?.setupNotchPanel()
+                }
+            }
+        )
     }
 
     // MARK: - Room Window
