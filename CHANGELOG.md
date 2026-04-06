@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/sophiie-ai/clautch/compare/v0.13.0...v0.13.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* restore widget when onboarding is dismissed without completing ([69fff6f](https://github.com/sophiie-ai/clautch/commit/69fff6f78888cb1a17b40e73b670115c52c58f1b))
+
 ## [0.13.0](https://github.com/sophiie-ai/clautch/compare/v0.12.0...v0.13.0) (2026-04-06)
 
 
