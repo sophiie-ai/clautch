@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.2](https://github.com/sophiie-ai/clautch/compare/v0.17.1...v0.17.2) (2026-04-07)
+
+
+### Bug Fixes
+
+* pass clicks through below panel when event log is disabled ([7462105](https://github.com/sophiie-ai/clautch/commit/746210523b6f6cc1c5d8fa11a46b4ddcb240a178))
+* sync release-please manifest to v0.17.1 after manual releases ([a644836](https://github.com/sophiie-ai/clautch/commit/a644836c4a66b80e81959a74adad8170294c74e2))
+
 ## [0.17.1](https://github.com/sophiie-ai/clautch/compare/v0.17.0...v0.17.1) (2026-04-07)
 
 
