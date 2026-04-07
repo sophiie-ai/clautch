@@ -126,9 +126,10 @@ struct RoomView: View {
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .padding(.vertical, 20)
                         } else {
-                            ForEach(Array(activityFeed.events.enumerated()), id: \.element.id) { index, event in
+                            let events = activityFeed.events
+                            ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
                                 if event.kind == .chat {
-                                    chatBubble(for: event, previousEvent: index > 0 ? activityFeed.events[index - 1] : nil)
+                                    chatBubble(for: event, previousEvent: index > 0 ? events[index - 1] : nil)
                                 } else {
                                     systemEvent(event)
                                 }
