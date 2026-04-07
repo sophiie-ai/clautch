@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/sophiie-ai/clautch/compare/v0.18.0...v0.18.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* show SettingsView in SwiftUI Settings scene instead of EmptyView ([d4c2556](https://github.com/sophiie-ai/clautch/commit/d4c2556eb928a001d1eb9b9fcb9739c6a443c43a))
+
 ## [0.18.0](https://github.com/sophiie-ai/clautch/compare/v0.17.5...v0.18.0) (2026-04-07)
 
 
