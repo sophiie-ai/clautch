@@ -496,6 +496,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         reactItem.submenu = reactMenu
         menu.addItem(reactItem)
 
+        // ── Status ──
+        menu.addItem(.separator())
+        let statusItem = NSMenuItem(title: "Set Status", action: nil, keyEquivalent: "")
+        statusItem.tag = 400
+        let statusMenu = NSMenu()
+        for preset in StatusPreset.allCases {
+            let item = NSMenuItem(
+                title: "\(preset.emoji)  \(preset.displayName)",
+                action: #selector(setStatusPreset(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = preset.rawValue
+            statusMenu.addItem(item)
+        }
+        statusMenu.addItem(.separator())
+        let customItem = NSMenuItem(title: "Custom…", action: #selector(setCustomStatus), keyEquivalent: "")
+        customItem.target = self
+        statusMenu.addItem(customItem)
+        statusItem.submenu = statusMenu
+        menu.addItem(statusItem)
+
+        let clearStatusItem = NSMenuItem(title: "Clear Status", action: #selector(clearCurrentStatus), keyEquivalent: "")
+        clearStatusItem.target = self
+        clearStatusItem.tag = 401
+        menu.addItem(clearStatusItem)
+
+        let currentStatusLabel = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        currentStatusLabel.tag = 402
+        menu.addItem(currentStatusLabel)
+
         // ── Windows ──
         menu.addItem(.separator())
         let statsWindowItem = NSMenuItem(title: "Usage Stats…", action: #selector(showStatsWindow), keyEquivalent: "")
@@ -517,6 +548,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let changeItem = NSMenuItem(title: "Change Creature…", action: #selector(changeCreature), keyEquivalent: "")
         changeItem.target = self
         menu.addItem(changeItem)
+
+        let sceneItem = NSMenuItem(title: "Scene", action: nil, keyEquivalent: "")
+        sceneItem.tag = 450
+        let sceneMenu = NSMenu()
+        for theme in SceneTheme.allCases {
+            let item = NSMenuItem(
+                title: "\(theme.emoji)  \(theme.displayName)",
+                action: #selector(setSceneTheme(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = theme.rawValue
+            sceneMenu.addItem(item)
+        }
+        sceneMenu.addItem(.separator())
+        let customBgItem = NSMenuItem(
+            title: "\u{1F5BC}  Custom...",
+            action: #selector(pickCustomBackground),
+            keyEquivalent: ""
+        )
+        customBgItem.target = self
+        sceneMenu.addItem(customBgItem)
+
+        let removeBgItem = NSMenuItem(
+            title: "Remove Custom Background",
+            action: #selector(removeCustomBackground),
+            keyEquivalent: ""
+        )
+        removeBgItem.target = self
+        removeBgItem.tag = 451
+        sceneMenu.addItem(removeBgItem)
+
+        sceneItem.submenu = sceneMenu
+        menu.addItem(sceneItem)
 
         // ── Display ──
         let allScreens = NSScreen.screens
@@ -646,6 +711,72 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @objc private func setStatusPreset(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let preset = StatusPreset(rawValue: rawValue) else { return }
+        StateMachine.shared.setStatus(preset: preset)
+    }
+
+    @objc private func setCustomStatus() {
+        let alert = NSAlert()
+        alert.messageText = "Set Custom Status"
+        alert.informativeText = "What are you up to?"
+        alert.addButton(withTitle: "Set")
+        alert.addButton(withTitle: "Cancel")
+
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 250, height: 24))
+        input.placeholderString = "e.g. Writing PRD..."
+        alert.accessoryView = input
+        alert.window.initialFirstResponder = input
+
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            let text = input.stringValue.trimmingCharacters(in: .whitespaces)
+            if !text.isEmpty {
+                StateMachine.shared.setCustomStatus(text: text, expiry: StatusExpiry.twoHours.duration)
+            }
+        }
+        returnToAccessoryIfNeeded()
+    }
+
+    @objc private func pickCustomBackground() {
+        CustomBackgroundStore.shared.pickAndSave()
+        // Switch to custom theme
+        if CustomBackgroundStore.shared.hasCustomBackground {
+            if var profile = UserProfile.current {
+                profile.sceneTheme = .custom
+                UserProfile.current = profile
+            }
+            UserDefaults.standard.set(SceneTheme.custom.rawValue, forKey: "com.clautch.sceneTheme")
+        }
+    }
+
+    @objc private func removeCustomBackground() {
+        CustomBackgroundStore.shared.remove()
+        // Switch back to meadow
+        if var profile = UserProfile.current {
+            profile.sceneTheme = .meadow
+            UserProfile.current = profile
+        }
+        UserDefaults.standard.set(SceneTheme.meadow.rawValue, forKey: "com.clautch.sceneTheme")
+    }
+
+    @objc private func setSceneTheme(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let theme = SceneTheme(rawValue: rawValue),
+              var profile = UserProfile.current else { return }
+        profile.sceneTheme = theme
+        UserProfile.current = profile
+        // Also write to AppStorage so GrassIslandView reactively updates
+        UserDefaults.standard.set(theme.rawValue, forKey: "com.clautch.sceneTheme")
+    }
+
+    @objc private func clearCurrentStatus() {
+        StateMachine.shared.clearStatus()
+    }
+
     @objc private func copyRoomCode() {
         Task { @MainActor in
             guard let room = RoomManager.shared.currentRoom else { return }
@@ -742,6 +873,37 @@ extension AppDelegate: NSMenuDelegate {
                 }
                 item.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: taskLabel)
                 menu.insertItem(item, at: sentinelIndex + i)
+            }
+        }
+
+        // Update status
+        let currentStatus = StateMachine.shared.activeStatus
+        let hasStatus = currentStatus != nil && !currentStatus!.isExpired
+        if let clearItem = menu.item(withTag: 401) {
+            clearItem.isHidden = !hasStatus
+        }
+        if let labelItem = menu.item(withTag: 402) {
+            if hasStatus, let status = currentStatus {
+                let remaining = Int(status.expiresAt.timeIntervalSinceNow / 60)
+                let timeStr = remaining > 60 ? "\(remaining / 60)h \(remaining % 60)m" : "\(max(1, remaining))m"
+                labelItem.title = "\(status.displayEmoji) \(status.displayText) (\(timeStr) left)"
+                labelItem.isHidden = false
+            } else {
+                labelItem.isHidden = true
+            }
+        }
+
+        // Update scene checkmarks and custom background visibility
+        if let sceneItem = menu.item(withTag: 450),
+           let sceneMenu = sceneItem.submenu {
+            let current = UserProfile.current?.sceneTheme ?? .meadow
+            for item in sceneMenu.items {
+                if let raw = item.representedObject as? String {
+                    item.state = raw == current.rawValue ? .on : .off
+                }
+            }
+            if let removeItem = sceneMenu.item(withTag: 451) {
+                removeItem.isHidden = !CustomBackgroundStore.shared.hasCustomBackground
             }
         }
 

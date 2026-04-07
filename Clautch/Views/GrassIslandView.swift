@@ -98,6 +98,10 @@ struct GrassIslandView: View {
     let creatures: [CreatureDisplay]
     var isExpanded: Bool = false
     var isWalking: Bool = false
+    /// Tracks theme changes to force re-render when scene is switched from the menu.
+    @AppStorage("com.clautch.sceneTheme") private var sceneThemeRaw: String = SceneTheme.meadow.rawValue
+    /// Triggers re-render when custom background image changes.
+    @AppStorage("com.clautch.customBgTimestamp") private var customBgTimestamp: Double = 0
 
     @State private var bounceScale: CGFloat = 1.0
     @State private var bounceOffset: CGFloat = 0
@@ -112,57 +116,29 @@ struct GrassIslandView: View {
         }
     }
 
-    /// Sky colors and star count, smoothly interpolated by time of day with seasonal tint.
-    private var skyTheme: (top: Color, bottom: Color, stars: Int) {
+    private var currentTheme: SceneTheme {
+        SceneTheme(rawValue: sceneThemeRaw) ?? .meadow
+    }
+
+    private var currentHour: Double {
         let cal = Calendar.current
         let now = Date()
-        let h = cal.component(.hour, from: now)
-        let m = cal.component(.minute, from: now)
-        let t = Double(h) + Double(m) / 60.0  // fractional hour (e.g. 7.5 = 7:30)
+        return Double(cal.component(.hour, from: now)) + Double(cal.component(.minute, from: now)) / 60.0
+    }
 
-        // Keyframes: (hour, topR, topG, topB, botR, botG, botB, stars)
-        let keys: [(h: Double, tr: Double, tg: Double, tb: Double, br: Double, bg: Double, bb: Double, s: Double)] = [
-            (0,  0.08, 0.10, 0.25, 0.12, 0.18, 0.35, 14),  // Midnight
-            (6,  0.08, 0.10, 0.25, 0.12, 0.18, 0.35, 14),  // Pre-dawn
-            (7,  0.45, 0.30, 0.40, 0.75, 0.45, 0.30,  3),  // Dawn
-            (8,  0.20, 0.45, 0.75, 0.40, 0.65, 0.85,  0),  // Morning
-            (17, 0.20, 0.45, 0.75, 0.40, 0.65, 0.85,  0),  // Late afternoon
-            (18, 0.35, 0.20, 0.45, 0.70, 0.35, 0.30,  4),  // Dusk
-            (19, 0.12, 0.12, 0.30, 0.15, 0.20, 0.35, 10),  // Early night
-            (24, 0.08, 0.10, 0.25, 0.12, 0.18, 0.35, 14),  // Midnight wrap
-        ]
-
-        // Find surrounding keyframes and interpolate
-        var lo = keys[0], hi = keys[1]
-        for i in 0..<(keys.count - 1) {
-            if t >= keys[i].h && t < keys[i + 1].h {
-                lo = keys[i]; hi = keys[i + 1]; break
-            }
-        }
-        let span = hi.h - lo.h
-        let f = span > 0 ? (t - lo.h) / span : 0  // blend factor 0..1
-
-        // Apply seasonal tint
-        let tint = Season.current.skyTint
-        func clamp(_ v: Double) -> Double { min(1, max(0, v)) }
-
-        let top = Color(red: clamp(lo.tr + (hi.tr - lo.tr) * f + tint.r),
-                        green: clamp(lo.tg + (hi.tg - lo.tg) * f + tint.g),
-                        blue: clamp(lo.tb + (hi.tb - lo.tb) * f + tint.b))
-        let bot = Color(red: clamp(lo.br + (hi.br - lo.br) * f + tint.r),
-                        green: clamp(lo.bg + (hi.bg - lo.bg) * f + tint.g),
-                        blue: clamp(lo.bb + (hi.bb - lo.bb) * f + tint.b))
-        let starBase = Int((lo.s + (hi.s - lo.s) * f).rounded())
-        // Winter gets more stars, summer fewer
-        let starAdjust = Season.current == .winter ? 3 : (Season.current == .summer ? -2 : 0)
-        let stars = max(0, starBase + starAdjust)
-        return (top, bot, stars)
+    /// Sky colors and star count from the active theme.
+    private var skyTheme: (top: Color, bottom: Color, stars: Int) {
+        let theme = currentTheme
+        let hour = currentHour
+        let sky = theme.skyColors(hour: hour)
+        let stars = theme.starCount(hour: hour)
+        return (sky.top, sky.bottom, stars)
     }
 
     var body: some View {
         let sky = skyTheme
-        let season = Season.current
-        let grass = season.grassColor
+        let theme = currentTheme
+        let ground = theme.groundColors
         Canvas { ctx, size in
             let layout = PanelLayout(viewHeight: size.height, isExpanded: isExpanded)
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
@@ -206,8 +182,19 @@ struct GrassIslandView: View {
                 // 2. Draw scenic background
                 let grassY = layout.grassLineY
 
-                // Sky gradient (fills from top of screen)
                 ctx.clip(to: path)
+
+                // Custom background: draw user image filling the entire panel
+                if theme == .custom, let nsImage = CustomBackgroundStore.shared.image {
+                    let panelRect = CGRect(
+                        x: midX - panelHalf, y: 0,
+                        width: panelHalf * 2, height: bottom
+                    )
+                    let image = Image(nsImage: nsImage)
+                    ctx.draw(ctx.resolve(image), in: panelRect)
+                }
+
+                // Sky gradient (fills from top of screen) — transparent for custom theme
                 let skyGradient = Gradient(colors: [sky.top, sky.bottom])
                 ctx.fill(
                     Path(CGRect(x: midX - panelHalf, y: 0, width: panelHalf * 2, height: grassY)),
@@ -228,48 +215,45 @@ struct GrassIslandView: View {
                     }
                 }
 
-                // Weather particles — seasonal effects in the sky
+                // Weather/theme particles
                 let t = Date.timeIntervalSinceReferenceDate
-                let pCount = season.particleCount
+                let pCount = theme.particleCount
                 let leftEdge = midX - panelHalf
                 let width = panelHalf * 2
+                let hour = self.currentHour
                 for i in 0..<pCount {
-                    let seed = Double(i) * 137.5  // golden angle offset per particle
-                    Self.drawWeatherParticle(
-                        ctx: &ctx, season: season, index: i, seed: seed, time: t,
+                    let seed = Double(i) * 137.5
+                    theme.drawParticle(
+                        ctx: &ctx, index: i, seed: seed, time: t,
                         left: leftEdge, width: width,
-                        skyTop: skyTop_y, skyBottom: grassY, starCount: starCount
+                        skyTop: skyTop_y, skyBottom: grassY,
+                        hour: hour
                     )
                 }
+
+                // Background scenery (trees, boulders, branches) — behind creatures
+                theme.drawBackgroundScenery(
+                    ctx: &ctx,
+                    left: midX - panelHalf, width: panelHalf * 2, grassY: grassY
+                )
 
                 // Ground — fixed height
                 ctx.fill(
                     Path(CGRect(x: midX - panelHalf, y: grassY, width: panelHalf * 2, height: bottom - grassY)),
-                    with: .color(grass.ground)
+                    with: .color(ground.base)
                 )
 
-                // Grass blades
-                var rng = StableRNG(seed: 42)
+                // Ground texture (grass blades for meadow, themed for others)
                 let grassWidth = panelHalf * 2 - 8
                 let grassX = midX - grassWidth / 2
-                let bladeCount = Int(grassWidth / 2.5)
-                for i in 0..<bladeCount {
-                    let bx = grassX + CGFloat(i) * 2.5 + CGFloat.random(in: -1...1, using: &rng)
-                    let h = CGFloat.random(in: 4...10, using: &rng)
-                    let rect = CGRect(x: bx, y: grassY - h + 2, width: 1.5, height: h)
-                    let opacity = Double.random(in: 0.4...0.9, using: &rng)
-                    ctx.fill(Path(rect), with: .color(grass.blade.opacity(opacity)))
+                theme.drawGroundTexture(
+                    ctx: &ctx,
+                    grassX: grassX, grassY: grassY, grassWidth: grassWidth
+                )
 
-                    // Winter: frost-white tips on some blades
-                    if season == .winter && i % 3 == 0 {
-                        let frostRect = CGRect(x: bx, y: grassY - h + 2, width: 1.5, height: 2)
-                        ctx.fill(Path(frostRect), with: .color(Color.white.opacity(0.5 * opacity)))
-                    }
-                }
-
-                // Seasonal ground accents
-                Self.drawSeasonalAccents(
-                    ctx: &ctx, season: season,
+                // Ground accents (flowers, craters, shells, etc.)
+                theme.drawGroundAccents(
+                    ctx: &ctx,
                     grassX: grassX, grassY: grassY, grassWidth: grassWidth
                 )
 

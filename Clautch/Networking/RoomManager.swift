@@ -229,6 +229,13 @@ final class RoomManager {
         let existingInteraction = localState?.interaction
         let existingInteractionTarget = localState?.interactionTarget
         let existingInteractionTs = localState?.interactionTimestamp
+
+        // Carry status from StateMachine
+        let status = StateMachine.shared.activeStatus
+        let statusPreset = (status != nil && !status!.isExpired) ? status?.preset?.rawValue : nil
+        let statusText = (status != nil && !status!.isExpired) ? status?.customText : nil
+        let statusExpires = (status != nil && !status!.isExpired) ? status?.expiresAt : nil
+
         localState = PeerState(
             peerId: profile.peerId,
             displayName: profile.displayName,
@@ -246,7 +253,10 @@ final class RoomManager {
             chatTimestamp: existingChatTs,
             interaction: existingInteraction,
             interactionTarget: existingInteractionTarget,
-            interactionTimestamp: existingInteractionTs
+            interactionTimestamp: existingInteractionTs,
+            statusPreset: statusPreset,
+            statusText: statusText,
+            statusExpiresAt: statusExpires
         )
     }
 
@@ -291,7 +301,10 @@ final class RoomManager {
             reaction: state.reaction,
             reactionTimestamp: state.reactionTimestamp,
             chatMessage: trimmed,
-            chatTimestamp: Date()
+            chatTimestamp: Date(),
+            statusPreset: state.statusPreset,
+            statusText: state.statusText,
+            statusExpiresAt: state.statusExpiresAt
         )
         localState = state
 
@@ -321,7 +334,10 @@ final class RoomManager {
             reaction: reaction,
             reactionTimestamp: Date(),
             chatMessage: state.chatMessage,
-            chatTimestamp: state.chatTimestamp
+            chatTimestamp: state.chatTimestamp,
+            statusPreset: state.statusPreset,
+            statusText: state.statusText,
+            statusExpiresAt: state.statusExpiresAt
         )
         localState = state
         GamificationStore.shared.recordReactionSent()
@@ -356,7 +372,10 @@ final class RoomManager {
             chatTimestamp: state.chatTimestamp,
             interaction: type,
             interactionTarget: targetPeerId,
-            interactionTimestamp: Date()
+            interactionTimestamp: Date(),
+            statusPreset: state.statusPreset,
+            statusText: state.statusText,
+            statusExpiresAt: state.statusExpiresAt
         )
 
         // Auto-clear after 4 seconds

@@ -51,6 +51,14 @@ struct NotchContentView: View {
     private func startWandering() {
         guard wanderTimer == nil else { return }
         wanderTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+            // Don't wander when status is active AND Claude Code is idle
+            // (if Claude is thinking/working, it overrides the status so wandering is fine)
+            let effectiveTask = stateMachine.sessionStore.effectiveSession?.state.task ?? .idle
+            let claudeActive = effectiveTask == .thinking || effectiveTask == .working
+            if let status = stateMachine.activeStatus, !status.isExpired, !claudeActive {
+                isWalking = false
+                return
+            }
             let newTarget = CGFloat.random(in: 0.05...0.95)
             walkingRight = newTarget > wanderPosition
             isWalking = true
@@ -76,14 +84,22 @@ struct NotchContentView: View {
         var creatures: [CreatureDisplay] = []
 
         // One creature per user — use the most active session's state,
-        // or idle if no sessions are running.
+        // or idle if no sessions are running. Status overrides creature behaviour.
         let effective = stateMachine.sessionStore.effectiveSession
+        var localCreatureState = effective?.state ?? CreatureState()
+        // Status only overrides when Claude Code is idle — active thinking/working takes priority
+        let claudeActive = localCreatureState.task == .thinking || localCreatureState.task == .working
+        let statusActive = stateMachine.activeStatus != nil && !stateMachine.activeStatus!.isExpired
+        if statusActive && !claudeActive, let preset = stateMachine.activeStatus?.preset {
+            localCreatureState.task = preset.creatureTask
+            localCreatureState.emotion = preset.creatureEmotion
+        }
         let localReaction = roomManager.localState?.reaction
         let localReactionActive = roomManager.localState?.hasActiveReaction ?? false
         let localInteractionActive = roomManager.localState?.hasActiveInteraction ?? false
         creatures.append(CreatureDisplay(
             id: "local",
-            state: effective?.state ?? CreatureState(),
+            state: localCreatureState,
             creatureType: profile?.creatureType ?? .ghost,
             colorPreset: profile?.colorPreset ?? .none,
             accessory: profile?.accessory ?? .none,
@@ -98,7 +114,10 @@ struct NotchContentView: View {
             chatMessage: roomManager.localState?.activeChatMessage,
             interaction: localInteractionActive ? roomManager.localState?.interaction : nil,
             interactionTarget: localInteractionActive ? roomManager.localState?.interactionTarget : nil,
-            interactionActive: localInteractionActive
+            interactionActive: localInteractionActive,
+            statusPreset: stateMachine.activeStatus.flatMap { $0.isExpired ? nil : $0.preset },
+            statusText: stateMachine.activeStatus.flatMap { $0.isExpired ? nil : ($0.customText ?? $0.preset?.displayName) },
+            hasStatus: stateMachine.activeStatus != nil && !stateMachine.activeStatus!.isExpired
         ))
 
         if let myId = profile?.peerId {
@@ -125,7 +144,10 @@ struct NotchContentView: View {
                     isTyping: peer.isTyping ?? false,
                     interaction: peer.hasActiveInteraction ? peer.interaction : nil,
                     interactionTarget: peer.hasActiveInteraction ? peer.interactionTarget : nil,
-                    interactionActive: peer.hasActiveInteraction
+                    interactionActive: peer.hasActiveInteraction,
+                    statusPreset: peer.activeStatusPreset,
+                    statusText: peer.activeStatusDisplay,
+                    hasStatus: peer.hasActiveStatus
                 ))
             }
         }

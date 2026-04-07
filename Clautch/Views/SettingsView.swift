@@ -63,6 +63,7 @@ private struct AppearanceSettingsTab: View {
     @State private var selectedType: CreatureType = UserProfile.current?.creatureType ?? .ghost
     @State private var colorPreset: CreatureColorPreset = UserProfile.current?.colorPreset ?? .none
     @State private var accessory: CreatureAccessory = UserProfile.current?.accessory ?? .none
+    @State private var sceneTheme: SceneTheme = UserProfile.current?.sceneTheme ?? .meadow
     @State private var displayName: String = UserProfile.current?.displayName ?? ""
     @State private var gamification = GamificationStore.shared
 
@@ -123,6 +124,15 @@ private struct AppearanceSettingsTab: View {
                 }
             }
 
+            Section("Scene") {
+                Picker("Background", selection: $sceneTheme) {
+                    ForEach(SceneTheme.allCases) { theme in
+                        Text("\(theme.emoji) \(theme.displayName)").tag(theme)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+
             Section("Profile") {
                 TextField("Display Name", text: $displayName)
             }
@@ -131,6 +141,7 @@ private struct AppearanceSettingsTab: View {
         .padding(.vertical, 8)
         .onChange(of: selectedType) { _, _ in saveProfile() }
         .onChange(of: colorPreset) { _, _ in saveProfile() }
+        .onChange(of: sceneTheme) { _, _ in saveProfile() }
         .onChange(of: accessory) { _, newValue in
             if gamification.isAccessoryUnlocked(newValue) {
                 saveProfile()
@@ -154,8 +165,11 @@ private struct AppearanceSettingsTab: View {
             displayName: name,
             creatureType: selectedType,
             colorPreset: colorPreset,
-            accessory: accessory
+            accessory: accessory,
+            sceneTheme: sceneTheme
         )
+        // Sync to AppStorage for reactive GrassIslandView updates
+        UserDefaults.standard.set(sceneTheme.rawValue, forKey: "com.clautch.sceneTheme")
     }
 }
 

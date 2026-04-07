@@ -37,6 +37,9 @@ enum AchievementId: String, Codable, CaseIterable, Identifiable {
     case teamPlayer     // join a room
     case socialButterfly // send 10 reactions
 
+    // Status milestones
+    case statusSetter   // set status 25 times
+
     // Streak milestones
     case streakThree
     case streakSeven
@@ -67,6 +70,7 @@ enum AchievementId: String, Codable, CaseIterable, Identifiable {
         case .zenMaster:            return "Zen Master"
         case .teamPlayer:           return "Team Player"
         case .socialButterfly:      return "Social Butterfly"
+        case .statusSetter:         return "Status Setter"
         case .streakThree:          return "On a Roll"
         case .streakSeven:          return "Week Warrior"
         case .streakFourteen:       return "Fortnight"
@@ -96,6 +100,7 @@ enum AchievementId: String, Codable, CaseIterable, Identifiable {
         case .zenMaster:            return "20 positive moods in a row"
         case .teamPlayer:           return "Join a room"
         case .socialButterfly:      return "Send 10 reactions"
+        case .statusSetter:         return "Set your status 25 times"
         case .streakThree:          return "3-day coding streak"
         case .streakSeven:          return "7-day coding streak"
         case .streakFourteen:       return "14-day coding streak"
@@ -266,6 +271,14 @@ enum AchievementId: String, Codable, CaseIterable, Identifiable {
                 [1,1,0,1,1],
                 [1,0,0,0,1],
             ]
+        case .statusSetter:
+            return [
+                [1,1,1,1,1],
+                [1,2,2,2,1],
+                [1,1,1,1,1],
+                [0,1,0,0,0],
+                [0,0,0,0,0],
+            ]
         case .streakThree:
             return [
                 [0,0,2,0,0],
@@ -323,6 +336,7 @@ enum AchievementId: String, Codable, CaseIterable, Identifiable {
         case .zenMaster:            return Color(red: 0.5, green: 0.7, blue: 0.9)
         case .teamPlayer:           return Color(red: 0.3, green: 0.6, blue: 0.9)
         case .socialButterfly:      return Color(red: 0.9, green: 0.4, blue: 0.6)
+        case .statusSetter:         return Color(red: 0.4, green: 0.7, blue: 0.9)
         case .streakThree:          return Color(red: 1.0, green: 0.5, blue: 0.0)
         case .streakSeven:          return Color(red: 1.0, green: 0.4, blue: 0.0)
         case .streakFourteen:       return Color(red: 1.0, green: 0.35, blue: 0.0)
@@ -352,6 +366,7 @@ enum AchievementId: String, Codable, CaseIterable, Identifiable {
         case .zenMaster:            return Color(red: 0.7, green: 0.85, blue: 1.0)
         case .teamPlayer:           return Color(red: 0.6, green: 0.8, blue: 1.0)
         case .socialButterfly:      return Color(red: 1.0, green: 0.7, blue: 0.85)
+        case .statusSetter:         return Color(red: 0.6, green: 0.85, blue: 1.0)
         case .streakThree:          return Color(red: 1.0, green: 0.85, blue: 0.2)
         case .streakSeven:          return Color(red: 1.0, green: 0.8, blue: 0.1)
         case .streakFourteen:       return Color(red: 1.0, green: 0.75, blue: 0.15)
