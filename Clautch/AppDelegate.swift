@@ -120,8 +120,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         sessionBadgeTimer?.invalidate()
         HookInstaller.shared.stopPeriodicRepair()
         SocketServer.shared.stop()
-        // Leave room gracefully
-        Task { await RoomManager.shared.leaveRoom() }
+        // Block until room cleanup completes so the presence record is
+        // actually deleted before the process exits. We drain the RunLoop
+        // to avoid deadlocking the MainActor.
+        let done = DispatchSemaphore(value: 0)
+        Task { @MainActor in
+            await RoomManager.shared.leaveRoom()
+            done.signal()
+        }
+        let deadline = Date(timeIntervalSinceNow: 3)
+        while done.wait(timeout: .now()) == .timedOut, Date() < deadline {
+            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.01))
+        }
     }
 
     // MARK: - Onboarding
