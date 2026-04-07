@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.5](https://github.com/sophiie-ai/clautch/compare/v0.17.4...v0.17.5) (2026-04-07)
+
+
+### Bug Fixes
+
+* add pull-requests write permission to release workflow ([1d0306a](https://github.com/sophiie-ai/clautch/commit/1d0306a4358b27a50dd9ea734c760153fd00e852))
+* crash when leaving room due to ForEach index race ([7c72279](https://github.com/sophiie-ai/clautch/commit/7c72279bc7fddf147b5a7b3ae75bb2b83477c782))
+
 ## [0.17.4](https://github.com/sophiie-ai/clautch/compare/v0.17.3...v0.17.4) (2026-04-07)
 
 
