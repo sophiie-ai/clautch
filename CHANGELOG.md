@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/sophiie-ai/clautch/compare/v0.17.5...v0.18.0) (2026-04-07)
+
+
+### Features
+
+* user status + custom scene backgrounds ([#79](https://github.com/sophiie-ai/clautch/issues/79)) ([82fa0db](https://github.com/sophiie-ai/clautch/commit/82fa0db400ba1d49118ce8fa71e1c82fdde409b1))
+
 ## [0.17.5](https://github.com/sophiie-ai/clautch/compare/v0.17.4...v0.17.5) (2026-04-07)
 
 
