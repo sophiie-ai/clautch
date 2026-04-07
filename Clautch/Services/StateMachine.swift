@@ -9,8 +9,10 @@ final class StateMachine {
     static let shared = StateMachine()
 
     let sessionStore = SessionStore()
+    private(set) var activeStatus: UserStatus?
     private let logger = Logger(subsystem: "com.clautch.app", category: "StateMachine")
     private var cleanupTimer: Timer?
+    private static let statusKey = "com.clautch.activeStatus"
 
     private init() {
         // Wire up socket events → state transitions
@@ -20,10 +22,18 @@ final class StateMachine {
             }
         }
 
-        // Periodic cleanup of stale sessions
+        // Load persisted status
+        if let data = UserDefaults.standard.data(forKey: Self.statusKey),
+           let status = try? JSONDecoder().decode(UserStatus.self, from: data),
+           !status.isExpired {
+            activeStatus = status
+        }
+
+        // Periodic cleanup of stale sessions + status expiry check
         cleanupTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.sessionStore.cleanupStale()
+                self?.checkStatusExpiry()
             }
         }
     }
@@ -81,11 +91,84 @@ final class StateMachine {
         updateGamification(event)
     }
 
+    // MARK: - Status
+
+    /// Set a status from a preset with optional custom text and expiry duration.
+    func setStatus(preset: StatusPreset, customText: String? = nil, expiry: TimeInterval? = nil) {
+        let duration = expiry ?? preset.defaultExpiry
+        let status = UserStatus(
+            preset: preset,
+            customText: customText,
+            setAt: Date(),
+            expiresAt: Date().addingTimeInterval(duration)
+        )
+        activeStatus = status
+        persistStatus()
+        GamificationStore.shared.recordStatusSet()
+        ActivityFeed.shared.add(icon: preset.emoji, text: "Status: \(status.displayText)")
+        broadcastCurrentState()
+        logger.info("Status set: \(preset.rawValue) expires in \(Int(duration))s")
+    }
+
+    /// Set a custom status with freeform text.
+    func setCustomStatus(text: String, expiry: TimeInterval) {
+        let sanitized = NotificationService.sanitize(text, maxLength: 100)
+        guard !sanitized.isEmpty else { return }
+        let status = UserStatus(
+            preset: nil,
+            customText: sanitized,
+            setAt: Date(),
+            expiresAt: Date().addingTimeInterval(expiry)
+        )
+        activeStatus = status
+        persistStatus()
+        GamificationStore.shared.recordStatusSet()
+        ActivityFeed.shared.add(icon: "\u{1F4AC}", text: "Status: \(sanitized)")
+        broadcastCurrentState()
+        logger.info("Custom status set: \(sanitized)")
+    }
+
+    /// Clear the current status.
+    func clearStatus() {
+        guard activeStatus != nil else { return }
+        activeStatus = nil
+        persistStatus()
+        ActivityFeed.shared.add(icon: "\u{2716}", text: "Status cleared")
+        broadcastCurrentState()
+        logger.info("Status cleared")
+    }
+
+    private func checkStatusExpiry() {
+        guard let status = activeStatus, status.isExpired else { return }
+        activeStatus = nil
+        persistStatus()
+        ActivityFeed.shared.add(icon: "\u{23F0}", text: "Status expired")
+        broadcastCurrentState()
+        logger.info("Status auto-expired")
+    }
+
+    private func persistStatus() {
+        if let status = activeStatus,
+           let data = try? JSONEncoder().encode(status) {
+            UserDefaults.standard.set(data, forKey: Self.statusKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.statusKey)
+        }
+    }
+
     /// Push the current effective session state to RoomManager for network broadcast.
     func broadcastCurrentState() {
         let effective = sessionStore.effectiveSession
-        let task = effective?.state.task ?? .idle
-        let emotion = effective?.state.emotion ?? .neutral
+        var task = effective?.state.task ?? .idle
+        var emotion = effective?.state.emotion ?? .neutral
+
+        // Status only overrides when Claude Code is idle — active thinking/working takes priority
+        let claudeActive = task == .thinking || task == .working
+        if let status = activeStatus, !status.isExpired, !claudeActive, let preset = status.preset {
+            task = preset.creatureTask
+            emotion = preset.creatureEmotion
+        }
+
         RoomManager.shared.broadcastState(task: task, emotion: emotion)
 
         // Record mood for sparkline and gamification

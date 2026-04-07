@@ -151,8 +151,30 @@ struct PeerState: Codable, Sendable, Identifiable {
     var interaction: PeerInteraction?
     var interactionTarget: String?
     var interactionTimestamp: Date?
+    var statusPreset: String?
+    var statusText: String?
+    var statusExpiresAt: Date?
 
     var id: String { peerId }
+
+    /// Whether this peer has an active (non-expired) status.
+    var hasActiveStatus: Bool {
+        guard let expires = statusExpiresAt else { return false }
+        return Date() < expires
+    }
+
+    /// The active status preset, if any.
+    var activeStatusPreset: StatusPreset? {
+        guard hasActiveStatus, let raw = statusPreset else { return nil }
+        return StatusPreset(rawValue: raw)
+    }
+
+    /// The active status display text (custom text or preset name).
+    var activeStatusDisplay: String? {
+        guard hasActiveStatus else { return nil }
+        if let text = statusText, !text.isEmpty { return text }
+        return activeStatusPreset?.displayName
+    }
 
     /// Whether this peer has been active recently.
     var isActive: Bool {
@@ -202,6 +224,9 @@ struct PeerState: Codable, Sendable, Identifiable {
         isTyping == other.isTyping &&
         interaction == other.interaction &&
         interactionTarget == other.interactionTarget &&
+        statusPreset == other.statusPreset &&
+        statusText == other.statusText &&
+        statusExpiresAt == other.statusExpiresAt &&
         abs((xPosition ?? 0.5) - (other.xPosition ?? 0.5)) < 0.01
     }
 }
@@ -232,6 +257,9 @@ extension PeerState {
         interaction = try c.decodeIfPresent(PeerInteraction.self, forKey: .interaction)
         interactionTarget = try c.decodeIfPresent(String.self, forKey: .interactionTarget)
         interactionTimestamp = try c.decodeIfPresent(Date.self, forKey: .interactionTimestamp)
+        statusPreset = try c.decodeIfPresent(String.self, forKey: .statusPreset)
+        statusText = try c.decodeIfPresent(String.self, forKey: .statusText)
+        statusExpiresAt = try c.decodeIfPresent(Date.self, forKey: .statusExpiresAt)
     }
 }
 
@@ -258,4 +286,7 @@ struct CreatureDisplay: Identifiable {
     var interaction: PeerInteraction?
     var interactionTarget: String?
     var interactionActive: Bool = false
+    var statusPreset: StatusPreset?
+    var statusText: String?
+    var hasStatus: Bool = false
 }

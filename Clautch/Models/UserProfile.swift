@@ -7,6 +7,7 @@ struct UserProfile: Codable, Sendable {
     var creatureType: CreatureType
     var colorPreset: CreatureColorPreset
     var accessory: CreatureAccessory
+    var sceneTheme: SceneTheme
 
     // MARK: - Persistence
 
@@ -42,12 +43,13 @@ struct UserProfile: Codable, Sendable {
     static var hasProfile: Bool { current != nil }
 
     /// Create a new profile with defaults.
-    init(peerId: String, displayName: String, creatureType: CreatureType, colorPreset: CreatureColorPreset, accessory: CreatureAccessory = .none) {
+    init(peerId: String, displayName: String, creatureType: CreatureType, colorPreset: CreatureColorPreset, accessory: CreatureAccessory = .none, sceneTheme: SceneTheme = .meadow) {
         self.peerId = peerId
         self.displayName = displayName
         self.creatureType = creatureType
         self.colorPreset = colorPreset
         self.accessory = accessory
+        self.sceneTheme = sceneTheme
     }
 
     /// Backward-compatible decoding: default accessory to .none for older profiles.
@@ -58,20 +60,23 @@ struct UserProfile: Codable, Sendable {
         creatureType = try c.decode(CreatureType.self, forKey: .creatureType)
         colorPreset = try c.decode(CreatureColorPreset.self, forKey: .colorPreset)
         accessory = try c.decodeIfPresent(CreatureAccessory.self, forKey: .accessory) ?? .none
+        sceneTheme = try c.decodeIfPresent(SceneTheme.self, forKey: .sceneTheme) ?? .meadow
     }
 
     static func create(
         displayName: String,
         creatureType: CreatureType,
         colorPreset: CreatureColorPreset = .none,
-        accessory: CreatureAccessory = .none
+        accessory: CreatureAccessory = .none,
+        sceneTheme: SceneTheme = .meadow
     ) -> UserProfile {
         UserProfile(
             peerId: UUID().uuidString,
             displayName: displayName,
             creatureType: creatureType,
             colorPreset: colorPreset,
-            accessory: accessory
+            accessory: accessory,
+            sceneTheme: sceneTheme
         )
     }
 }

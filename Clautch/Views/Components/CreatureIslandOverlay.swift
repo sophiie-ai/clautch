@@ -70,8 +70,15 @@ struct CreatureIslandOverlay: View {
                             .id("reaction-\(creature.id)-\(reaction.rawValue)-\(creature.reactionActive)")
                     }
 
-                    if isExpanded && creature.isLocal {
-                        Text(creature.state.task.displayLabel)
+                    if isExpanded {
+                        let claudeActive = creature.state.task == .thinking || creature.state.task == .working
+                        let label: String = {
+                            if creature.hasStatus && !claudeActive {
+                                return creature.statusText ?? creature.statusPreset?.displayName ?? creature.state.task.displayLabel
+                            }
+                            return creature.state.task.displayLabel
+                        }()
+                        Text(label)
                             .font(.system(size: 7, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.7))
                             .transition(.opacity)
@@ -180,7 +187,15 @@ struct CreatureIslandOverlay: View {
     }
 
     private func creatureTooltip(_ creature: CreatureDisplay) -> String {
-        var parts = [creature.displayName, creature.state.task.displayLabel]
+        var parts = [creature.displayName]
+        if creature.hasStatus {
+            let statusText = creature.statusText ?? creature.statusPreset?.displayName ?? ""
+            if !statusText.isEmpty {
+                parts.append(statusText)
+            }
+        } else {
+            parts.append(creature.state.task.displayLabel)
+        }
         if let duration = creature.sessionDuration {
             let m = Int(duration) / 60
             let s = Int(duration) % 60

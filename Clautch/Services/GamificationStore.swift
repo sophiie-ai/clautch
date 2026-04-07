@@ -38,6 +38,7 @@ final class GamificationStore {
         var hasRecoveredFromErrors: Bool = false
         var longestPositiveMoodRun: Int = 0
         var totalCodingSeconds: TimeInterval = 0
+        var totalStatusSets: Int = 0
     }
 
     /// Counters scoped to the current day, used for daily quest progress.
@@ -197,6 +198,12 @@ final class GamificationStore {
         checkAchievements()
     }
 
+    func recordStatusSet() {
+        counters.totalStatusSets += 1
+        saveCounters()
+        checkAchievements()
+    }
+
     // MARK: - XP
 
     private func addXP(_ amount: Int) {
@@ -281,6 +288,8 @@ final class GamificationStore {
             // Social
             case .teamPlayer:           earned = counters.hasJoinedRoom
             case .socialButterfly:      earned = counters.totalReactionsSent >= 10
+            // Status
+            case .statusSetter:         earned = counters.totalStatusSets >= 25
             // Streaks
             case .streakThree:          earned = streak.currentStreak >= 3
             case .streakSeven:          earned = streak.currentStreak >= 7

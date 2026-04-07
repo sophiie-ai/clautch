@@ -151,6 +151,11 @@ final class CloudKitService: CloudKitServiceProtocol, @unchecked Sendable {
             if let it = state.interactionTimestamp {
                 record["interactionTimestamp"] = it as NSDate
             }
+            record["statusPreset"] = state.statusPreset ?? ""
+            record["statusText"] = state.statusText ?? ""
+            if let se = state.statusExpiresAt {
+                record["statusExpiresAt"] = se as NSDate
+            }
 
             return try await db.save(record)
         }
@@ -355,6 +360,9 @@ extension PeerState {
         let interactionRaw = record["interaction"] as? String ?? ""
         let interactionTargetVal = record["interactionTarget"] as? String ?? ""
         let interactionTs = record["interactionTimestamp"] as? Date
+        let statusPresetVal = record["statusPreset"] as? String ?? ""
+        let statusTextVal = record["statusText"] as? String ?? ""
+        let statusExpiresAtVal = record["statusExpiresAt"] as? Date
 
         // Verify signature if present — reject peers with invalid signatures
         if let pubKey, let sig, !pubKey.isEmpty, !sig.isEmpty {
@@ -386,7 +394,10 @@ extension PeerState {
             isTyping: typing,
             interaction: interactionRaw.isEmpty ? nil : PeerInteraction(rawValue: interactionRaw),
             interactionTarget: interactionTargetVal.isEmpty ? nil : interactionTargetVal,
-            interactionTimestamp: interactionTs
+            interactionTimestamp: interactionTs,
+            statusPreset: statusPresetVal.isEmpty ? nil : statusPresetVal,
+            statusText: statusTextVal.isEmpty ? nil : NotificationService.sanitize(statusTextVal, maxLength: 100),
+            statusExpiresAt: statusExpiresAtVal
         )
     }
 }
