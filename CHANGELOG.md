@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/sophiie-ai/clautch/compare/v0.17.0...v0.17.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* ensure room presence is deleted before process exits on quit ([2d52c5d](https://github.com/sophiie-ai/clautch/commit/2d52c5dcc09406f9c0b010a01c9284c8b40317e9))
+
 ## [0.17.0](https://github.com/sophiie-ai/clautch/compare/v0.16.0...v0.17.0) (2026-04-07)
 
 
