@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.4](https://github.com/sophiie-ai/clautch/compare/v0.17.3...v0.17.4) (2026-04-07)
+
+
+### Bug Fixes
+
+* open PR for appcast update instead of pushing directly to main ([a66f44e](https://github.com/sophiie-ai/clautch/commit/a66f44e83977671f92f26c9ab1a4bd7b811b63ae))
+
 ## [0.17.3](https://github.com/sophiie-ai/clautch/compare/v0.17.2...v0.17.3) (2026-04-07)
 
 
