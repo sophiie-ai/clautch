@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.17.0](https://github.com/sophiie-ai/clautch/compare/v0.16.0...v0.17.0) (2026-04-07)
+
+
+### Features
+
+* redesign room chat with iMessage-style bubbles and compact peer avatars ([e6a9e4b](https://github.com/sophiie-ai/clautch/commit/e6a9e4b984cb8cfeb1bc9bd926330fe4e0e8475a))
+
+
+### Bug Fixes
+
+* ensure room presence is deleted before process exits on quit ([2d52c5d](https://github.com/sophiie-ai/clautch/commit/2d52c5dcc09406f9c0b010a01c9284c8b40317e9))
+
 ## [0.16.0](https://github.com/sophiie-ai/clautch/compare/v0.15.0...v0.16.0) (2026-04-06)
 
 
