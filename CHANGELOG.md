@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.3](https://github.com/sophiie-ai/clautch/compare/v0.17.2...v0.17.3) (2026-04-07)
+
+
+### Bug Fixes
+
+* use admin PAT for appcast push to bypass branch protection ([8b3c9ee](https://github.com/sophiie-ai/clautch/commit/8b3c9ee72d9c23607aa0512eaa6460d2c46cafe2))
+
 ## [0.17.2](https://github.com/sophiie-ai/clautch/compare/v0.17.1...v0.17.2) (2026-04-07)
 
 
