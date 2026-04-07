@@ -11,6 +11,7 @@ struct RoomView: View {
     @State private var activityFeed = RoomActivityFeed.shared
     @State private var showKeychainAlert = false
     @State private var pendingAction: PendingRoomAction?
+    @State private var iCloudAvailable: Bool?
 
     private enum PendingRoomAction {
         case create
@@ -45,6 +46,9 @@ struct RoomView: View {
             }
         }
         .frame(minWidth: 300, minHeight: 350)
+        .task {
+            iCloudAvailable = await CloudKitService.shared.checkAvailability()
+        }
         .alert("Keychain Storage", isPresented: $showKeychainAlert) {
             Button("Allow") {
                 UserDefaults.standard.set(true, forKey: Self.keychainAcceptedKey)
@@ -61,25 +65,25 @@ struct RoomView: View {
     // MARK: - Connected
 
     private var connectedView: some View {
-        VStack(spacing: 12) {
-            // Room code display
+        VStack(spacing: 0) {
+            // Room header bar
             if let room = roomManager.currentRoom {
                 HStack(spacing: 8) {
                     Button(action: copyCode) {
                         HStack(spacing: 6) {
                             Text(room.roomCode)
-                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .font(.system(size: 13, weight: .bold, design: .monospaced))
                                 .foregroundStyle(.primary)
                                 .tracking(2)
 
                             Image(systemName: copiedCode ? "checkmark" : "doc.on.doc")
-                                .font(.system(size: 10))
+                                .font(.system(size: 9))
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(Color.primary.opacity(0.06))
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Copy room invite code")
@@ -91,113 +95,95 @@ struct RoomView: View {
 
                     Spacer()
 
-                    Text("\(peerList.count + 1) online")
+                    // Peer avatars row
+                    HStack(spacing: -4) {
+                        if let profile = UserProfile.current {
+                            peerAvatar(creature: profile.creatureType, task: roomManager.localState?.task ?? .idle)
+                        }
+                        ForEach(peerList, id: \.peerId) { peer in
+                            peerAvatar(creature: peer.creatureType, task: peer.task)
+                        }
+                    }
+
+                    Text("\(peerList.count + 1)")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
 
             Divider()
-                .padding(.horizontal, 20)
 
-            // Peer list (compact)
-            VStack(alignment: .leading, spacing: 6) {
-                // Self
-                if let profile = UserProfile.current {
-                    peerRow(
-                        name: "\(profile.displayName) (you)",
-                        creature: profile.creatureType,
-                        task: roomManager.localState?.task ?? .idle,
-                        isLocal: true
-                    )
-                }
-
-                // Remote peers
-                ForEach(peerList, id: \.peerId) { peer in
-                    peerRow(
-                        name: peer.displayName,
-                        creature: peer.creatureType,
-                        task: peer.task,
-                        isLocal: false
-                    )
-                }
-            }
-            .padding(.horizontal, 20)
-
-            Divider()
-                .padding(.horizontal, 20)
-
-            // Activity feed
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 6) {
-                    if activityFeed.events.isEmpty {
-                        Text("No activity yet")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.tertiary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 8)
-                    } else {
-                        ForEach(activityFeed.events) { event in
-                            HStack(spacing: 6) {
-                                Image(systemName: event.icon)
-                                    .font(.system(size: 8))
-                                    .foregroundStyle(eventColor(event.kind))
-                                    .frame(width: 12)
-
+            // Chat messages area
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        if activityFeed.events.isEmpty {
+                            Text("No messages yet")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.tertiary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 20)
+                        } else {
+                            ForEach(Array(activityFeed.events.enumerated()), id: \.element.id) { index, event in
                                 if event.kind == .chat {
-                                    Text("\(event.peerName): ")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundStyle(.primary) +
-                                    Text(event.text)
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.secondary)
+                                    chatBubble(for: event, previousEvent: index > 0 ? activityFeed.events[index - 1] : nil)
                                 } else {
-                                    Text(event.text)
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.secondary)
+                                    systemEvent(event)
                                 }
-
-                                Spacer()
-
-                                Text(event.timeAgo)
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
                             }
-                            .padding(.vertical, 2)
                         }
+
+                        // Anchor for auto-scroll
+                        Color.clear
+                            .frame(height: 1)
+                            .id("bottom")
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+                .frame(maxHeight: .infinity)
+                .onChange(of: activityFeed.events.count) {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        proxy.scrollTo("bottom", anchor: .bottom)
                     }
                 }
-                .padding(.horizontal, 20)
+                .onAppear {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
             }
-            .frame(maxHeight: .infinity)
 
-            // Chat input
-            HStack(spacing: 8) {
-                TextField("Send a message…", text: $chatInput)
+            Divider()
+
+            // iMessage-style input bar
+            HStack(spacing: 6) {
+                TextField("iMessage", text: $chatInput)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 12))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.primary.opacity(0.06))
-                    .cornerRadius(6)
+                    .font(.system(size: 13))
                     .onSubmit { sendChat() }
                     .onChange(of: chatInput) { _, newValue in
                         roomManager.setTyping(!newValue.isEmpty)
                     }
 
                 Button(action: sendChat) {
-                    Image(systemName: "paperplane.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(chatInput.isEmpty ? Color.secondary : Color.accentColor)
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(chatInput.isEmpty ? Color.secondary.opacity(0.4) : Color.accentColor)
                 }
                 .buttonStyle(.plain)
                 .disabled(chatInput.isEmpty)
                 .accessibilityLabel("Send message")
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 8)
+            .padding(.leading, 14)
+            .padding(.trailing, 6)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(Color.primary.opacity(0.06))
+            )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
 
             // Leave button
             Button(action: {
@@ -207,17 +193,76 @@ struct RoomView: View {
                 }
             }) {
                 Text("Leave Room")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.red)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(8)
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 12)
+            .padding(.bottom, 10)
         }
+    }
+
+    // MARK: - Chat Bubble
+
+    /// iMessage-style chat bubble: blue/right for local, gray/left for remote.
+    private func chatBubble(for event: RoomEvent, previousEvent: RoomEvent?) -> some View {
+        let isLocal = event.isLocal
+        let showSender = !isLocal && (previousEvent?.kind != .chat || previousEvent?.peerName != event.peerName || previousEvent?.isLocal == true)
+
+        return VStack(alignment: isLocal ? .trailing : .leading, spacing: 2) {
+            if showSender {
+                Text(event.peerName)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
+            }
+
+            HStack {
+                if isLocal { Spacer(minLength: 40) }
+
+                Text(event.text)
+                    .font(.system(size: 13))
+                    .foregroundStyle(isLocal ? .white : .primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(isLocal ? Color.accentColor : Color.primary.opacity(0.1))
+                    )
+
+                if !isLocal { Spacer(minLength: 40) }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: isLocal ? .trailing : .leading)
+        .padding(.vertical, 1)
+    }
+
+    /// Centered, muted system event (join/leave/reaction).
+    private func systemEvent(_ event: RoomEvent) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: event.icon)
+                .font(.system(size: 8))
+                .foregroundStyle(.tertiary)
+            Text(event.text)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Peer Avatar
+
+    private func peerAvatar(creature: CreatureType, task: CreatureTask) -> some View {
+        PixelCreatureView(
+            type: creature,
+            frame: 0,
+            task: task,
+            emotion: .neutral
+        )
+        .frame(width: 18, height: 18)
+        .background(Circle().fill(Color.primary.opacity(0.06)))
+        .clipShape(Circle())
     }
 
     private var peerList: [PeerState] {
@@ -225,60 +270,15 @@ struct RoomView: View {
         return roomManager.peerStore.visiblePeers(excludingPeerId: profile.peerId)
     }
 
-    private func peerRow(name: String, creature: CreatureType, task: CreatureTask, isLocal: Bool) -> some View {
-        HStack(spacing: 10) {
-            // Mini creature preview
-            PixelCreatureView(
-                type: creature,
-                frame: 0,
-                task: task,
-                emotion: .neutral
-            )
-            .frame(width: 20, height: 20)
-
-            Text(name)
-                .font(.system(size: 13))
-                .foregroundStyle(.primary)
-
-            Spacer()
-
-            Text(task.rawValue)
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(taskColor(task).opacity(0.15))
-                .cornerRadius(4)
-        }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(name), \(task.rawValue)")
-    }
-
-    private func taskColor(_ task: CreatureTask) -> Color {
-        switch task {
-        case .idle: return .gray
-        case .working: return .blue
-        case .thinking: return .yellow
-        case .sleeping: return .purple
-        case .compacting: return .red
-        }
-    }
-
-    private func eventColor(_ kind: RoomEvent.Kind) -> Color {
-        switch kind {
-        case .chat:     return .blue
-        case .join:     return .green
-        case .leave:    return .orange
-        case .reaction: return .yellow
-        }
-    }
-
     // MARK: - Disconnected
 
     private var disconnectedView: some View {
         VStack(spacing: 20) {
             Spacer()
+
+            if iCloudAvailable == false {
+                iCloudUnavailableBanner
+            }
 
             // Create room
             Button(action: {
@@ -300,7 +300,8 @@ struct RoomView: View {
                     )
             }
             .buttonStyle(.plain)
-            .disabled(isLoading)
+            .disabled(isLoading || iCloudAvailable == false)
+            .opacity(iCloudAvailable == false ? 0.5 : 1)
             .padding(.horizontal, 20)
 
             // Divider with "or"
@@ -337,13 +338,13 @@ struct RoomView: View {
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(joinCodeValid
+                                .fill(joinCodeValid && iCloudAvailable != false
                                     ? Color.accentColor
                                     : Color.secondary.opacity(0.3))
                         )
                 }
                 .buttonStyle(.plain)
-                .disabled(!joinCodeValid || isLoading)
+                .disabled(!joinCodeValid || isLoading || iCloudAvailable == false)
             }
             .padding(.horizontal, 20)
 
@@ -362,6 +363,37 @@ struct RoomView: View {
 
             Spacer()
         }
+    }
+
+    private var iCloudUnavailableBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.icloud")
+                .font(.system(size: 16))
+                .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("iCloud Required")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("Sign in to iCloud in System Settings to use rooms.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Open Settings") {
+                NSWorkspace.shared.open(
+                    URL(string: "x-apple.systempreferences:com.apple.preferences.AppleIDPrefPane")!
+                )
+            }
+            .font(.system(size: 11, weight: .medium))
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.orange.opacity(0.08))
+                .strokeBorder(Color.orange.opacity(0.2), lineWidth: 1)
+        )
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Status Badge
@@ -437,7 +469,8 @@ struct RoomView: View {
         guard !msg.isEmpty else { return }
         let name = UserProfile.current?.displayName ?? "You"
         roomManager.sendChat(msg)
-        activityFeed.addChat(from: name, message: msg)
+        activityFeed.addChat(from: name, message: msg, isLocal: true)
+        NotificationService.shared.playSound(.chatSent)
         chatInput = ""
     }
 

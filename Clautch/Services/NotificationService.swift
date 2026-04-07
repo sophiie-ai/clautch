@@ -8,6 +8,7 @@ import os
 protocol NotificationServiceProtocol {
     var isEnabled: Bool { get set }
     var soundEffectsEnabled: Bool { get set }
+    var chatSoundsEnabled: Bool { get set }
     func playSound(_ kind: NotificationService.RoomSoundKind)
     func postSessionFinished(sessionId: String)
     func postToolError(sessionId: String, toolName: String?)
@@ -32,9 +33,17 @@ final class NotificationService: NotificationServiceProtocol {
         set { UserDefaults.standard.set(newValue, forKey: Self.soundKey) }
     }
 
+    private static let chatSoundKey = "com.clautch.chatSoundsEnabled"
+    var chatSoundsEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: Self.chatSoundKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Self.chatSoundKey) }
+    }
+
     /// Play a subtle system sound for a room event.
     func playSound(_ kind: RoomSoundKind) {
         guard soundEffectsEnabled else { return }
+        // Chat sounds have their own toggle
+        if kind.isChatSound && !chatSoundsEnabled { return }
         NSSound(named: kind.systemSoundName)?.play()
     }
 
@@ -42,6 +51,7 @@ final class NotificationService: NotificationServiceProtocol {
         case peerJoin
         case peerLeave
         case chatReceived
+        case chatSent
         case reactionReceived
         case needsInput
 
@@ -50,8 +60,16 @@ final class NotificationService: NotificationServiceProtocol {
             case .peerJoin:          return "Pop"
             case .peerLeave:         return "Tink"
             case .chatReceived:      return "Blow"
+            case .chatSent:          return "Tink"
             case .reactionReceived:  return "Ping"
             case .needsInput:        return "Glass"
+            }
+        }
+
+        var isChatSound: Bool {
+            switch self {
+            case .chatReceived, .chatSent: return true
+            default: return false
             }
         }
     }

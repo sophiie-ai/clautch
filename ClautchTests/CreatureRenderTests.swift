@@ -195,10 +195,10 @@ final class CreatureRenderTests: XCTestCase {
         feed.addLeave("Bob")
 
         XCTAssertEqual(feed.events.count, 4)
-        XCTAssertEqual(feed.events[0].kind, .leave)
-        XCTAssertEqual(feed.events[1].kind, .reaction)
-        XCTAssertEqual(feed.events[2].kind, .chat)
-        XCTAssertEqual(feed.events[3].kind, .join)
+        XCTAssertEqual(feed.events[0].kind, .join)
+        XCTAssertEqual(feed.events[1].kind, .chat)
+        XCTAssertEqual(feed.events[2].kind, .reaction)
+        XCTAssertEqual(feed.events[3].kind, .leave)
         feed.clear()
     }
 }

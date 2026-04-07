@@ -29,6 +29,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Request notification permission
         NotificationService.shared.requestPermissionIfNeeded()
 
+        // Silently check for updates on launch — only shows UI if a new version exists
+        updaterController.updater.checkForUpdatesInBackground()
+
         // Register for CloudKit silent push notifications
         NSApp.registerForRemoteNotifications(matching: [])  // silent pushes only
 

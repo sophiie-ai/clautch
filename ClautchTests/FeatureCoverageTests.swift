@@ -94,8 +94,8 @@ final class FeatureCoverageTests: XCTestCase {
         feed.addJoin("Bob")
 
         XCTAssertEqual(feed.events.count, 2)
-        XCTAssertEqual(feed.events[0].kind, .join)
-        XCTAssertEqual(feed.events[1].kind, .chat)
+        XCTAssertEqual(feed.events[0].kind, .chat)
+        XCTAssertEqual(feed.events[1].kind, .join)
 
         // Verify events are Codable
         let encoded = try? JSONEncoder().encode(feed.events)
@@ -104,7 +104,7 @@ final class FeatureCoverageTests: XCTestCase {
         if let data = encoded {
             let decoded = try? JSONDecoder().decode([RoomEvent].self, from: data)
             XCTAssertEqual(decoded?.count, 2)
-            XCTAssertEqual(decoded?[0].kind, .join)
+            XCTAssertEqual(decoded?[0].kind, .chat)
         }
 
         feed.clear()
