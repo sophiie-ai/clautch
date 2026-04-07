@@ -78,10 +78,10 @@ final class NotchHitTestView: NSView {
         }
 
         // Fallback: accept clicks in the top portion where the panel is drawn.
-        // The panel extends from the top down; the bottom ~40% of the window
-        // frame is empty space below the island.
-        let panelMaxHeight = notchHeight + 120  // generous bound for panel content
-        let minY = bounds.maxY - panelMaxHeight
+        // Use PanelLayout to compute the actual panel bottom so clicks below
+        // the visible content (e.g. when event log is disabled) pass through.
+        let layout = PanelLayout(viewHeight: bounds.height, isExpanded: true)
+        let minY = bounds.maxY - layout.bottom
         return local.y >= minY ? self : nil
     }
 }
