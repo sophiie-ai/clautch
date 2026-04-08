@@ -281,7 +281,7 @@ final class RoomManager {
         }
     }
 
-    /// Send a chat message — broadcast on next sync, auto-clear after 8s.
+    /// Send a chat message — broadcast immediately, auto-clear after 8s.
     func sendChat(_ message: String) {
         guard var state = ensureLocalState() else { return }
         let trimmed = NotificationService.sanitize(message, maxLength: 50)
@@ -307,6 +307,7 @@ final class RoomManager {
             statusExpiresAt: state.statusExpiresAt
         )
         localState = state
+        broadcastImmediately()
 
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(8))
@@ -317,7 +318,7 @@ final class RoomManager {
         }
     }
 
-    /// Send a reaction — it will be broadcast on the next sync cycle and auto-clear after 4s.
+    /// Send a reaction — broadcast immediately, auto-clear after 4s.
     func sendReaction(_ reaction: PeerReaction) {
         guard var state = ensureLocalState() else { return }
         state = PeerState(
@@ -341,6 +342,7 @@ final class RoomManager {
         )
         localState = state
         GamificationStore.shared.recordReactionSent()
+        broadcastImmediately()
 
         // Auto-clear after 4 seconds
         Task { @MainActor in
@@ -352,7 +354,7 @@ final class RoomManager {
         }
     }
 
-    /// Send a targeted interaction to another peer — broadcast on next sync, auto-clear after 4s.
+    /// Send a targeted interaction to another peer — broadcast immediately, auto-clear after 4s.
     func sendInteraction(_ type: PeerInteraction, to targetPeerId: String) {
         guard let state = ensureLocalState() else { return }
         localState = PeerState(
@@ -377,6 +379,7 @@ final class RoomManager {
             statusText: state.statusText,
             statusExpiresAt: state.statusExpiresAt
         )
+        broadcastImmediately()
 
         // Auto-clear after 4 seconds
         Task { @MainActor in
@@ -443,6 +446,23 @@ final class RoomManager {
         guard currentRoom != nil else { return }
         Task { @MainActor in
             await syncCycle()
+        }
+    }
+
+    /// Immediately write the current local state to CloudKit.
+    /// Used for ephemeral state (chat, reactions, interactions) that auto-clears
+    /// before the next polling-based sync cycle would fire.
+    private func broadcastImmediately() {
+        guard currentRoom != nil, let state = localState else { return }
+        Task { @MainActor in
+            let record = await writeHeartbeat(
+                state: state, presenceID: myPresenceRecordID, roomCode: currentRoom?.roomCode ?? ""
+            )
+            if let record {
+                myPresenceRecordID = record.recordID
+                lastBroadcastState = state
+                lastHeartbeatDate = Date()
+            }
         }
     }
 
