@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.2](https://github.com/sophiie-ai/clautch/compare/v0.18.1...v0.18.2) (2026-04-08)
+
+
+### Bug Fixes
+
+* broadcast chat, reactions, and interactions immediately ([c3438df](https://github.com/sophiie-ai/clautch/commit/c3438df624fd054eaeae0d431e422aa742aab0aa))
+
 ## [0.18.1](https://github.com/sophiie-ai/clautch/compare/v0.18.0...v0.18.1) (2026-04-07)
 
 
