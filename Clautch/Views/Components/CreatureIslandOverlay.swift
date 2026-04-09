@@ -104,29 +104,22 @@ struct CreatureIslandOverlay: View {
                 }
             }
             .overlay {
-                if !isExpanded && (creature.state.emotion != .neutral || creature.chatMessage != nil) {
-                    let outward = emotionIndicatorOffset(for: creature)
-                    HStack(spacing: 2) {
-                        if outward > 0 {
-                            if creature.state.emotion != .neutral {
-                                CollapsedEmotionIndicator(emotion: creature.state.emotion)
-                            }
-                            if let chat = creature.chatMessage {
-                                CollapsedChatBubble(text: String(chat.prefix(30)))
-                            }
-                        } else {
-                            if let chat = creature.chatMessage {
-                                CollapsedChatBubble(text: String(chat.prefix(30)))
-                            }
-                            if creature.state.emotion != .neutral {
-                                CollapsedEmotionIndicator(emotion: creature.state.emotion)
-                            }
-                        }
-                    }
-                    .offset(x: outward)
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: 0.3), value: creature.state.emotion)
-                    .animation(.easeInOut(duration: 0.3), value: creature.chatMessage)
+                if !isExpanded && creature.state.emotion != .neutral {
+                    CollapsedEmotionIndicator(emotion: creature.state.emotion)
+                        .offset(x: emotionIndicatorOffset(for: creature))
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.3), value: creature.state.emotion)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if !isExpanded, let chat = creature.chatMessage {
+                    CollapsedChatBubble(text: String(chat.prefix(30)))
+                        .offset(y: creatureSize / 2 + 8)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.5).combined(with: .opacity),
+                            removal: .opacity
+                        ))
+                        .animation(.easeInOut(duration: 0.3), value: creature.chatMessage)
                 }
             }
             .position(
