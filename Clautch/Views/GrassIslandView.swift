@@ -412,8 +412,8 @@ struct PanelClipShape: Shape {
                 control: CGPoint(x: midX - panelHalf, y: bottom))
             path.addLine(to: CGPoint(x: midX - panelHalf, y: 0))
         } else {
-            // Collapsed: clip to just the notch/menu bar height (top of view)
-            let clipHeight = min(notchHeight, rect.height)
+            // Collapsed: extend slightly past notch to show chat bubbles / emotion indicators
+            let clipHeight = min(notchHeight + 16, rect.height)
             path.addRect(CGRect(x: rect.minX, y: 0, width: rect.width, height: clipHeight))
         }
         path.closeSubpath()
