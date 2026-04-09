@@ -95,6 +95,7 @@ jobs:
             PROVISIONING_PROFILE_SPECIFIER="" \
             ENABLE_HARDENED_RUNTIME=YES \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            MARKETING_VERSION="${{ inputs.version }}" \
             OTHER_CODE_SIGN_FLAGS="--timestamp"
 
       - name: Re-sign for Developer ID distribution
