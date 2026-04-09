@@ -130,6 +130,8 @@ struct RoomView: View {
                             ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
                                 if event.kind == .chat {
                                     chatBubble(for: event, previousEvent: index > 0 ? events[index - 1] : nil)
+                                } else if event.kind == .sceneShare {
+                                    sceneShareEvent(event)
                                 } else {
                                     systemEvent(event)
                                 }
@@ -166,6 +168,15 @@ struct RoomView: View {
                     .onChange(of: chatInput) { _, newValue in
                         roomManager.setTyping(!newValue.isEmpty)
                     }
+
+                Button(action: { roomManager.shareScene() }) {
+                    Image(systemName: "paintbrush")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.secondary.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Share your scene")
+                .help("Share your current scene with the room")
 
                 Button(action: sendChat) {
                     Image(systemName: "arrow.up.circle.fill")
@@ -236,6 +247,35 @@ struct RoomView: View {
         }
         .frame(maxWidth: .infinity, alignment: isLocal ? .trailing : .leading)
         .padding(.vertical, 1)
+    }
+
+    /// Scene share event with an Apply button for non-local users.
+    private func sceneShareEvent(_ event: RoomEvent) -> some View {
+        let theme = event.sceneThemeRaw.flatMap { SceneTheme(rawValue: $0) }
+        let isCurrentScene = theme == (UserProfile.current?.sceneTheme ?? .meadow)
+
+        return VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: "paintbrush")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.secondary)
+                Text(event.text)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+
+            if let theme, !event.isLocal {
+                Button(action: { applyScene(theme) }) {
+                    Text(isCurrentScene ? "Applied" : "Apply")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(isCurrentScene ? .secondary : Color.accentColor)
+                }
+                .buttonStyle(.plain)
+                .disabled(isCurrentScene)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 4)
     }
 
     /// Centered, muted system event (join/leave/reaction).
@@ -473,6 +513,13 @@ struct RoomView: View {
         activityFeed.addChat(from: name, message: msg, isLocal: true)
         NotificationService.shared.playSound(.chatSent)
         chatInput = ""
+    }
+
+    private func applyScene(_ theme: SceneTheme) {
+        guard var profile = UserProfile.current else { return }
+        profile.sceneTheme = theme
+        UserProfile.current = profile
+        UserDefaults.standard.set(theme.rawValue, forKey: "com.clautch.sceneTheme")
     }
 
     private func copyCode() {

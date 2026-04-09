@@ -154,6 +154,7 @@ struct PeerState: Codable, Sendable, Identifiable {
     var statusPreset: String?
     var statusText: String?
     var statusExpiresAt: Date?
+    var sceneTheme: SceneTheme?
 
     var id: String { peerId }
 
@@ -227,6 +228,7 @@ struct PeerState: Codable, Sendable, Identifiable {
         statusPreset == other.statusPreset &&
         statusText == other.statusText &&
         statusExpiresAt == other.statusExpiresAt &&
+        sceneTheme == other.sceneTheme &&
         abs((xPosition ?? 0.5) - (other.xPosition ?? 0.5)) < 0.01
     }
 }
@@ -260,6 +262,7 @@ extension PeerState {
         statusPreset = try c.decodeIfPresent(String.self, forKey: .statusPreset)
         statusText = try c.decodeIfPresent(String.self, forKey: .statusText)
         statusExpiresAt = try c.decodeIfPresent(Date.self, forKey: .statusExpiresAt)
+        sceneTheme = try c.decodeIfPresent(SceneTheme.self, forKey: .sceneTheme)
     }
 }
 

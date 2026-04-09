@@ -156,6 +156,7 @@ final class CloudKitService: CloudKitServiceProtocol, @unchecked Sendable {
             if let se = state.statusExpiresAt {
                 record["statusExpiresAt"] = se as NSDate
             }
+            record["sceneTheme"] = state.sceneTheme?.rawValue ?? ""
 
             return try await db.save(record)
         }
@@ -363,6 +364,7 @@ extension PeerState {
         let statusPresetVal = record["statusPreset"] as? String ?? ""
         let statusTextVal = record["statusText"] as? String ?? ""
         let statusExpiresAtVal = record["statusExpiresAt"] as? Date
+        let sceneThemeRaw = record["sceneTheme"] as? String ?? ""
 
         // Verify signature if present — reject peers with invalid signatures
         if let pubKey, let sig, !pubKey.isEmpty, !sig.isEmpty {
@@ -397,7 +399,8 @@ extension PeerState {
             interactionTimestamp: interactionTs,
             statusPreset: statusPresetVal.isEmpty ? nil : statusPresetVal,
             statusText: statusTextVal.isEmpty ? nil : NotificationService.sanitize(statusTextVal, maxLength: 100),
-            statusExpiresAt: statusExpiresAtVal
+            statusExpiresAt: statusExpiresAtVal,
+            sceneTheme: sceneThemeRaw.isEmpty ? nil : SceneTheme(rawValue: sceneThemeRaw)
         )
     }
 }

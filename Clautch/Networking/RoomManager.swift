@@ -52,6 +52,9 @@ final class RoomManager {
             throw RoomError.noProfile
         }
 
+        // Clear any leftover history from a previous room
+        RoomActivityFeed.shared.clear()
+
         status = .connecting
         let code = RoomInfo.generateCode()
         let token = RoomInfo.generateInviteToken()
@@ -105,6 +108,9 @@ final class RoomManager {
         guard let profile = UserProfile.current else {
             throw RoomError.noProfile
         }
+
+        // Clear any leftover history from a previous room
+        RoomActivityFeed.shared.clear()
 
         let normalized = code.uppercased().trimmingCharacters(in: .whitespaces)
         guard normalized.count == 6 || normalized.count == 8 else {
@@ -256,7 +262,8 @@ final class RoomManager {
             interactionTimestamp: existingInteractionTs,
             statusPreset: statusPreset,
             statusText: statusText,
-            statusExpiresAt: statusExpires
+            statusExpiresAt: statusExpires,
+            sceneTheme: profile.sceneTheme
         )
     }
 
@@ -304,7 +311,8 @@ final class RoomManager {
             chatTimestamp: Date(),
             statusPreset: state.statusPreset,
             statusText: state.statusText,
-            statusExpiresAt: state.statusExpiresAt
+            statusExpiresAt: state.statusExpiresAt,
+            sceneTheme: state.sceneTheme
         )
         localState = state
         broadcastImmediately()
@@ -338,7 +346,8 @@ final class RoomManager {
             chatTimestamp: state.chatTimestamp,
             statusPreset: state.statusPreset,
             statusText: state.statusText,
-            statusExpiresAt: state.statusExpiresAt
+            statusExpiresAt: state.statusExpiresAt,
+            sceneTheme: state.sceneTheme
         )
         localState = state
         GamificationStore.shared.recordReactionSent()
@@ -377,7 +386,8 @@ final class RoomManager {
             interactionTimestamp: Date(),
             statusPreset: state.statusPreset,
             statusText: state.statusText,
-            statusExpiresAt: state.statusExpiresAt
+            statusExpiresAt: state.statusExpiresAt,
+            sceneTheme: state.sceneTheme
         )
         broadcastImmediately()
 
@@ -390,6 +400,18 @@ final class RoomManager {
                 localState?.interactionTimestamp = nil
             }
         }
+    }
+
+    // MARK: - Share Scene
+
+    /// Share the local user's current scene theme with the room.
+    func shareScene() {
+        guard let profile = UserProfile.current, isInRoom else { return }
+        let theme = profile.sceneTheme
+        RoomActivityFeed.shared.addSceneShare(from: profile.displayName, theme: theme, isLocal: true)
+        // Update local state so sceneTheme is broadcast immediately
+        localState?.sceneTheme = theme
+        broadcastImmediately()
     }
 
     // MARK: - Sync Timer
@@ -564,7 +586,8 @@ final class RoomManager {
             colorPreset: profile.colorPreset,
             accessory: profile.accessory,
             evolution: GamificationStore.shared.evolution,
-            timestamp: Date()
+            timestamp: Date(),
+            sceneTheme: profile.sceneTheme
         )
     }
 }
