@@ -103,14 +103,6 @@ struct CreatureIslandOverlay: View {
                     }
                 }
             }
-            .overlay {
-                if !isExpanded && creature.state.emotion != .neutral {
-                    CollapsedEmotionIndicator(emotion: creature.state.emotion)
-                        .offset(x: emotionIndicatorOffset(for: creature))
-                        .transition(.opacity)
-                        .animation(.easeInOut(duration: 0.3), value: creature.state.emotion)
-                }
-            }
             .position(
                 x: viewWidth / 2 + creatureOffset(for: creature),
                 y: grassLineY - creatureSize / 2 - 4
@@ -179,13 +171,6 @@ struct CreatureIslandOverlay: View {
         }
         let usable = viewWidth - creatureSize - 20
         return -usable / 2 + creature.xPosition * usable
-    }
-
-    /// Offset to place the emotion indicator on the outer side of a collapsed creature.
-    private func emotionIndicatorOffset(for creature: CreatureDisplay) -> CGFloat {
-        let idx = creatures.firstIndex(where: { $0.id == creature.id }) ?? 0
-        let outward: CGFloat = idx % 2 == 0 ? -1 : 1
-        return outward * (creatureSize / 2 + 4)
     }
 
     private func petCreature() {
@@ -419,7 +404,7 @@ struct TypingIndicator: View {
 
 // MARK: - Collapsed Chat Overlay
 
-/// Renders chat bubbles below collapsed creatures, outside the panel clip shape.
+/// Renders chat bubbles and emotion indicators for collapsed creatures, outside the panel clip shape.
 struct CollapsedChatOverlay: View {
     let creatures: [CreatureDisplay]
     let creatureSize: CGFloat
@@ -429,6 +414,18 @@ struct CollapsedChatOverlay: View {
 
     var body: some View {
         ForEach(creatures) { creature in
+            let cx = viewWidth / 2 + creatureOffset(for: creature)
+
+            if creature.state.emotion != .neutral {
+                CollapsedEmotionIndicator(emotion: creature.state.emotion)
+                    .position(
+                        x: cx + emotionSideOffset(for: creature),
+                        y: grassLineY - creatureSize / 2 - 4
+                    )
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3), value: creature.state.emotion)
+            }
+
             if let chat = creature.chatMessage {
                 CollapsedChatBubble(text: String(chat.prefix(30)))
                     .transition(.asymmetric(
@@ -436,10 +433,7 @@ struct CollapsedChatOverlay: View {
                         removal: .opacity
                     ))
                     .id("collapsed-chat-\(creature.id)-\(chat)")
-                    .position(
-                        x: viewWidth / 2 + creatureOffset(for: creature),
-                        y: grassLineY + 6
-                    )
+                    .position(x: cx, y: grassLineY + 6)
                     .animation(.easeInOut(duration: 0.3), value: creature.chatMessage)
             }
         }
@@ -453,6 +447,13 @@ struct CollapsedChatOverlay: View {
         let side: CGFloat = idx % 2 == 0 ? -1 : 1
         let slot = CGFloat(idx / 2)
         return side * (notchHalf + sideMargin + creatureSize * slot + creatureSize / 2)
+    }
+
+    /// Place the emotion indicator on the outer side (away from notch).
+    private func emotionSideOffset(for creature: CreatureDisplay) -> CGFloat {
+        let idx = creatures.firstIndex(where: { $0.id == creature.id }) ?? 0
+        let outward: CGFloat = idx % 2 == 0 ? -1 : 1
+        return outward * (creatureSize / 2 + 4)
     }
 }
 
