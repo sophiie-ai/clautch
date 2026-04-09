@@ -330,6 +330,22 @@ struct GrassIslandView: View {
         }
         // Clip everything to the panel shape
         .clipShape(PanelClipShape(isExpanded: isExpanded, notchHalf: notchHalfForClip, panelHalf: panelHalfForClip, notchHeight: notchHeightForClip, cr: isExpanded ? 8 : 6))
+        // Collapsed chat bubbles rendered OUTSIDE the clip so they can overflow below the menubar
+        .overlay {
+            if !isExpanded {
+                GeometryReader { geo in
+                    let layout = PanelLayout(viewHeight: geo.size.height, isExpanded: false)
+                    CollapsedChatOverlay(
+                        creatures: creatures,
+                        creatureSize: creatureSize,
+                        grassLineY: layout.grassLineY,
+                        viewWidth: geo.size.width,
+                        notchWidthFn: notchWidthInWindow
+                    )
+                }
+                .allowsHitTesting(false)
+            }
+        }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
         .onChange(of: isExpanded) { _, expanded in
             if expanded {
@@ -412,8 +428,8 @@ struct PanelClipShape: Shape {
                 control: CGPoint(x: midX - panelHalf, y: bottom))
             path.addLine(to: CGPoint(x: midX - panelHalf, y: 0))
         } else {
-            // Collapsed: extend slightly past notch to show chat bubbles / emotion indicators
-            let clipHeight = min(notchHeight + 16, rect.height)
+            // Collapsed: clip to just the notch/menu bar height (top of view)
+            let clipHeight = min(notchHeight, rect.height)
             path.addRect(CGRect(x: rect.minX, y: 0, width: rect.width, height: clipHeight))
         }
         path.closeSubpath()

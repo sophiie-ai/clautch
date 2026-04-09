@@ -111,17 +111,6 @@ struct CreatureIslandOverlay: View {
                         .animation(.easeInOut(duration: 0.3), value: creature.state.emotion)
                 }
             }
-            .overlay(alignment: .bottom) {
-                if !isExpanded, let chat = creature.chatMessage {
-                    CollapsedChatBubble(text: String(chat.prefix(30)))
-                        .offset(y: creatureSize / 2 + 8)
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.5).combined(with: .opacity),
-                            removal: .opacity
-                        ))
-                        .animation(.easeInOut(duration: 0.3), value: creature.chatMessage)
-                }
-            }
             .position(
                 x: viewWidth / 2 + creatureOffset(for: creature),
                 y: grassLineY - creatureSize / 2 - 4
@@ -428,9 +417,48 @@ struct TypingIndicator: View {
     }
 }
 
+// MARK: - Collapsed Chat Overlay
+
+/// Renders chat bubbles below collapsed creatures, outside the panel clip shape.
+struct CollapsedChatOverlay: View {
+    let creatures: [CreatureDisplay]
+    let creatureSize: CGFloat
+    let grassLineY: CGFloat
+    let viewWidth: CGFloat
+    let notchWidthFn: (CGFloat) -> CGFloat
+
+    var body: some View {
+        ForEach(creatures) { creature in
+            if let chat = creature.chatMessage {
+                CollapsedChatBubble(text: String(chat.prefix(30)))
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.5).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+                    .id("collapsed-chat-\(creature.id)-\(chat)")
+                    .position(
+                        x: viewWidth / 2 + creatureOffset(for: creature),
+                        y: grassLineY + 6
+                    )
+                    .animation(.easeInOut(duration: 0.3), value: creature.chatMessage)
+            }
+        }
+    }
+
+    private func creatureOffset(for creature: CreatureDisplay) -> CGFloat {
+        let notchW = notchWidthFn(viewWidth)
+        let notchHalf = notchW / 2
+        let sideMargin: CGFloat = 8
+        let idx = creatures.firstIndex(where: { $0.id == creature.id }) ?? 0
+        let side: CGFloat = idx % 2 == 0 ? -1 : 1
+        let slot = CGFloat(idx / 2)
+        return side * (notchHalf + sideMargin + creatureSize * slot + creatureSize / 2)
+    }
+}
+
 // MARK: - Collapsed Chat Bubble
 
-/// Compact chat bubble shown above collapsed creatures — smaller font, tighter padding.
+/// Compact chat bubble shown below collapsed creatures — smaller font, tighter padding.
 struct CollapsedChatBubble: View {
     let text: String
 
