@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.20.0](https://github.com/sophiie-ai/clautch/compare/v0.19.1...v0.20.0) (2026-04-09)
+
+
+### Features
+
+* clear room history on create/join and add scene sharing in rooms ([9f1d275](https://github.com/sophiie-ai/clautch/commit/9f1d275bf333804a5c9731abbcb5e3e74a8be9b0))
+
+
+### Bug Fixes
+
+* make collapsed emotion indicators and chat bubbles visible ([617d380](https://github.com/sophiie-ai/clautch/commit/617d38069eefded06df64e7fbb25b38ca112b255))
+* pass MARKETING_VERSION to archive build for accurate update checks ([37e16a6](https://github.com/sophiie-ai/clautch/commit/37e16a680f5bbf1fff82f46bebd4dc58c4b761ee))
+
 ## [0.19.1](https://github.com/sophiie-ai/clautch/compare/v0.19.0...v0.19.1) (2026-04-09)
 
 
