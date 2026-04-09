@@ -50,13 +50,22 @@ struct CreatureIslandOverlay: View {
             .offset(y: bounceOffset)
             .overlay(alignment: .top) {
                 VStack(spacing: 2) {
-                    if isExpanded, let chat = creature.chatMessage {
-                        PixelChatBubble(text: String(chat.prefix(50)))
-                            .transition(.asymmetric(
-                                insertion: .scale(scale: 0.5).combined(with: .opacity),
-                                removal: .opacity
-                            ))
-                            .id("chat-\(creature.id)-\(chat)")
+                    if let chat = creature.chatMessage {
+                        if isExpanded {
+                            PixelChatBubble(text: String(chat.prefix(50)))
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.5).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
+                                .id("chat-\(creature.id)-\(chat)")
+                        } else {
+                            CollapsedChatBubble(text: String(chat.prefix(30)))
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.5).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
+                                .id("chat-collapsed-\(creature.id)-\(chat)")
+                        }
                     }
 
                     if isExpanded && creature.isTyping && creature.chatMessage == nil {
@@ -413,6 +422,37 @@ struct TypingIndicator: View {
                 PixelBubbleShape()
                     .fill(.white.opacity(0.3))
             )
+        }
+    }
+}
+
+// MARK: - Collapsed Chat Bubble
+
+/// Compact chat bubble shown above collapsed creatures — smaller font, tighter padding.
+struct CollapsedChatBubble: View {
+    let text: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(text)
+                .font(.system(size: 6, weight: .medium, design: .rounded))
+                .foregroundStyle(.black)
+                .lineLimit(1)
+                .padding(.horizontal, 3)
+                .padding(.vertical, 1.5)
+                .background(
+                    PixelBubbleShape()
+                        .fill(.white.opacity(0.92))
+                )
+                .background(
+                    PixelBubbleShape()
+                        .stroke(Color.black.opacity(0.15), lineWidth: 0.5)
+                )
+
+            VStack(spacing: 0) {
+                Rectangle().fill(.white.opacity(0.92)).frame(width: 3, height: 1)
+                Rectangle().fill(.white.opacity(0.92)).frame(width: 1, height: 1)
+            }
         }
     }
 }
