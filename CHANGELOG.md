@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.19.0](https://github.com/sophiie-ai/clautch/compare/v0.18.2...v0.19.0) (2026-04-09)
+
+
+### Features
+
+* move collapsed chat bubbles beside creatures with emotions ([d4f4b69](https://github.com/sophiie-ai/clautch/commit/d4f4b697f3e45bea0ecb9768f4770023ded68eb3))
+* show chat messages above collapsed creatures ([9ce5bbf](https://github.com/sophiie-ai/clautch/commit/9ce5bbfe346fbfdd43dea61b570f8d36f0ac80e6))
+* show emotion indicators beside collapsed creatures ([ae75f3a](https://github.com/sophiie-ai/clautch/commit/ae75f3afd88bdedcabac9f03afd261f869e961f5))
+
 ## [0.18.2](https://github.com/sophiie-ai/clautch/compare/v0.18.1...v0.18.2) (2026-04-08)
 
 
