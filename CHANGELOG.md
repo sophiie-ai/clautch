@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.2](https://github.com/sophiie-ai/clautch/compare/v0.20.1...v0.20.2) (2026-04-09)
+
+
+### Bug Fixes
+
+* render collapsed emotion indicators outside the clip shape ([04a9c72](https://github.com/sophiie-ai/clautch/commit/04a9c7211c846361cc04a27b0f33ded9273afbab))
+
 ## [0.20.1](https://github.com/sophiie-ai/clautch/compare/v0.20.0...v0.20.1) (2026-04-09)
 
 
