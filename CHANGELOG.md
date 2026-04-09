@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.1](https://github.com/sophiie-ai/clautch/compare/v0.20.0...v0.20.1) (2026-04-09)
+
+
+### Bug Fixes
+
+* keep creatures clipped to menubar, only chat bubbles overflow ([3f2cff2](https://github.com/sophiie-ai/clautch/commit/3f2cff24937fb64e2451b12be464a1993062d99a))
+* push appcast update directly to main via deploy key ([f0b3812](https://github.com/sophiie-ai/clautch/commit/f0b38120f4089f280821d007a56a3d9c8360d3bf))
+
 ## [0.20.0](https://github.com/sophiie-ai/clautch/compare/v0.19.1...v0.20.0) (2026-04-09)
 
 
