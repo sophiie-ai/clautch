@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/sophiie-ai/clautch/compare/v0.19.0...v0.19.1) (2026-04-09)
+
+
+### Bug Fixes
+
+* separate collapsed emotion and chat into distinct positions ([fb98b9a](https://github.com/sophiie-ai/clautch/commit/fb98b9aedb659b1a6e4df46e1397c3fe722d950c))
+
 ## [0.19.0](https://github.com/sophiie-ai/clautch/compare/v0.18.2...v0.19.0) (2026-04-09)
 
 
