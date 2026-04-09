@@ -103,6 +103,14 @@ struct CreatureIslandOverlay: View {
                     }
                 }
             }
+            .overlay {
+                if !isExpanded && creature.state.emotion != .neutral {
+                    CollapsedEmotionIndicator(emotion: creature.state.emotion)
+                        .offset(x: emotionIndicatorOffset(for: creature))
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.3), value: creature.state.emotion)
+                }
+            }
             .position(
                 x: viewWidth / 2 + creatureOffset(for: creature),
                 y: grassLineY - creatureSize / 2 - 4
@@ -171,6 +179,13 @@ struct CreatureIslandOverlay: View {
         }
         let usable = viewWidth - creatureSize - 20
         return -usable / 2 + creature.xPosition * usable
+    }
+
+    /// Offset to place the emotion indicator on the outer side of a collapsed creature.
+    private func emotionIndicatorOffset(for creature: CreatureDisplay) -> CGFloat {
+        let idx = creatures.firstIndex(where: { $0.id == creature.id }) ?? 0
+        let outward: CGFloat = idx % 2 == 0 ? -1 : 1
+        return outward * (creatureSize / 2 + 4)
     }
 
     private func petCreature() {
@@ -469,6 +484,85 @@ struct ReactionFloater: View {
                     opacity = 0
                 }
             }
+    }
+}
+
+// MARK: - Collapsed Emotion Indicator
+
+/// Tiny animated indicator shown to the side of a collapsed creature to convey its emotion.
+struct CollapsedEmotionIndicator: View {
+    let emotion: CreatureEmotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 0.1)) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            Canvas { ctx, size in
+                draw(in: ctx, size: size, time: t)
+            }
+            .frame(width: 6, height: 8)
+        }
+    }
+
+    private func draw(in ctx: GraphicsContext, size: CGSize, time t: Double) {
+        let mx = size.width / 2
+
+        switch emotion {
+        case .neutral:
+            break
+
+        case .happy:
+            // Pulsing yellow sparkle cross
+            let p = 0.5 + 0.5 * abs(sin(t * 3))
+            ctx.fill(Path(CGRect(x: mx - 0.5, y: 1, width: 1, height: 1)),
+                     with: .color(.yellow.opacity(p * 0.6)))
+            ctx.fill(Path(CGRect(x: mx - 1, y: 2, width: 2, height: 2)),
+                     with: .color(.yellow.opacity(p)))
+            ctx.fill(Path(CGRect(x: mx - 0.5, y: 4, width: 1, height: 1)),
+                     with: .color(.yellow.opacity(p * 0.6)))
+
+        case .sad:
+            // Falling blue teardrop
+            let cyc = t.truncatingRemainder(dividingBy: 1.5)
+            let prog = cyc / 1.5
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: mx - 1, y: 1 + prog * 5, width: 2, height: 2.5)),
+                with: .color(Color(red: 0.4, green: 0.6, blue: 1.0).opacity(1.0 - prog))
+            )
+
+        case .frustrated:
+            // Rising red steam puff
+            let cyc = (t * 1.5).truncatingRemainder(dividingBy: 1.5)
+            let prog = cyc / 1.5
+            let s = 1.5 + prog
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: mx - s / 2, y: 5 - prog * 5, width: s, height: s)),
+                with: .color(.red.opacity((1.0 - prog) * 0.8))
+            )
+
+        case .excited:
+            // Bouncing yellow dot
+            let bounce = abs(sin(t * 5)) * 3
+            ctx.fill(
+                Path(CGRect(x: mx - 1, y: 3 - bounce, width: 2, height: 2)),
+                with: .color(.yellow.opacity(0.9))
+            )
+
+        case .confused:
+            // Wobbling amber dot
+            let wobble = sin(t * 3) * 1.5
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: mx - 1 + wobble, y: 2, width: 2.5, height: 2.5)),
+                with: .color(Color(red: 0.8, green: 0.6, blue: 0.2).opacity(0.8))
+            )
+
+        case .tired:
+            // Slow pulsing dim dot
+            let p = 0.3 + 0.3 * abs(sin(t * 1.5))
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: mx - 1.25, y: 2.5, width: 2.5, height: 2.5)),
+                with: .color(Color(red: 0.5, green: 0.5, blue: 0.6).opacity(p))
+            )
+        }
     }
 }
 
