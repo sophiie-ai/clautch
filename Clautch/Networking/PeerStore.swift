@@ -9,10 +9,10 @@ final class PeerStore {
     private(set) var peers: [String: PeerState] = [:]
 
     /// Map peerId → CKRecord.ID for presence updates.
-    var recordIDs: [String: CKRecord.ID] = [:]
+    @ObservationIgnored var recordIDs: [String: CKRecord.ID] = [:]
 
     /// Stable X positions for each peer (generated once on join, persisted by peerId hash).
-    private var positions: [String: CGFloat] = [:]
+    @ObservationIgnored private var positions: [String: CGFloat] = [:]
 
     /// Peers that should be rendered (active within 5 min, excluding self).
     func visiblePeers(excludingPeerId selfId: String) -> [PeerState] {
