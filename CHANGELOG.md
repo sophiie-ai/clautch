@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/sophiie-ai/clautch/compare/v0.20.2...v0.21.0) (2026-04-11)
+
+
+### Features
+
+* add creature personality, journal, interactions & idle behaviors ([45c6377](https://github.com/sophiie-ai/clautch/commit/45c6377762e98d6adfc820aeefa4a0e648bbf85b))
+
 ## [0.20.2](https://github.com/sophiie-ai/clautch/compare/v0.20.1...v0.20.2) (2026-04-09)
 
 
