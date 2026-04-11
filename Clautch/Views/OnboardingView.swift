@@ -307,8 +307,11 @@ struct OnboardingView: View {
             Text(type.displayName)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(.primary)
+            Text(type.personalityHint)
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
         }
-        .frame(width: 100, height: 90)
+        .frame(width: 100, height: 100)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(selected

@@ -46,6 +46,19 @@ struct StatusBarOverlay: View {
                     .foregroundStyle(.white.opacity(0.6))
             }
 
+            // Status expiry countdown
+            if let status = stateMachine.activeStatus, !status.isExpired {
+                TimelineView(.periodic(from: .now, by: 60)) { _ in
+                    let remaining = status.expiresAt.timeIntervalSinceNow
+                    let label = remaining < 3600
+                        ? "\(Int(remaining / 60))m"
+                        : "\(Int(remaining / 3600))h\(Int(remaining.truncatingRemainder(dividingBy: 3600) / 60))m"
+                    Text("\(status.displayEmoji) \(label)")
+                        .font(.system(size: 6, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.white.opacity(remaining < 600 ? 0.7 : 0.45))
+                }
+            }
+
             if gamification.streak.currentStreak > 0 {
                 StreakIndicator(count: gamification.streak.currentStreak)
             }

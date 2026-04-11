@@ -68,6 +68,8 @@ final class RoomActivityFeed {
     static let shared = RoomActivityFeed()
 
     private(set) var events: [RoomEvent] = []
+    /// Count of unread remote chat messages (reset when room window is opened).
+    private(set) var unreadCount: Int = 0
     private let maxEvents = 30
     private static let storageKey = "com.clautch.roomActivityFeed"
 
@@ -76,7 +78,13 @@ final class RoomActivityFeed {
     }
 
     func addChat(from peerName: String, message: String, isLocal: Bool = false) {
+        if !isLocal { unreadCount += 1 }
         insert(RoomEvent(kind: .chat, peerName: peerName, text: message, timestamp: Date(), isLocal: isLocal))
+    }
+
+    /// Mark all messages as read (call when the room window is opened).
+    func markAsRead() {
+        unreadCount = 0
     }
 
     func addJoin(_ peerName: String) {

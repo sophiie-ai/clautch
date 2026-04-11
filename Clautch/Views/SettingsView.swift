@@ -75,6 +75,7 @@ private struct AppearanceSettingsTab: View {
                     TimelineView(.animation(minimumInterval: 1.0 / 4)) { timeline in
                         let t = timeline.date.timeIntervalSinceReferenceDate
                         let frame = Int(t * 3) % max(selectedType.frames.count, 1)
+                        let bob = BobAnimation.value(time: t, period: 1.5, amplitude: 1.0)
                         PixelCreatureView(
                             type: selectedType,
                             frame: frame,
@@ -83,8 +84,15 @@ private struct AppearanceSettingsTab: View {
                             colorPreset: colorPreset,
                             accessory: accessory
                         )
-                        .frame(width: 40, height: 40)
+                        .frame(width: 48, height: 48)
+                        .offset(y: bob)
                     }
+                    .frame(width: 56, height: 56)
+                    .background(
+                        Circle()
+                            .fill(Color.primary.opacity(0.06))
+                            .frame(width: 56, height: 56)
+                    )
 
                     VStack(alignment: .leading, spacing: 8) {
                         Picker("Type", selection: $selectedType) {

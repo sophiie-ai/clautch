@@ -5,6 +5,7 @@ struct CreatureJournalView: View {
     @State private var journal = JournalStore.shared
     @State private var gamification = GamificationStore.shared
     @State private var personalityEngine = PersonalityEngine.shared
+    @State private var stats = SessionStats.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -114,7 +115,8 @@ struct CreatureJournalView: View {
     // MARK: - Entry Row
 
     private func entryRow(_ entry: JournalEntry) -> some View {
-        HStack(spacing: 10) {
+        let mood = moodAtTime(entry.date)
+        return HStack(spacing: 10) {
             Text(entry.type.icon)
                 .font(.system(size: 14))
                 .frame(width: 24, height: 24)
@@ -133,6 +135,14 @@ struct CreatureJournalView: View {
 
             Spacer()
 
+            // Mood at time of event
+            if let mood {
+                Circle()
+                    .fill(MoodJournalView.moodColor(mood))
+                    .frame(width: 5, height: 5)
+                    .help("Mood: \(mood)")
+            }
+
             Text(timeString(entry.date))
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(.tertiary)
@@ -141,6 +151,16 @@ struct CreatureJournalView: View {
         .padding(.vertical, 8)
         .background(Color.primary.opacity(0.02))
         .cornerRadius(8)
+    }
+
+    /// Find the creature's mood closest to the given time.
+    private func moodAtTime(_ date: Date) -> String? {
+        let dateKey = SessionStats.dateKey(for: date)
+        guard let samples = stats.dailyMoodHistory[dateKey], !samples.isEmpty else { return nil }
+        // Find the sample closest to the entry time
+        return samples
+            .min(by: { abs($0.timestamp.timeIntervalSince(date)) < abs($1.timestamp.timeIntervalSince(date)) })?
+            .emotion
     }
 
     // MARK: - Formatting

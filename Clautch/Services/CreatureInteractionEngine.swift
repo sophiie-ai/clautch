@@ -19,14 +19,14 @@ final class CreatureInteractionEngine {
     private(set) var activeInteraction: AutonomousInteraction?
 
     /// Tracks when each pair first became proximate.
-    private var proximityTimers: [String: Date] = [:]
+    @ObservationIgnored private var proximityTimers: [String: Date] = [:]
 
     /// Tracks cooldown per pair to prevent spam.
-    private var cooldowns: [String: Date] = [:]
+    @ObservationIgnored private var cooldowns: [String: Date] = [:]
 
     /// Cached creature list for timer-driven updates.
-    private var lastCreatures: [CreatureDisplay] = []
-    private var tickTimer: Timer?
+    @ObservationIgnored private var lastCreatures: [CreatureDisplay] = []
+    @ObservationIgnored private var tickTimer: Timer?
 
     struct AutonomousInteraction {
         let creatureA: String

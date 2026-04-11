@@ -24,6 +24,18 @@ enum CreatureType: String, CaseIterable, Codable, Identifiable, Sendable {
         }
     }
 
+    /// One-line personality hint shown during onboarding.
+    var personalityHint: String {
+        switch self {
+        case .ghost:    return "Mysterious phaser"
+        case .cat:      return "Curious groomer"
+        case .robot:    return "Precise thinker"
+        case .mushroom: return "Chill bouncer"
+        case .slime:    return "Playful wobbler"
+        case .owl:      return "Wise observer"
+        }
+    }
+
     /// Default body color (before user tint).
     var baseColor: Color {
         switch self {

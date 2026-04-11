@@ -105,6 +105,8 @@ struct GrassIslandView: View {
 
     @State private var bounceScale: CGFloat = 1.0
     @State private var bounceOffset: CGFloat = 0
+    /// Brief dip in opacity when the scene theme changes to create a crossfade.
+    @State private var sceneOpacity: Double = 1.0
     /// Cached SwiftUI Image for the custom background to avoid creating a new
     /// GPU texture on every Canvas frame (`.drawingGroup()` resolves each unique
     /// `Image` value into a separate Metal texture).
@@ -279,6 +281,7 @@ struct GrassIslandView: View {
             }
         }
         .drawingGroup()  // GPU-rasterize static scenic content
+        .opacity(sceneOpacity)
         .overlay {
             // SwiftUI creature sprites
             GeometryReader { geo in
@@ -351,7 +354,14 @@ struct GrassIslandView: View {
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
         .onAppear { refreshCustomBgCache() }
-        .onChange(of: sceneThemeRaw) { _, _ in refreshCustomBgCache() }
+        .onChange(of: sceneThemeRaw) { _, _ in
+            refreshCustomBgCache()
+            // Brief crossfade when switching themes
+            withAnimation(.easeOut(duration: 0.15)) { sceneOpacity = 0.0 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.easeIn(duration: 0.2)) { sceneOpacity = 1.0 }
+            }
+        }
         .onChange(of: customBgTimestamp) { _, _ in refreshCustomBgCache() }
         .onChange(of: isExpanded) { _, expanded in
             if expanded {

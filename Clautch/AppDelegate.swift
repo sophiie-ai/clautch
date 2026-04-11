@@ -444,12 +444,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @MainActor
+    private var lastUnreadCount = 0
+
     private func updateSessionBadge() {
-        let count = StateMachine.shared.sessionStore.activeSessions.count
-        guard count != lastBadgeCount else { return }
-        lastBadgeCount = count
+        let sessionCount = StateMachine.shared.sessionStore.activeSessions.count
+        let unread = RoomActivityFeed.shared.unreadCount
+        let changed = sessionCount != lastBadgeCount || unread != lastUnreadCount
+        guard changed else { return }
+        lastBadgeCount = sessionCount
+        lastUnreadCount = unread
         guard let button = statusItem?.button else { return }
-        button.title = count > 0 ? "\(count)" : ""
+        if unread > 0 {
+            // Show unread badge with a dot indicator
+            let sessions = sessionCount > 0 ? "\(sessionCount)" : ""
+            button.title = "\(sessions)\u{2022}\(unread)"
+        } else {
+            button.title = sessionCount > 0 ? "\(sessionCount)" : ""
+        }
     }
 
     private func rebuildMenu() {
@@ -490,7 +501,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         roomStatus.tag = 200
         menu.addItem(roomStatus)
 
-        let copyCodeItem = NSMenuItem(title: "Copy Invite Code", action: #selector(copyRoomCode), keyEquivalent: "")
+        let copyCodeItem = NSMenuItem(title: "Copy Invite Link", action: #selector(copyRoomCode), keyEquivalent: "")
         copyCodeItem.target = self
         copyCodeItem.tag = 201
         menu.addItem(copyCodeItem)
@@ -626,7 +637,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // ── System ──
         menu.addItem(.separator())
 
-        let pauseItem = NSMenuItem(title: "Pause Clautch", action: #selector(togglePause), keyEquivalent: "")
+        let pauseLabel = AnimationSettings.shared.isPaused ? "Resume Clautch" : "Pause Clautch"
+        let pauseItem = NSMenuItem(title: pauseLabel, action: #selector(togglePause), keyEquivalent: "")
         pauseItem.target = self
         pauseItem.tag = 800
         menu.addItem(pauseItem)
@@ -799,8 +811,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func copyRoomCode() {
         Task { @MainActor in
             guard let room = RoomManager.shared.currentRoom else { return }
+            let deepLink = "clautch://join/\(room.shareableCode)"
             NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(room.shareableCode, forType: .string)
+            NSPasteboard.general.setString(deepLink, forType: .string)
         }
     }
 
@@ -928,7 +941,9 @@ extension AppDelegate: NSMenuDelegate {
 
         // Update toggles
         if let pauseItem = menu.item(withTag: 800) {
-            pauseItem.state = AnimationSettings.shared.isPaused ? .on : .off
+            let paused = AnimationSettings.shared.isPaused
+            pauseItem.title = paused ? "Resume Clautch" : "Pause Clautch"
+            pauseItem.state = paused ? .on : .off
         }
         // Update display picker checkmarks
         if let displayItem = menu.item(withTag: 850),

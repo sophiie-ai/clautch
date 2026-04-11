@@ -65,10 +65,25 @@ struct CreatureSpriteView: View {
 
     private func collapsedAnimations(t: Double) -> (hop: CGFloat, tilt: Double) {
         let seed = creatureSeed
-        let hopCycle = (t + seed * 3).truncatingRemainder(dividingBy: 5 + seed)
-        let hop: CGFloat = hopCycle < 0.15 ? -2 : 0
-        let tiltCycle = (t + seed * 7).truncatingRemainder(dividingBy: 7 + seed * 0.5)
-        let tilt = tiltCycle > 6.5 ? sin(tiltCycle * 8) * 6 : 0
+        let p = personality
+
+        // Personality-driven timing: playful creatures hop more often, zen ones stay still
+        let hopFreq = 5 + seed - (p?.playful ?? 0) * 2  // more playful = shorter cycle
+        let hopCycle = (t + seed * 3).truncatingRemainder(dividingBy: max(hopFreq, 2))
+        let hopThreshold = 0.15 + (p?.playful ?? 0) * 0.1  // playful = longer hop window
+        let hopHeight: CGFloat = (p?.playful ?? 0) > 0.3 ? -3 : -2
+        let hop: CGFloat = hopCycle < hopThreshold ? hopHeight : 0
+
+        // Curious creatures tilt more often (looking around)
+        let tiltFreq = 7 + seed * 0.5 - (p?.curious ?? 0) * 2
+        let tiltCycle = (t + seed * 7).truncatingRemainder(dividingBy: max(tiltFreq, 3))
+        let tiltThreshold = tiltFreq - 0.5 - (p?.curious ?? 0) * 0.5
+        let tiltAmp = 6.0 + (p?.curious ?? 0) * 4  // curious = wider look
+        let tilt = tiltCycle > tiltThreshold ? sin(tiltCycle * 8) * tiltAmp : 0
+
+        // Zen creatures suppress all micro-animations
+        if (p?.zen ?? 0) > 0.5 { return (0, 0) }
+
         return (hop, tilt)
     }
 

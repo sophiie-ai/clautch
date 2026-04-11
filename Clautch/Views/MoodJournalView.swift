@@ -3,6 +3,7 @@ import SwiftUI
 /// Mood journal showing daily emotion timeline and summary stats.
 struct MoodJournalView: View {
     @State private var stats = SessionStats.shared
+    @State private var journal = JournalStore.shared
     @State private var selectedDate: String
 
     init() {
@@ -58,10 +59,40 @@ struct MoodJournalView: View {
                                 .foregroundStyle(.secondary)
                             MoodTimeline(samples: samples)
                                 .frame(height: 40)
+                            MoodLegend()
                         }
 
                         // Summary cards
                         summaryGrid
+
+                        // Cross-journal: creature events for this day
+                        let dayEntries = journal.entries.filter {
+                            SessionStats.dateKey(for: $0.date) == selectedDate
+                        }
+                        if !dayEntries.isEmpty {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Creature Events")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                ForEach(dayEntries) { entry in
+                                    HStack(spacing: 8) {
+                                        Text(entry.type.icon)
+                                            .font(.system(size: 12))
+                                        Text(entry.title)
+                                            .font(.system(size: 11))
+                                            .lineLimit(1)
+                                        Spacer()
+                                        Text(timeString(entry.date))
+                                            .font(.system(size: 9, design: .monospaced))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.primary.opacity(0.03))
+                                    .cornerRadius(6)
+                                }
+                            }
+                        }
 
                         Spacer(minLength: 8)
                     }
@@ -195,6 +226,12 @@ struct MoodJournalView: View {
         let display = DateFormatter()
         display.dateFormat = "MMM d"
         return display.string(from: date)
+    }
+
+    private func timeString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
     }
 
     // MARK: - Colors

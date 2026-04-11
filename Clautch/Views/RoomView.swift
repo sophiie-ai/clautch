@@ -49,6 +49,9 @@ struct RoomView: View {
         .task {
             iCloudAvailable = await CloudKitService.shared.checkAvailability()
         }
+        .onAppear {
+            activityFeed.markAsRead()
+        }
         .alert("Keychain Storage", isPresented: $showKeychainAlert) {
             Button("Allow") {
                 UserDefaults.standard.set(true, forKey: Self.keychainAcceptedKey)
@@ -229,8 +232,15 @@ struct RoomView: View {
                     .padding(.top, 4)
             }
 
-            HStack {
+            HStack(alignment: .bottom, spacing: 4) {
                 if isLocal { Spacer(minLength: 40) }
+
+                if isLocal {
+                    Text(event.timeAgo)
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.tertiary)
+                        .padding(.bottom, 4)
+                }
 
                 Text(event.text)
                     .font(.system(size: 13))
@@ -242,7 +252,13 @@ struct RoomView: View {
                             .fill(isLocal ? Color.accentColor : Color.primary.opacity(0.1))
                     )
 
-                if !isLocal { Spacer(minLength: 40) }
+                if !isLocal {
+                    Text(event.timeAgo)
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.tertiary)
+                        .padding(.bottom, 4)
+                    Spacer(minLength: 40)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: isLocal ? .trailing : .leading)
@@ -524,8 +540,9 @@ struct RoomView: View {
 
     private func copyCode() {
         guard let room = roomManager.currentRoom else { return }
+        let deepLink = "clautch://join/\(room.shareableCode)"
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(room.shareableCode, forType: .string)
+        NSPasteboard.general.setString(deepLink, forType: .string)
         copiedCode = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             copiedCode = false

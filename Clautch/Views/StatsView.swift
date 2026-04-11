@@ -49,6 +49,8 @@ struct StatsView: View {
 
                     MoodSparkline(samples: stats.moodHistory)
                         .frame(height: 30)
+
+                    MoodLegend()
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -79,31 +81,77 @@ struct StatsView: View {
     private var weeklyChart: some View {
         let days = stats.weekDays
         let maxSeconds = max(days.map(\.seconds).max() ?? 1, 1)
+        let todayIndex = Calendar.current.component(.weekday, from: Date()) // 1=Sun...7=Sat
 
         return HStack(alignment: .bottom, spacing: 6) {
-            ForEach(Array(days.enumerated()), id: \.offset) { _, day in
+            ForEach(Array(days.enumerated()), id: \.offset) { index, day in
+                let isToday = index == adjustedTodayIndex(todayIndex, dayCount: days.count)
                 VStack(spacing: 4) {
                     // Duration label
                     if day.seconds > 0 {
                         Text(SessionStats.format(day.seconds))
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(isToday ? .primary : .secondary)
                     }
 
                     // Bar
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(day.seconds > 0 ? Color.accentColor : Color.primary.opacity(0.08))
+                        .fill(isToday
+                            ? Color.accentColor
+                            : (day.seconds > 0 ? Color.accentColor.opacity(0.6) : Color.primary.opacity(0.08)))
                         .frame(height: max(day.seconds > 0 ? CGFloat(day.seconds / maxSeconds) * 100 : 4, 4))
+                        .overlay(
+                            isToday
+                                ? RoundedRectangle(cornerRadius: 3)
+                                    .strokeBorder(Color.accentColor, lineWidth: 1)
+                                : nil
+                        )
 
                     // Day label
                     Text(day.label)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 10, weight: isToday ? .bold : .medium))
+                        .foregroundStyle(isToday ? .primary : .secondary)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
         .frame(height: 140)
+    }
+
+    /// Map Calendar weekday (1=Sun) to the day array index (0=Mon typically).
+    private func adjustedTodayIndex(_ weekday: Int, dayCount: Int) -> Int {
+        // weekDays is Mon=0..Sun=6, Calendar weekday is Sun=1..Sat=7
+        let mondayBased = (weekday + 5) % 7  // Mon=0..Sun=6
+        return min(mondayBased, dayCount - 1)
+    }
+}
+
+// MARK: - Mood Legend
+
+/// Compact inline legend for mood colors used in sparklines and timelines.
+struct MoodLegend: View {
+    private static let items: [(String, Color)] = [
+        ("Happy", .green),
+        ("Neutral", .yellow),
+        ("Sad", .blue),
+        ("Frustrated", .red),
+        ("Confused", .purple),
+        ("Tired", .gray),
+    ]
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(Self.items, id: \.0) { label, color in
+                HStack(spacing: 3) {
+                    Circle()
+                        .fill(color)
+                        .frame(width: 5, height: 5)
+                    Text(label)
+                        .font(.system(size: 8))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 }
 
