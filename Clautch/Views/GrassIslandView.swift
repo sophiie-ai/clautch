@@ -105,6 +105,10 @@ struct GrassIslandView: View {
 
     @State private var bounceScale: CGFloat = 1.0
     @State private var bounceOffset: CGFloat = 0
+    /// Cached SwiftUI Image for the custom background to avoid creating a new
+    /// GPU texture on every Canvas frame (`.drawingGroup()` resolves each unique
+    /// `Image` value into a separate Metal texture).
+    @State private var cachedCustomBgImage: Image?
 
     private var creatureSize: CGFloat {
         if !isExpanded { return 9 } // smaller when collapsed
@@ -184,13 +188,12 @@ struct GrassIslandView: View {
 
                 ctx.clip(to: path)
 
-                // Custom background: draw user image filling the entire panel
-                if theme == .custom, let nsImage = CustomBackgroundStore.shared.image {
+                // Custom background: draw cached image filling the entire panel
+                if theme == .custom, let image = cachedCustomBgImage {
                     let panelRect = CGRect(
                         x: midX - panelHalf, y: 0,
                         width: panelHalf * 2, height: bottom
                     )
-                    let image = Image(nsImage: nsImage)
                     ctx.draw(ctx.resolve(image), in: panelRect)
                 }
 
@@ -347,6 +350,9 @@ struct GrassIslandView: View {
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
+        .onAppear { refreshCustomBgCache() }
+        .onChange(of: sceneThemeRaw) { _, _ in refreshCustomBgCache() }
+        .onChange(of: customBgTimestamp) { _, _ in refreshCustomBgCache() }
         .onChange(of: isExpanded) { _, expanded in
             if expanded {
                 triggerLandingBounce()
@@ -354,6 +360,14 @@ struct GrassIslandView: View {
                 bounceScale = 1.0
                 bounceOffset = 0
             }
+        }
+    }
+
+    private func refreshCustomBgCache() {
+        if currentTheme == .custom, let nsImage = CustomBackgroundStore.shared.image {
+            cachedCustomBgImage = Image(nsImage: nsImage)
+        } else {
+            cachedCustomBgImage = nil
         }
     }
 
