@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.1](https://github.com/sophiie-ai/clautch/compare/v0.21.0...v0.21.1) (2026-04-11)
+
+
+### Bug Fixes
+
+* cache custom background Image to prevent GPU memory leak on scene switch ([7dacc56](https://github.com/sophiie-ai/clautch/commit/7dacc562d10f2f0c282dd70e4a030b9e2d678932))
+
 ## [0.21.0](https://github.com/sophiie-ai/clautch/compare/v0.20.2...v0.21.0) (2026-04-11)
 
 
