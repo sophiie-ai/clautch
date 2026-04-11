@@ -117,7 +117,8 @@ struct NotchContentView: View {
             interactionActive: localInteractionActive,
             statusPreset: stateMachine.activeStatus.flatMap { $0.isExpired ? nil : $0.preset },
             statusText: stateMachine.activeStatus.flatMap { $0.isExpired ? nil : ($0.customText ?? $0.preset?.displayName) },
-            hasStatus: stateMachine.activeStatus != nil && !stateMachine.activeStatus!.isExpired
+            hasStatus: stateMachine.activeStatus != nil && !stateMachine.activeStatus!.isExpired,
+            personality: PersonalityEngine.shared.personality
         ))
 
         if let myId = profile?.peerId {
@@ -152,6 +153,9 @@ struct NotchContentView: View {
             }
         }
 
+        // Update autonomous creature interactions
+        CreatureInteractionEngine.shared.update(creatures: creatures)
+
         // Compute facing: each creature faces its nearest neighbor
         return computeFacing(creatures)
     }
@@ -160,10 +164,14 @@ struct NotchContentView: View {
     private func computeFacing(_ creatures: [CreatureDisplay]) -> [CreatureDisplay] {
         guard creatures.count > 1 else { return creatures }
         let sorted = creatures.sorted { $0.xPosition < $1.xPosition }
+        let engine = CreatureInteractionEngine.shared
         return sorted.map { c in
             var c = c
-            // When walking, local creature faces travel direction
-            if c.isLocal && isWalking {
+            // Interaction engine can override facing for paired animations
+            if let override = engine.facingOverride(for: c.id) {
+                c.facingRight = override
+            } else if c.isLocal && isWalking {
+                // When walking, local creature faces travel direction
                 c.facingRight = walkingRight
             } else if let nearest = sorted.filter({ $0.id != c.id })
                 .min(by: { abs($0.xPosition - c.xPosition) < abs($1.xPosition - c.xPosition) }) {

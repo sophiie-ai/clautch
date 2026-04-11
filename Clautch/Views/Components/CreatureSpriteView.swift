@@ -56,6 +56,7 @@ struct CreatureSpriteView: View {
     var isWalking: Bool = false
     var needsInput: Bool = false
     var needsPermission: Bool = false
+    var personality: CreaturePersonality?
 
     /// Per-creature seed for random collapsed animations (stable across frames).
     private var creatureSeed: Double {
@@ -102,7 +103,8 @@ struct CreatureSpriteView: View {
                 time: t,
                 isExpanded: isExpanded,
                 needsInput: needsInput,
-                needsPermission: needsPermission
+                needsPermission: needsPermission,
+                personality: personality
             )
             .frame(width: 32, height: 32)
             .offset(y: bob + walkHop + collapsed.hop)
@@ -203,6 +205,7 @@ struct PixelCreatureView: View {
     var isExpanded: Bool = true
     var needsInput: Bool = false
     var needsPermission: Bool = false
+    var personality: CreaturePersonality?
 
     private var colors: CreatureColors {
         let key = CreatureColors.Key(type: type, colorPreset: colorPreset, task: task, emotion: emotion)
@@ -653,12 +656,99 @@ struct PixelCreatureView: View {
         }
 
         // Common: look-around eyes (shared, but at different times per type)
-        let lookCycle = (t + Double(type.rawValue.count) * 2).truncatingRemainder(dividingBy: 12.0)
+        let lookPeriod: Double = (personality?.curious ?? 0) > 0.3 ? 8.0 : 12.0
+        let lookCycle = (t + Double(type.rawValue.count) * 2).truncatingRemainder(dividingBy: lookPeriod)
         if lookCycle > 2.0 && lookCycle < 3.0 {
             let shift = sin((lookCycle - 2.0) * .pi) * 1.5
             ctx.fill(
                 Path(CGRect(x: size.width / 2 + shift - 0.5, y: 3 * px, width: 1, height: 1)),
                 with: .color(.white.opacity(0.5))
+            )
+        }
+
+        // Personality-driven behaviors
+        drawPersonalityTraitEffects(ctx: ctx, size: size, px: px, t: t)
+    }
+
+    /// Personality-trait-driven animations layered on top of creature-type effects.
+    private func drawPersonalityTraitEffects(ctx: GraphicsContext, size: CGSize, px: CGFloat, t: Double) {
+        guard let p = personality else { return }
+        let cycle = t.truncatingRemainder(dividingBy: 15.0)
+
+        // Curious: occasional "!" curiosity indicator (10-11s in 15s cycle)
+        if p.curious > 0.3 && cycle > 10.0 && cycle < 11.0 {
+            let alpha = sin((cycle - 10.0) * .pi) * min(p.curious, 1.0)
+            ctx.fill(
+                Path(CGRect(x: size.width / 2 + 5, y: px, width: 1, height: 2.5)),
+                with: .color(.yellow.opacity(alpha * 0.7))
+            )
+            ctx.fill(
+                Path(CGRect(x: size.width / 2 + 5, y: px + 3, width: 1, height: 1)),
+                with: .color(.yellow.opacity(alpha * 0.7))
+            )
+        }
+
+        // Focused: subtle concentration lines near head (12-13.5s)
+        if p.focused > 0.3 && cycle > 12.0 && cycle < 13.5 {
+            let alpha = sin((cycle - 12.0) / 1.5 * .pi) * 0.4
+            for i in 0..<2 {
+                let dx = CGFloat(i) * 3 - 1.5
+                ctx.fill(
+                    Path(CGRect(x: size.width / 2 + dx - 4, y: 2 * px, width: 2, height: 0.5)),
+                    with: .color(.white.opacity(alpha))
+                )
+            }
+        }
+
+        // Social: occasional tiny wave (7-8s)
+        if p.social > 0.3 && cycle > 7.0 && cycle < 8.0 {
+            let progress = sin((cycle - 7.0) * .pi)
+            ctx.fill(
+                Path(CGRect(x: size.width - px, y: 4 * px - progress * 2, width: px * 0.8, height: px * 0.8)),
+                with: .color(colors.body.opacity(progress * 0.6))
+            )
+        }
+
+        // Nocturnal: yawn during daytime (1-2.5s)
+        let hour = Calendar.current.component(.hour, from: Date())
+        if p.nocturnal > 0.3 && hour >= 8 && hour < 20 && cycle > 1.0 && cycle < 2.5 {
+            let yawnPhase = sin((cycle - 1.0) / 1.5 * .pi)
+            let mouthSize = 1 + yawnPhase * 1.5
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: size.width / 2 - mouthSize / 2, y: 5 * px, width: mouthSize, height: mouthSize * 0.8)),
+                with: .color(Color.black.opacity(yawnPhase * 0.5))
+            )
+        }
+
+        // Playful: random small bounce (4-4.5s, 8.5-9s — two short bursts)
+        if p.playful > 0.3 {
+            let inBurst1 = cycle > 4.0 && cycle < 4.5
+            let inBurst2 = cycle > 8.5 && cycle < 9.0
+            if inBurst1 || inBurst2 {
+                let phase = inBurst1 ? (cycle - 4.0) / 0.5 : (cycle - 8.5) / 0.5
+                let sparkle = abs(sin(phase * .pi * 2))
+                ctx.fill(
+                    Path(CGRect(x: size.width / 2 + 4, y: px - 1, width: 1.5, height: 1.5)),
+                    with: .color(.yellow.opacity(sparkle * 0.6))
+                )
+                ctx.fill(
+                    Path(CGRect(x: size.width / 2 - 5, y: px + 1, width: 1, height: 1)),
+                    with: .color(.cyan.opacity(sparkle * 0.4))
+                )
+            }
+        }
+
+        // Zen: subtle meditation glow (0.5-2s, slow pulse)
+        if p.zen > 0.3 && cycle > 0.5 && cycle < 2.0 {
+            let phase = (cycle - 0.5) / 1.5
+            let glow = sin(phase * .pi) * p.zen * 0.06
+            ctx.fill(
+                Path(ellipseIn: CGRect(
+                    x: size.width / 2 - 6,
+                    y: size.height / 2 - 6,
+                    width: 12, height: 12
+                )),
+                with: .color(.white.opacity(glow))
             )
         }
     }

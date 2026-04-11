@@ -292,4 +292,5 @@ struct CreatureDisplay: Identifiable {
     var statusPreset: StatusPreset?
     var statusText: String?
     var hasStatus: Bool = false
+    var personality: CreaturePersonality?
 }

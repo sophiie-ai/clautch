@@ -162,6 +162,11 @@ final class StateMachine {
         var task = effective?.state.task ?? .idle
         var emotion = effective?.state.emotion ?? .neutral
 
+        // When idle with no session, apply local interaction emotion if active
+        if effective == nil, let interactionEmo = interactionEmotion {
+            emotion = interactionEmo
+        }
+
         // Status only overrides when Claude Code is idle — active thinking/working takes priority
         let claudeActive = task == .thinking || task == .working
         if let status = activeStatus, !status.isExpired, !claudeActive, let preset = status.preset {
@@ -176,6 +181,62 @@ final class StateMachine {
         GamificationStore.shared.recordMoodSample(emotion.rawValue)
     }
 
+    // MARK: - Local Interactions (pet, poke, feed)
+
+    enum LocalInteraction {
+        case pet, poke, feed
+    }
+
+    /// Tracks the emotion that was set by the last local interaction, so the
+    /// reset task only clears it if no newer emotion has arrived in the meantime.
+    private var interactionEmotion: CreatureEmotion?
+    private var interactionResetTask: Task<Void, Never>?
+
+    /// Apply a local user interaction (pet/poke/feed) to the creature's mood.
+    /// Works even when no Claude session is active by setting a local override.
+    func applyLocalInteraction(_ type: LocalInteraction) {
+        let emotion: CreatureEmotion
+        let duration: Double
+        switch type {
+        case .pet:
+            emotion = .happy
+            duration = 3.0
+            GamificationStore.shared.recordInteraction(.pet)
+        case .poke:
+            emotion = .confused
+            duration = 2.0
+            GamificationStore.shared.recordInteraction(.poke)
+        case .feed:
+            emotion = .happy
+            duration = 5.0
+            GamificationStore.shared.recordInteraction(.feed)
+        }
+
+        // Apply to effective session if one exists
+        if let effective = sessionStore.effectiveSession {
+            effective.state.emotion = emotion
+        }
+
+        // Track which emotion we set so the reset is safe
+        interactionEmotion = emotion
+        interactionResetTask?.cancel()
+        interactionResetTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(duration))
+            guard !Task.isCancelled else { return }
+            // Only reset if the emotion is still the one we set
+            if let effective = sessionStore.effectiveSession,
+               effective.state.emotion == interactionEmotion {
+                effective.state.emotion = .neutral
+            }
+            interactionEmotion = nil
+            sessionStore.invalidateCache()
+            broadcastCurrentState()
+        }
+
+        sessionStore.invalidateCache()
+        broadcastCurrentState()
+    }
+
     /// Track per-session error streaks for recovery detection.
     private var sessionErrorStreaks: [String: Int] = [:]
 
@@ -184,6 +245,11 @@ final class StateMachine {
         switch event.eventType {
         case .sessionStart:
             store.recordSessionStart()
+            // Milestone session journal entries
+            let total = store.counters.totalSessions
+            if [10, 25, 50, 100, 250, 500].contains(total) {
+                JournalStore.shared.record(type: .milestoneSession, title: "Session #\(total)", detail: "A coding milestone!")
+            }
         case .sessionEnd:
             let session = sessionStore.sessions.first { $0.id == event.sessionId }
             let duration = session.map { Date().timeIntervalSince($0.startedAt) } ?? 0
@@ -194,6 +260,9 @@ final class StateMachine {
             sessionErrorStreaks.removeValue(forKey: event.sessionId)
         case .preToolUse:
             store.recordToolUse()
+            if let toolName = event.toolName {
+                store.recordToolName(toolName)
+            }
             // Speed demon + velocity bonus: check if session has 5+ tools in 30 seconds
             if let session = sessionStore.sessions.first(where: { $0.id == event.sessionId }) {
                 let recentTools = session.recentToolTimes.filter {

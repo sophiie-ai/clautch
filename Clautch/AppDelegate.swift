@@ -22,6 +22,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Initialize gamification (loads streak/achievements, checks streak)
         _ = GamificationStore.shared
 
+        // Initialize personality engine (loads cached personality)
+        _ = PersonalityEngine.shared
+
         // Install Claude Code hooks
         HookInstaller.shared.installIfNeeded()
         HookInstaller.shared.startPeriodicRepair()
@@ -308,6 +311,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    @objc private func showCreatureJournal() {
+        windowCoordinator.show(
+            key: "creatureJournal",
+            title: "Creature Journal",
+            size: NSSize(width: 400, height: 500),
+            minSize: NSSize(width: 360, height: 400),
+            resizable: true,
+            autosaveName: "ClautchCreatureJournal",
+            content: { CreatureJournalView() }
+        )
+    }
+
     @objc private func showShareCard() {
         windowCoordinator.show(
             key: "shareCard",
@@ -540,6 +555,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let journalItem = NSMenuItem(title: "Mood Journal…", action: #selector(showMoodJournal), keyEquivalent: "")
         journalItem.target = self
         menu.addItem(journalItem)
+
+        let creatureJournalItem = NSMenuItem(title: "Creature Journal…", action: #selector(showCreatureJournal), keyEquivalent: "")
+        creatureJournalItem.target = self
+        menu.addItem(creatureJournalItem)
 
         let shareItem = NSMenuItem(title: "Share Creature Card…", action: #selector(showShareCard), keyEquivalent: "")
         shareItem.target = self

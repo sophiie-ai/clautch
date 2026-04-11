@@ -39,6 +39,12 @@ final class GamificationStore {
         var longestPositiveMoodRun: Int = 0
         var totalCodingSeconds: TimeInterval = 0
         var totalStatusSets: Int = 0
+
+        // Personality counters
+        var nightSessionCount: Int = 0
+        var errorRecoveryCount: Int = 0
+        var speedBurstCount: Int = 0
+        var uniqueToolNames: [String] = []
     }
 
     /// Counters scoped to the current day, used for daily quest progress.
@@ -48,6 +54,9 @@ final class GamificationStore {
         var sessions: Int = 0
         var reactionsSent: Int = 0
         var positiveMoodRun: Int = 0
+        var feedCount: Int = 0
+        var petCount: Int = 0
+        var pokeCount: Int = 0
     }
 
     private init() {
@@ -126,7 +135,46 @@ final class GamificationStore {
             unlockIfNew(.nightOwl)
         }
 
+        // Track night sessions for personality
+        if startHour >= 22 || startHour < 5 {
+            counters.nightSessionCount += 1
+            saveCounters()
+        }
+
         checkAchievements()
+
+        // Recalculate personality traits at session boundary
+        PersonalityEngine.shared.recalculate()
+    }
+
+    /// Record a local creature interaction (pet/poke/feed).
+    func recordInteraction(_ type: StateMachine.LocalInteraction) {
+        resetDailyCountersIfNeeded()
+        switch type {
+        case .pet:
+            dailyCounters.petCount += 1
+        case .poke:
+            dailyCounters.pokeCount += 1
+        case .feed:
+            guard dailyCounters.feedCount < 3 else {
+                saveDailyCounters()
+                return
+            }
+            dailyCounters.feedCount += 1
+            addXP(1)
+        }
+        saveDailyCounters()
+    }
+
+    /// Record a tool name for personality trait tracking (tool variety).
+    func recordToolName(_ name: String) {
+        guard !counters.uniqueToolNames.contains(name) else { return }
+        counters.uniqueToolNames.append(name)
+        // Cap at 100 to bound storage
+        if counters.uniqueToolNames.count > 100 {
+            counters.uniqueToolNames.removeFirst()
+        }
+        saveCounters()
     }
 
     func recordToolUse() {
@@ -143,6 +191,7 @@ final class GamificationStore {
 
     func recordSpeedBurst() {
         counters.hadSpeedBurst = true
+        counters.speedBurstCount += 1
         saveCounters()
         unlockIfNew(.speedDemon)
     }
@@ -166,6 +215,7 @@ final class GamificationStore {
     func recordErrorRecovery() {
         addXP(3)
         counters.hasRecoveredFromErrors = true
+        counters.errorRecoveryCount += 1
         saveCounters()
         checkAchievements()
     }
@@ -217,6 +267,7 @@ final class GamificationStore {
         if newStage != oldStage {
             ActivityFeed.shared.add(icon: "⬆", text: "Evolved to \(newStage.displayName)!")
             NotificationService.shared.playSound(.reactionReceived)
+            JournalStore.shared.record(type: .evolution, title: "Evolved to \(newStage.displayName)", detail: "Reached \(xp) XP")
             logger.info("Evolution: \(oldStage.displayName) → \(newStage.displayName)")
         }
     }
@@ -317,6 +368,7 @@ final class GamificationStore {
 
         ActivityFeed.shared.add(icon: "⭐", text: "Achievement: \(id.title)")
         NotificationService.shared.playSound(.reactionReceived)
+        JournalStore.shared.record(type: .achievement, title: "Achievement: \(id.title)", detail: id.description)
         logger.info("Achievement unlocked: \(id.rawValue)")
     }
 
@@ -364,6 +416,7 @@ final class GamificationStore {
 
         ActivityFeed.shared.add(icon: "🌟", text: "Prestige \(prestige.level)! Reborn as Baby")
         NotificationService.shared.playSound(.reactionReceived)
+        JournalStore.shared.record(type: .prestige, title: "Prestige \(prestige.level)!", detail: "Reborn with \(prestige.lifetimeXP) lifetime XP")
         logger.info("Prestige rebirth to level \(self.prestige.level), lifetime XP: \(self.prestige.lifetimeXP)")
     }
 

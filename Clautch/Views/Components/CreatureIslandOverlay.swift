@@ -17,11 +17,26 @@ struct CreatureIslandOverlay: View {
     @State private var gamification = GamificationStore.shared
     @State private var currentCelebration: AchievementId?
     @State private var petHearts: [PetHeart] = []
+    @State private var pokeIndicators: [PokeIndicator] = []
+    @State private var foodParticles: [FoodParticle] = []
+    @State private var pokeJumping: Bool = false
 
     struct PetHeart: Identifiable {
         let id = UUID()
         let xOffset: CGFloat
         let createdAt: Date
+    }
+
+    struct PokeIndicator: Identifiable {
+        let id = UUID()
+        let xOffset: CGFloat
+        let symbol: String
+    }
+
+    struct FoodParticle: Identifiable {
+        let id = UUID()
+        let xOffset: CGFloat
+        let yStart: CGFloat
     }
 
     var body: some View {
@@ -36,7 +51,8 @@ struct CreatureIslandOverlay: View {
                     isExpanded: isExpanded,
                     isWalking: isWalking && creature.isLocal,
                     needsInput: creature.isLocal && creature.state.needsInput,
-                    needsPermission: creature.isLocal && creature.state.needsPermission
+                    needsPermission: creature.isLocal && creature.state.needsPermission,
+                    personality: creature.personality
                 )
                 .frame(width: creatureSize, height: creatureSize)
                 .scaleEffect(x: creature.facingRight ? 1 : -1, y: 1)
@@ -101,8 +117,15 @@ struct CreatureIslandOverlay: View {
                     ForEach(petHearts) { heart in
                         HeartFloater(heart: heart)
                     }
+                    ForEach(pokeIndicators) { poke in
+                        PokeFloater(indicator: poke)
+                    }
+                    ForEach(foodParticles) { food in
+                        FoodFloater(particle: food)
+                    }
                 }
             }
+            .offset(y: (pokeJumping && creature.isLocal) ? -8 : 0)
             .position(
                 x: viewWidth / 2 + creatureOffset(for: creature),
                 y: grassLineY - creatureSize / 2 - 4
@@ -122,6 +145,19 @@ struct CreatureIslandOverlay: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel(creatureAccessibilityLabel(creature))
             .accessibilityHint(creature.isLocal ? "Right-click to send a reaction" : "Click to wave")
+            .gesture(
+                LongPressGesture(minimumDuration: 0.5)
+                    .onEnded { _ in
+                        if creature.isLocal && isExpanded {
+                            feedCreature()
+                        }
+                    }
+            )
+            .onTapGesture(count: 2) {
+                if creature.isLocal && isExpanded {
+                    pokeCreature()
+                }
+            }
             .onTapGesture {
                 if !creature.isLocal && isExpanded {
                     RoomManager.shared.sendReaction(.wave)
@@ -180,10 +216,49 @@ struct CreatureIslandOverlay: View {
         )
         withAnimation { petHearts.append(heart) }
         NSSound(named: "Pop")?.play()
+        StateMachine.shared.applyLocalInteraction(.pet)
         // Remove after animation completes
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             withAnimation { petHearts.removeAll { $0.id == heart.id } }
         }
+    }
+
+    private func pokeCreature() {
+        let indicator = PokeIndicator(
+            xOffset: CGFloat.random(in: -6...6),
+            symbol: "!"
+        )
+        withAnimation { pokeIndicators.append(indicator) }
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.3)) {
+            pokeJumping = true
+        }
+        NSSound(named: "Tink")?.play()
+        StateMachine.shared.applyLocalInteraction(.poke)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation { pokeJumping = false }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            withAnimation { pokeIndicators.removeAll { $0.id == indicator.id } }
+        }
+    }
+
+    private func feedCreature() {
+        // Cap at 3 feeds per day
+        guard gamification.dailyCounters.feedCount < 3 else { return }
+        for i in 0..<3 {
+            let particle = FoodParticle(
+                xOffset: CGFloat.random(in: -8...8),
+                yStart: CGFloat(i) * -4
+            )
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.15) {
+                withAnimation { foodParticles.append(particle) }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2 + Double(i) * 0.15) {
+                withAnimation { foodParticles.removeAll { $0.id == particle.id } }
+            }
+        }
+        NSSound(named: "Pop")?.play()
+        StateMachine.shared.applyLocalInteraction(.feed)
     }
 
     private func creatureTooltip(_ creature: CreatureDisplay) -> String {
@@ -222,7 +297,8 @@ struct CreatureIslandOverlay: View {
 
 // MARK: - Proximity Effects
 
-/// Renders passive effects (hearts, sparkles) between nearby creatures.
+/// Renders passive effects (hearts, sparkles) between nearby creatures,
+/// plus autonomous creature-to-creature interactions when triggered.
 struct ProximityEffectsView: View {
     let creatures: [CreatureDisplay]
     let isExpanded: Bool
@@ -237,6 +313,12 @@ struct ProximityEffectsView: View {
             TimelineView(.animation(minimumInterval: 0.1)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 Canvas { ctx, size in
+                    // Draw autonomous interaction effects
+                    if let interaction = CreatureInteractionEngine.shared.activeInteraction,
+                       interaction.isActive {
+                        drawAutonomousInteraction(ctx: ctx, size: size, t: t, interaction: interaction)
+                    }
+
                     let pairs = nearbyPairs()
                     for (a, b) in pairs {
                         let ax = size.width / 2 + xOffset(a)
@@ -315,6 +397,80 @@ struct ProximityEffectsView: View {
         return -usable / 2 + creature.xPosition * usable
     }
 
+    private func drawAutonomousInteraction(
+        ctx: GraphicsContext, size: CGSize, t: Double,
+        interaction: CreatureInteractionEngine.AutonomousInteraction
+    ) {
+        let creatureA = creatures.first { $0.id == interaction.creatureA }
+        let creatureB = creatures.first { $0.id == interaction.creatureB }
+        guard let a = creatureA, let b = creatureB else { return }
+
+        let ax = size.width / 2 + xOffset(a)
+        let bx = size.width / 2 + xOffset(b)
+        let midX = (ax + bx) / 2
+        let y = grassLineY - creatureSize / 2 - 4
+        let progress = interaction.progress
+
+        switch interaction.type {
+        case .faceEachOther:
+            // Subtle glow between creatures
+            let glow = sin(progress * .pi) * 0.15
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: midX - 6, y: y - 4, width: 12, height: 8)),
+                with: .color(.white.opacity(glow))
+            )
+
+        case .bump:
+            // Collision particles at midpoint
+            let burst = progress < 0.3 ? progress / 0.3 : max(0, 1.0 - (progress - 0.3) / 0.7)
+            for i in 0..<5 {
+                let angle = Double(i) * .pi * 2 / 5 + t * 2
+                let radius = burst * 8
+                let px = midX + CGFloat(cos(angle)) * CGFloat(radius)
+                let py = y - 4 + CGFloat(sin(angle)) * CGFloat(radius) * 0.5
+                ctx.fill(
+                    Path(CGRect(x: px - 0.5, y: py - 0.5, width: 1, height: 1)),
+                    with: .color(.white.opacity(burst * 0.6))
+                )
+            }
+
+        case .wave:
+            // Small wave indicator near one creature
+            let wavePhase = sin(progress * .pi * 3)
+            let waveX = ax + (bx > ax ? 6 : -6)
+            ctx.fill(
+                Path(CGRect(x: waveX - 1, y: y - 6 + CGFloat(wavePhase) * 2, width: 2, height: 1.5)),
+                with: .color(.yellow.opacity(sin(progress * .pi) * 0.5))
+            )
+
+        case .playTogether:
+            // Shared sparkles bouncing between creatures
+            let sparkleAlpha = sin(progress * .pi)
+            for i in 0..<4 {
+                let frac = CGFloat(i) / 3.0
+                let sx = ax + (bx - ax) * frac
+                let bounce = CGFloat(sin(t * 4 + Double(i) * 1.5)) * 5
+                ctx.fill(
+                    Path(CGRect(x: sx - 0.5, y: y - 8 + bounce, width: 1.5, height: 1.5)),
+                    with: .color(.yellow.opacity(sparkleAlpha * 0.5))
+                )
+            }
+
+        case .share:
+            // Particle stream from A to B
+            let streamAlpha = sin(progress * .pi) * 0.6
+            for i in 0..<6 {
+                let frac = (Double(i) / 6.0 + t * 0.5).truncatingRemainder(dividingBy: 1.0)
+                let sx = ax + (bx - ax) * CGFloat(frac)
+                let sy = y - 6 + CGFloat(sin(frac * .pi)) * -4
+                ctx.fill(
+                    Path(CGRect(x: sx - 0.5, y: sy - 0.5, width: 1, height: 1)),
+                    with: .color(.cyan.opacity(streamAlpha * (1.0 - frac)))
+                )
+            }
+        }
+    }
+
     private func heartPath(at center: CGPoint, size: CGFloat) -> Path {
         // Simple pixel heart: 3x3
         var p = Path()
@@ -344,6 +500,48 @@ struct HeartFloater: View {
             .scaleEffect(animate ? 1.3 : 0.5)
             .onAppear {
                 withAnimation(.easeOut(duration: 0.9)) {
+                    animate = true
+                }
+            }
+    }
+}
+
+// MARK: - Poke Floater
+
+struct PokeFloater: View {
+    let indicator: CreatureIslandOverlay.PokeIndicator
+    @State private var animate = false
+
+    var body: some View {
+        Text(indicator.symbol)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.orange)
+            .offset(x: indicator.xOffset, y: animate ? -18 : -4)
+            .opacity(animate ? 0 : 1)
+            .scaleEffect(animate ? 1.2 : 0.6)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.7)) {
+                    animate = true
+                }
+            }
+    }
+}
+
+// MARK: - Food Floater
+
+struct FoodFloater: View {
+    let particle: CreatureIslandOverlay.FoodParticle
+    @State private var animate = false
+
+    var body: some View {
+        Text(".")
+            .font(.system(size: 8, weight: .bold))
+            .foregroundStyle(.brown)
+            .offset(x: particle.xOffset, y: animate ? 6 : particle.yStart - 16)
+            .opacity(animate ? 0 : 0.8)
+            .scaleEffect(animate ? 0.3 : 0.8)
+            .onAppear {
+                withAnimation(.easeIn(duration: 0.9)) {
                     animate = true
                 }
             }
@@ -465,6 +663,11 @@ struct CollapsedChatBubble: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            VStack(spacing: 0) {
+                Rectangle().fill(.white.opacity(0.92)).frame(width: 1, height: 1)
+                Rectangle().fill(.white.opacity(0.92)).frame(width: 3, height: 1)
+            }
+
             Text(text)
                 .font(.system(size: 6, weight: .medium, design: .rounded))
                 .foregroundStyle(.black)
@@ -479,11 +682,6 @@ struct CollapsedChatBubble: View {
                     PixelBubbleShape()
                         .stroke(Color.black.opacity(0.15), lineWidth: 0.5)
                 )
-
-            VStack(spacing: 0) {
-                Rectangle().fill(.white.opacity(0.92)).frame(width: 3, height: 1)
-                Rectangle().fill(.white.opacity(0.92)).frame(width: 1, height: 1)
-            }
         }
     }
 }
