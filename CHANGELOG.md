@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.22.0](https://github.com/sophiie-ai/clautch/compare/v0.21.1...v0.22.0) (2026-04-11)
+
+
+### Features
+
+* UI/UX improvements across panel, rooms, journals, and onboarding ([65ec0cf](https://github.com/sophiie-ai/clautch/commit/65ec0cf8e57c00b28110fe29c23d1ea5538d3490))
+
+
+### Bug Fixes
+
+* prevent SwiftUI re-evaluation loops from PeerStore body-time mutations ([3a85b9d](https://github.com/sophiie-ai/clautch/commit/3a85b9dd04c4d86f863b8ed2603084a3de7552ae))
+
 ## [0.21.1](https://github.com/sophiie-ai/clautch/compare/v0.21.0...v0.21.1) (2026-04-11)
 
 
