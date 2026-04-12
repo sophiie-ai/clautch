@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.1](https://github.com/sophiie-ai/clautch/compare/v0.22.0...v0.22.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* prevent SwiftUI re-evaluation loop from CreatureInteractionEngine body-time mutations ([1e72fb2](https://github.com/sophiie-ai/clautch/commit/1e72fb25be1710445eb3c51043c4627f9d1085bd))
+
 ## [0.22.0](https://github.com/sophiie-ai/clautch/compare/v0.21.1...v0.22.0) (2026-04-11)
 
 
