@@ -65,6 +65,14 @@ final class CreatureInteractionEngine {
         }
     }
 
+    /// Push the latest creature list without running any interaction logic.
+    /// Safe to call from view body evaluation — only writes to `@ObservationIgnored`
+    /// `lastCreatures`, so it can't trigger SwiftUI re-evaluation. The 1-second
+    /// tick timer picks this up and drives the actual `update()` cycle.
+    func setCreatures(_ creatures: [CreatureDisplay]) {
+        lastCreatures = creatures
+    }
+
     /// Called with the current creature list. Also caches the list for timer ticks.
     func update(creatures: [CreatureDisplay]) {
         lastCreatures = creatures

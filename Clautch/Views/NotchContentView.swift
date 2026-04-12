@@ -153,8 +153,10 @@ struct NotchContentView: View {
             }
         }
 
-        // Update autonomous creature interactions
-        CreatureInteractionEngine.shared.update(creatures: creatures)
+        // Push creatures to the interaction engine — only caches the list
+        // (@ObservationIgnored), so it can't trigger SwiftUI re-evaluation.
+        // The engine's 1-second tick timer drives the actual interaction logic.
+        CreatureInteractionEngine.shared.setCreatures(creatures)
 
         // Compute facing: each creature faces its nearest neighbor
         return computeFacing(creatures)
