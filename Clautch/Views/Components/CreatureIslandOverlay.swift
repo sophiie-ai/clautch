@@ -761,6 +761,7 @@ struct ReactionFloater: View {
 /// Animated indicator shown to the side of a collapsed creature to convey its emotion.
 struct CollapsedEmotionIndicator: View {
     let emotion: CreatureEmotion
+    @State private var pulse: Double = 0.6
 
     private var symbol: String {
         switch emotion {
@@ -786,14 +787,20 @@ struct CollapsedEmotionIndicator: View {
         }
     }
 
+    // Pulse via Core Animation (layer opacity), not a TimelineView-driven
+    // attributed-string mutation — the previous version re-measured the
+    // Text on every timeline tick, pegging CoreText in the main thread.
     var body: some View {
-        TimelineView(.animation(minimumInterval: 0.15)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let pulse = 0.6 + 0.4 * abs(sin(t * 2.5))
-            Text(symbol)
-                .font(.system(size: 7, weight: .bold))
-                .foregroundStyle(color.opacity(pulse))
-        }
+        Text(symbol)
+            .font(.system(size: 7, weight: .bold))
+            .foregroundStyle(color)
+            .opacity(pulse)
+            .onAppear {
+                pulse = 0.6
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    pulse = 1.0
+                }
+            }
     }
 }
 
