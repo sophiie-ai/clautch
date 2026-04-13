@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.22.2](https://github.com/sophiie-ai/clautch/compare/v0.22.1...v0.22.2) (2026-04-13)
+
+
+### Bug Fixes
+
+* eliminate CollapsedEmotionIndicator text-layout CPU loop ([e6284bf](https://github.com/sophiie-ai/clautch/commit/e6284bf17e7691ab209bea28dc3ec021a6b9c95d))
+* prevent recursive dispatch_once crash in GamificationStore init ([34e2c25](https://github.com/sophiie-ai/clautch/commit/34e2c256d52da02e291273ee14f23f152729e090))
+
 ## [0.22.1](https://github.com/sophiie-ai/clautch/compare/v0.22.0...v0.22.1) (2026-04-12)
 
 
