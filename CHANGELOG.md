@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.0](https://github.com/sophiie-ai/clautch/compare/v0.22.2...v0.23.0) (2026-04-13)
+
+
+### Features
+
+* play sound effects when sending chat messages and reactions ([417496d](https://github.com/sophiie-ai/clautch/commit/417496dfddd0aa2cbecd4b49a95c415521baa9c2))
+
 ## [0.22.2](https://github.com/sophiie-ai/clautch/compare/v0.22.1...v0.22.2) (2026-04-13)
 
 
