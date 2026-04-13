@@ -31,8 +31,10 @@ final class JournalStore {
     }
 
     /// Convenience: create and add an entry in one call.
-    func record(type: JournalEntryType, title: String, detail: String? = nil) {
-        let snapshot = currentSnapshot()
+    /// Pass `evolution` to avoid re-entering `GamificationStore.shared` — required
+    /// when called from inside that store's `init` (e.g. streak-unlock paths).
+    func record(type: JournalEntryType, title: String, detail: String? = nil, evolution: CreatureEvolution? = nil) {
+        let snapshot = currentSnapshot(evolutionOverride: evolution)
         let entry = JournalEntry(type: type, title: title, detail: detail, snapshot: snapshot)
         addEntry(entry)
     }
@@ -60,11 +62,11 @@ final class JournalStore {
 
     // MARK: - Snapshot
 
-    private func currentSnapshot() -> CreatureSnapshot {
+    private func currentSnapshot(evolutionOverride: CreatureEvolution? = nil) -> CreatureSnapshot {
         let profile = UserProfile.current
         return CreatureSnapshot(
             creatureType: profile?.creatureType ?? .ghost,
-            evolution: GamificationStore.shared.evolution,
+            evolution: evolutionOverride ?? GamificationStore.shared.evolution,
             dominantTrait: PersonalityEngine.shared.personality.dominantTrait
         )
     }

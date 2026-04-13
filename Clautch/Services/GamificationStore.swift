@@ -267,7 +267,7 @@ final class GamificationStore {
         if newStage != oldStage {
             ActivityFeed.shared.add(icon: "⬆", text: "Evolved to \(newStage.displayName)!")
             NotificationService.shared.playSound(.reactionReceived)
-            JournalStore.shared.record(type: .evolution, title: "Evolved to \(newStage.displayName)", detail: "Reached \(xp) XP")
+            JournalStore.shared.record(type: .evolution, title: "Evolved to \(newStage.displayName)", detail: "Reached \(xp) XP", evolution: newStage)
             logger.info("Evolution: \(oldStage.displayName) → \(newStage.displayName)")
         }
     }
@@ -368,7 +368,7 @@ final class GamificationStore {
 
         ActivityFeed.shared.add(icon: "⭐", text: "Achievement: \(id.title)")
         NotificationService.shared.playSound(.reactionReceived)
-        JournalStore.shared.record(type: .achievement, title: "Achievement: \(id.title)", detail: id.description)
+        JournalStore.shared.record(type: .achievement, title: "Achievement: \(id.title)", detail: id.description, evolution: CreatureEvolution.from(xp: xp))
         logger.info("Achievement unlocked: \(id.rawValue)")
     }
 
