@@ -53,6 +53,7 @@ final class NotificationService: NotificationServiceProtocol {
         case chatReceived
         case chatSent
         case reactionReceived
+        case reactionSent
         case needsInput
 
         var systemSoundName: NSSound.Name {
@@ -62,6 +63,7 @@ final class NotificationService: NotificationServiceProtocol {
             case .chatReceived:      return "Blow"
             case .chatSent:          return "Tink"
             case .reactionReceived:  return "Ping"
+            case .reactionSent:      return "Pop"
             case .needsInput:        return "Glass"
             }
         }

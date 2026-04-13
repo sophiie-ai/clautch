@@ -315,6 +315,7 @@ final class RoomManager {
             sceneTheme: state.sceneTheme
         )
         localState = state
+        NotificationService.shared.playSound(.chatSent)
         broadcastImmediately()
 
         Task { @MainActor in
@@ -351,6 +352,7 @@ final class RoomManager {
         )
         localState = state
         GamificationStore.shared.recordReactionSent()
+        NotificationService.shared.playSound(.reactionSent)
         broadcastImmediately()
 
         // Auto-clear after 4 seconds
