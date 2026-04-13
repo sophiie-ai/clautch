@@ -1,5 +1,10 @@
 import AppKit
 
+extension NSWindow.Level {
+    /// above menu bar, notch cover, and most system UI
+    static let shielding = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+}
+
 /// A borderless, transparent panel anchored to the notch area.
 final class NotchPanel: NSPanel {
 
@@ -13,8 +18,7 @@ final class NotchPanel: NSPanel {
             defer: false
         )
 
-        // Stay above the menu bar but below popovers and sheets
-        level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+        level = .shielding
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false

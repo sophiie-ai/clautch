@@ -17,7 +17,7 @@ struct PanelLayout {
     let bottom: CGFloat
 
     init(viewHeight: CGFloat, isExpanded: Bool) {
-        let screen = NSScreen.screens.first(where: { $0.hasNotch }) ?? NSScreen.main
+        let screen = NotchHoverState.shared.activeScreen
         notchHeight = screen?.effectiveNotchHeight ?? 24
         showLog = AnimationSettings.shared.showEventLog
         showStatus = AnimationSettings.shared.showStatusBar
@@ -398,22 +398,19 @@ struct GrassIslandView: View {
 
     // Pre-computed values for the clip shape (works on both notch and non-notch screens)
     private var activeScreen: NSScreen? {
-        NSScreen.screens.first(where: { $0.hasNotch }) ?? NSScreen.main
+        NotchHoverState.shared.activeScreen
     }
     private var notchHeightForClip: CGFloat {
         activeScreen?.effectiveNotchHeight ?? 24
     }
     private var notchHalfForClip: CGFloat {
-        guard let screen = activeScreen,
-              let win = screen.notchWindowFrame else { return 0 }
-        let notch = screen.effectiveNotchSize
-        return (notch.width * win.width / win.width) / 2
+        guard let screen = activeScreen else { return 0 }
+        return screen.effectiveNotchSize.width / 2
     }
     private var panelHalfForClip: CGFloat {
         guard let screen = activeScreen,
               let win = screen.notchWindowFrame else { return 100 }
-        let notch = screen.effectiveNotchSize
-        let notchHalf = (notch.width * win.width / win.width) / 2
+        let notchHalf = screen.effectiveNotchSize.width / 2
         return min(win.width / 2 - 2, notchHalf + 50)
     }
 
