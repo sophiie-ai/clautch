@@ -2,33 +2,50 @@ import AppKit
 
 extension NSScreen {
 
+    /// Whether this screen is the built-in display (MacBook lid screen).
+    var isBuiltIn: Bool {
+        guard let id = deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
+            return false
+        }
+        return CGDisplayIsBuiltin(id) != 0
+    }
+
     /// Whether this screen has a physical notch (MacBook Pro 2021+, MacBook Air 2022+).
+    /// Checks safeAreaInsets first (reliable when primary), then auxiliaryTopLeftArea
+    /// (works even when the built-in display is not the primary screen).
     var hasNotch: Bool {
-        safeAreaInsets.top > 0
+        safeAreaInsets.top > 0 || auxiliaryTopLeftArea != nil
     }
 
-    /// The effective notch/panel height — real safe area on notch screens, 24pt on non-notch.
+    private var notchBarHeight: CGFloat? {
+        if safeAreaInsets.top > 0 { return safeAreaInsets.top }
+        if let left = auxiliaryTopLeftArea, left.height > 0 { return left.height }
+        return nil
+    }
+
+    /// The effective notch/panel height — real notch bar on notch screens, 24pt on non-notch.
     var effectiveNotchHeight: CGFloat {
-        hasNotch ? safeAreaInsets.top : 24
+        notchBarHeight ?? 24
     }
 
-    /// The size of the notch cutout in screen points (nil on non-notch screens).
     var notchSize: NSSize? {
         guard hasNotch else { return nil }
         guard let left = auxiliaryTopLeftArea,
-              let right = auxiliaryTopRightArea else { return nil }
+              let right = auxiliaryTopRightArea,
+              let height = notchBarHeight else { return nil }
         let width = right.minX - left.maxX
-        let height = safeAreaInsets.top
         guard width > 0, height > 0 else { return nil }
         return NSSize(width: width, height: height)
     }
 
     /// The frame of the notch in global screen coordinates (nil on non-notch screens).
+    /// The notch is physically centered on the display, so we derive position from
+    /// the screen frame rather than auxiliaryTopLeftArea (whose coordinate space
+    /// varies between primary and non-primary screens).
     var notchFrame: NSRect? {
         guard hasNotch else { return nil }
-        guard let left = auxiliaryTopLeftArea,
-              let size = notchSize else { return nil }
-        let x = frame.origin.x + left.maxX
+        guard let size = notchSize else { return nil }
+        let x = frame.origin.x + (frame.width - size.width) / 2
         let y = frame.origin.y + frame.height - size.height
         return NSRect(origin: NSPoint(x: x, y: y), size: size)
     }

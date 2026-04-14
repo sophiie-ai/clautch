@@ -13,6 +13,9 @@ final class NotchHoverState {
         }
     }
 
+    /// The screen the notch panel is currently placed on, set by AppDelegate.
+    var activeScreen: NSScreen?
+
     init() {
         self.isHovered = UserDefaults.standard.bool(forKey: Self.persistenceKey)
     }

@@ -345,8 +345,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
            let match = NSScreen.screens.first(where: { $0.localizedName == savedId }) {
             return match
         }
-        // Prefer notch screens, fall back to primary display
-        return NSScreen.screens.first(where: { $0.hasNotch }) ?? NSScreen.main ?? NSScreen.screens.first
+        // prefer notch screens, then built-in display, fall back to primary
+        return NSScreen.screens.first(where: { $0.hasNotch })
+            ?? NSScreen.screens.first(where: { $0.isBuiltIn })
+            ?? NSScreen.main
+            ?? NSScreen.screens.first
     }
 
     private func setupNotchPanel() {
@@ -357,10 +360,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        NotchHoverState.shared.activeScreen = screen
         let panel = NotchPanel(screen: screen)
         let contentView = NotchContentView()
         let hostingView = NSHostingView(rootView: contentView)
         hostingView.layer?.backgroundColor = .clear
+
+        // on primary screen, lower to statusBar when collapsed so we don't block
+        // menu bar clicks; on non-primary screens, stay at shielding level because
+        // macOS draws a notch cover above statusBar level
+        let collapsedLevel: NSWindow.Level = screen == NSScreen.main
+            ? .statusBar
+            : .shielding
 
         let hitTestView = NotchHitTestView(hostingView: hostingView)
         hitTestView.notchHeight = screen.effectiveNotchHeight
@@ -371,17 +382,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 NotchHoverState.shared.isHovered = expanding
             }
-            // Collapsed: lower window level so it doesn't block other windows below the notch
-            // Expanded: raise to shielding level so the panel floats above everything
-            self?.notchPanel?.level = expanding
-                ? NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
-                : .statusBar
+            self?.notchPanel?.level = expanding ? .shielding : collapsedLevel
             NSSound(named: expanding ? "Pop" : "Tink")?.play()
         }
         panel.contentView = hitTestView
-        // Start at appropriate level
         if !NotchHoverState.shared.isHovered {
-            panel.level = .statusBar
+            panel.level = collapsedLevel
         }
         panel.orderFrontRegardless()
         self.notchPanel = panel
