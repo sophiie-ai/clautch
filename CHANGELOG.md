@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.1](https://github.com/sophiie-ai/clautch/compare/v0.23.0...v0.23.1) (2026-04-14)
+
+
+### Bug Fixes
+
+* notch panel invisible on non-primary MacBook display ([#100](https://github.com/sophiie-ai/clautch/issues/100)) ([9c15cc6](https://github.com/sophiie-ai/clautch/commit/9c15cc6901771d6a0411ce610fd8ba9ef1f4fc97))
+
 ## [0.23.0](https://github.com/sophiie-ai/clautch/compare/v0.22.2...v0.23.0) (2026-04-13)
 
 
