@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/sophiie-ai/clautch/compare/v0.23.1...v0.24.0) (2026-04-17)
+
+
+### Features
+
+* broadcast prestige and show room ranking popover ([#102](https://github.com/sophiie-ai/clautch/issues/102)) ([6ebae8c](https://github.com/sophiie-ai/clautch/commit/6ebae8ce17df3dd14ccb4dce36d4eb52f90bafd8))
+
 ## [0.23.1](https://github.com/sophiie-ai/clautch/compare/v0.23.0...v0.23.1) (2026-04-14)
 
 
