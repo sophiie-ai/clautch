@@ -139,6 +139,7 @@ struct PeerState: Codable, Sendable, Identifiable {
     let colorPreset: CreatureColorPreset
     let accessory: CreatureAccessory
     let evolution: CreatureEvolution
+    var prestige: Int = 0
     let timestamp: Date
     var xPosition: CGFloat?
     var publicKey: String?
@@ -220,6 +221,7 @@ struct PeerState: Codable, Sendable, Identifiable {
         colorPreset == other.colorPreset &&
         accessory == other.accessory &&
         evolution == other.evolution &&
+        prestige == other.prestige &&
         reaction == other.reaction &&
         chatMessage == other.chatMessage &&
         isTyping == other.isTyping &&
@@ -247,6 +249,7 @@ extension PeerState {
         colorPreset = try c.decode(CreatureColorPreset.self, forKey: .colorPreset)
         accessory = try c.decodeIfPresent(CreatureAccessory.self, forKey: .accessory) ?? .none
         evolution = try c.decodeIfPresent(CreatureEvolution.self, forKey: .evolution) ?? .baby
+        prestige = try c.decodeIfPresent(Int.self, forKey: .prestige) ?? 0
         timestamp = try c.decode(Date.self, forKey: .timestamp)
         xPosition = try c.decodeIfPresent(CGFloat.self, forKey: .xPosition)
         publicKey = try c.decodeIfPresent(String.self, forKey: .publicKey)

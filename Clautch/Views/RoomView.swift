@@ -12,6 +12,7 @@ struct RoomView: View {
     @State private var showKeychainAlert = false
     @State private var pendingAction: PendingRoomAction?
     @State private var iCloudAvailable: Bool?
+    @State private var showRanking = false
 
     private enum PendingRoomAction {
         case create
@@ -99,18 +100,41 @@ struct RoomView: View {
                     Spacer()
 
                     // Peer avatars row
-                    HStack(spacing: -4) {
+                    HStack(spacing: 2) {
                         if let profile = UserProfile.current {
-                            peerAvatar(creature: profile.creatureType, task: roomManager.localState?.task ?? .idle)
+                            peerAvatar(
+                                creature: profile.creatureType,
+                                task: roomManager.localState?.task ?? .idle,
+                                prestige: GamificationStore.shared.prestige.level
+                            )
                         }
                         ForEach(peerList, id: \.peerId) { peer in
-                            peerAvatar(creature: peer.creatureType, task: peer.task)
+                            peerAvatar(
+                                creature: peer.creatureType,
+                                task: peer.task,
+                                prestige: peer.prestige
+                            )
                         }
                     }
 
-                    Text("\(peerList.count + 1)")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
+                    Button(action: { showRanking.toggle() }) {
+                        HStack(spacing: 3) {
+                            Text("\(peerList.count + 1)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 7, weight: .semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Show room ranking")
+                    .popover(isPresented: $showRanking, arrowEdge: .top) {
+                        rankingPopover
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -310,7 +334,7 @@ struct RoomView: View {
 
     // MARK: - Peer Avatar
 
-    private func peerAvatar(creature: CreatureType, task: CreatureTask) -> some View {
+    private func peerAvatar(creature: CreatureType, task: CreatureTask, prestige: Int = 0) -> some View {
         PixelCreatureView(
             type: creature,
             frame: 0,
@@ -320,11 +344,161 @@ struct RoomView: View {
         .frame(width: 18, height: 18)
         .background(Circle().fill(Color.primary.opacity(0.06)))
         .clipShape(Circle())
+        .overlay(alignment: .topTrailing) {
+            if prestige > 0 {
+                Text("\(prestige)")
+                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(minWidth: 10, minHeight: 10)
+                    .padding(.horizontal, 2)
+                    .background(
+                        Capsule().fill(Color(red: 0.95, green: 0.73, blue: 0.12))
+                    )
+                    .overlay(Capsule().stroke(Color.white.opacity(0.9), lineWidth: 0.5))
+                    .offset(x: 4, y: -4)
+                    .accessibilityLabel("Prestige \(prestige)")
+            }
+        }
     }
 
     private var peerList: [PeerState] {
         guard let profile = UserProfile.current else { return [] }
         return roomManager.peerStore.visiblePeers(excludingPeerId: profile.peerId)
+    }
+
+    // MARK: - Ranking
+
+    private struct RankingEntry: Identifiable {
+        let id: String
+        let creatureType: CreatureType
+        let task: CreatureTask
+        let displayName: String
+        let evolution: CreatureEvolution
+        let prestige: Int
+        let isLocal: Bool
+    }
+
+    private var ranking: [RankingEntry] {
+        var entries: [RankingEntry] = []
+        if let profile = UserProfile.current {
+            entries.append(RankingEntry(
+                id: profile.peerId,
+                creatureType: profile.creatureType,
+                task: roomManager.localState?.task ?? .idle,
+                displayName: profile.displayName,
+                evolution: GamificationStore.shared.evolution,
+                prestige: GamificationStore.shared.prestige.level,
+                isLocal: true
+            ))
+        }
+        for peer in peerList {
+            entries.append(RankingEntry(
+                id: peer.peerId,
+                creatureType: peer.creatureType,
+                task: peer.task,
+                displayName: peer.displayName,
+                evolution: peer.evolution,
+                prestige: peer.prestige,
+                isLocal: false
+            ))
+        }
+        return entries.sorted { a, b in
+            if a.prestige != b.prestige { return a.prestige > b.prestige }
+            if a.evolution != b.evolution { return a.evolution > b.evolution }
+            return a.displayName.localizedCaseInsensitiveCompare(b.displayName) == .orderedAscending
+        }
+    }
+
+    private var rankingPopover: some View {
+        let entries = ranking
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color(red: 0.95, green: 0.73, blue: 0.12))
+                Text("Room Ranking")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Text("\(entries.count)")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+
+            Divider()
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                        rankingRow(rank: index + 1, entry: entry)
+                        if index < entries.count - 1 {
+                            Divider().padding(.leading, 48)
+                        }
+                    }
+                }
+            }
+            .frame(maxHeight: 280)
+        }
+        .frame(width: 250)
+    }
+
+    private func rankingRow(rank: Int, entry: RankingEntry) -> some View {
+        HStack(spacing: 8) {
+            Text("\(rank)")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(rank == 1 ? Color(red: 0.95, green: 0.73, blue: 0.12) : Color.secondary.opacity(0.6))
+                .frame(width: 16, alignment: .trailing)
+
+            PixelCreatureView(
+                type: entry.creatureType,
+                frame: 0,
+                task: entry.task,
+                emotion: .neutral
+            )
+            .frame(width: 22, height: 22)
+            .background(Circle().fill(entry.evolution.glowColor.opacity(0.22)))
+            .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 4) {
+                    Text(entry.displayName)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    if entry.isLocal {
+                        Text("you")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Capsule().fill(Color.primary.opacity(0.08)))
+                    }
+                }
+                Text(entry.evolution.displayName)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            if entry.prestige > 0 {
+                HStack(spacing: 2) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 8))
+                    Text("\(entry.prestige)")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(Color(red: 0.95, green: 0.73, blue: 0.12)))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Disconnected
