@@ -121,6 +121,7 @@ final class CloudKitService: CloudKitServiceProtocol, @unchecked Sendable {
             record["colorPreset"] = state.colorPreset.rawValue
             record["accessory"] = state.accessory.rawValue
             record["evolution"] = state.evolution.rawValue
+            record["prestige"] = state.prestige as NSNumber
             record["heartbeat"] = Date() as NSDate
             record["isActive"] = 1
             if let x = state.xPosition {
@@ -350,6 +351,7 @@ extension PeerState {
         let colorRaw = record["colorPreset"] as? String ?? "none"
         let accessoryRaw = record["accessory"] as? String ?? "none"
         let evolutionRaw = record["evolution"] as? String ?? "baby"
+        let prestigeLevel = (record["prestige"] as? Int64).map { Int($0) } ?? 0
         let xPos = record["xPosition"] as? Double
         let pubKey = record["publicKey"] as? String
         let sig = record["signature"] as? String
@@ -385,6 +387,7 @@ extension PeerState {
             colorPreset: CreatureColorPreset(rawValue: colorRaw) ?? .none,
             accessory: CreatureAccessory(rawValue: accessoryRaw) ?? .none,
             evolution: CreatureEvolution(rawValue: evolutionRaw) ?? .baby,
+            prestige: max(0, prestigeLevel),
             timestamp: heartbeat,
             xPosition: xPos.map { CGFloat(min(max($0, 0), 1)) },
             publicKey: pubKey,
