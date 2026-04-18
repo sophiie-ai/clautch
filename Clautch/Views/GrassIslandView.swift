@@ -16,9 +16,11 @@ struct PanelLayout {
     let grassLineY: CGFloat
     let bottom: CGFloat
 
-    init(viewHeight: CGFloat, isExpanded: Bool) {
+    init(viewHeight: CGFloat, isExpanded: Bool, fillWidth: Bool = false) {
         let screen = NotchHoverState.shared.activeScreen
-        notchHeight = screen?.effectiveNotchHeight ?? 24
+        // In windowed (fillWidth) mode there is no physical notch to avoid, so
+        // the scene extends to the very top of the hosting view.
+        notchHeight = fillWidth ? 0 : (screen?.effectiveNotchHeight ?? 24)
         showLog = AnimationSettings.shared.showEventLog
         showStatus = AnimationSettings.shared.showStatusBar
         logSpace = showLog ? logH : 0
@@ -26,7 +28,9 @@ struct PanelLayout {
 
         let fullDrop = viewHeight - notchHeight
         let neededDrop = minSky + groundH + logSpace + statusSpace + scenePad
-        maxDrop = min(fullDrop, neededDrop)
+        // Notch mode caps the drop at neededDrop so the island stays a fixed
+        // size; windowed mode lets the sky expand to fill the whole window.
+        maxDrop = fillWidth ? fullDrop : min(fullDrop, neededDrop)
 
         let dropHeight = isExpanded ? maxDrop : 0
         bottom = notchHeight + dropHeight
@@ -149,7 +153,7 @@ struct GrassIslandView: View {
         let theme = currentTheme
         let ground = theme.groundColors
         Canvas { ctx, size in
-            let layout = PanelLayout(viewHeight: size.height, isExpanded: isExpanded)
+            let layout = PanelLayout(viewHeight: size.height, isExpanded: isExpanded, fillWidth: fillWidth)
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
             let midX = size.width / 2
             let notchHalf = notchWidth / 2
@@ -290,7 +294,7 @@ struct GrassIslandView: View {
         .overlay {
             // SwiftUI creature sprites
             GeometryReader { geo in
-                let layout = PanelLayout(viewHeight: geo.size.height, isExpanded: isExpanded)
+                let layout = PanelLayout(viewHeight: geo.size.height, isExpanded: isExpanded, fillWidth: fillWidth)
                 let grassLineY = layout.grassLineY
 
                 CreatureIslandOverlay(
@@ -318,7 +322,7 @@ struct GrassIslandView: View {
         .overlay {
             if (AnimationSettings.shared.showEventLog || AnimationSettings.shared.showStatusBar) && isExpanded {
                 GeometryReader { geo in
-                    let layout = PanelLayout(viewHeight: geo.size.height, isExpanded: true)
+                    let layout = PanelLayout(viewHeight: geo.size.height, isExpanded: true, fillWidth: fillWidth)
                     let logTop = layout.grassLineY + layout.groundH
                     let contentWidth = geo.size.width - 72
 
