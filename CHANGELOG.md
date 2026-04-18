@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.27.0](https://github.com/sophiie-ai/clautch/compare/v0.26.1...v0.27.0) (2026-04-18)
+
+
+### Features
+
+* reorganize status bar menu into grouped submenus ([606a1fc](https://github.com/sophiie-ai/clautch/commit/606a1fc2a97e116aa4f0460b0e04fcce2b27c0bb))
+
+
+### Bug Fixes
+
+* let windowed panel fill the hosting view's full width ([54e557c](https://github.com/sophiie-ai/clautch/commit/54e557c16f39a5ad34de5f1eba2772b42917cacb))
+* let windowed panel scene fill the whole window vertically ([9cf602a](https://github.com/sophiie-ai/clautch/commit/9cf602a9041e6a6daf47148f6e3468cbac1feeba))
+* paint windowed scene edge-to-edge with no dead space ([43e1770](https://github.com/sophiie-ai/clautch/commit/43e1770b59dfc940f4ce1de4681ca26e4dda6c6e))
+
 ## [0.26.1](https://github.com/sophiie-ai/clautch/compare/v0.26.0...v0.26.1) (2026-04-18)
 
 
