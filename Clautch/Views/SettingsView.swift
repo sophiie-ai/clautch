@@ -3,6 +3,8 @@ import ServiceManagement
 
 extension Notification.Name {
     static let clautchPreferredScreenChanged = Notification.Name("com.clautch.preferredScreenChanged")
+    static let clautchWindowedModeChanged = Notification.Name("com.clautch.windowedModeChanged")
+    static let clautchWindowedAlwaysOnTopChanged = Notification.Name("com.clautch.windowedAlwaysOnTopChanged")
 }
 
 /// macOS Settings window with tabbed preferences using a toolbar-style tab bar.
@@ -187,6 +189,8 @@ private struct GeneralSettingsTab: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var settings = AnimationSettings.shared
     @AppStorage("com.clautch.southernHemisphere") private var southernHemisphere = false
+    @AppStorage("com.clautch.windowedMode") private var windowedMode = false
+    @AppStorage("com.clautch.windowedAlwaysOnTop") private var windowedAlwaysOnTop = false
 
     var body: some View {
         Form {
@@ -205,6 +209,26 @@ private struct GeneralSettingsTab: View {
 
             Toggle("Pause Clautch", isOn: $settings.isPaused)
                 .help("Hides the notch panel and pauses all processing to save CPU")
+
+            Toggle("Windowed Mode", isOn: $windowedMode)
+                .help("Show Clautch in a regular resizable window instead of attached to the notch")
+                .onChange(of: windowedMode) { _, _ in
+                    NotificationCenter.default.post(
+                        name: .clautchWindowedModeChanged,
+                        object: nil
+                    )
+                }
+
+            if windowedMode {
+                Toggle("Keep Window on Top", isOn: $windowedAlwaysOnTop)
+                    .help("Float the Clautch window above other apps")
+                    .onChange(of: windowedAlwaysOnTop) { _, _ in
+                        NotificationCenter.default.post(
+                            name: .clautchWindowedAlwaysOnTopChanged,
+                            object: nil
+                        )
+                    }
+            }
 
             Toggle("Southern Hemisphere", isOn: $southernHemisphere)
                 .help("Flip seasons for the southern hemisphere (e.g. December = summer)")

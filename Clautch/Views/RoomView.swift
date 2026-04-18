@@ -93,9 +93,12 @@ struct RoomView: View {
                     .accessibilityLabel("Copy room invite code")
                     .accessibilityHint("Copies the room code and invite token to the clipboard")
 
-                    Text(copiedCode ? "Copied!" : "Copy invite")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                    if copiedCode {
+                        Text("Copied!")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                            .transition(.opacity)
+                    }
 
                     Spacer()
 

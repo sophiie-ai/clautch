@@ -25,6 +25,8 @@ final class NotchHoverState {
 /// Minimal by default — shows creature peeking out and grass.
 /// Expands into a Dynamic Island panel on hover.
 struct NotchContentView: View {
+    var forceExpanded: Bool = false
+
     @State private var stateMachine = StateMachine.shared
     @State private var roomManager = RoomManager.shared
     @State private var hoverState = NotchHoverState.shared
@@ -33,7 +35,7 @@ struct NotchContentView: View {
     @State private var isWalking: Bool = false
     @State private var walkingRight: Bool = true
 
-    private var isExpanded: Bool { hoverState.isHovered }
+    private var isExpanded: Bool { forceExpanded || hoverState.isHovered }
 
     var body: some View {
         GrassIslandView(creatures: allCreatures, isExpanded: isExpanded, isWalking: isWalking)

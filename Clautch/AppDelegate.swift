@@ -7,11 +7,22 @@ import os
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var notchPanel: NotchPanel?
+    private var windowedPanel: NSWindow?
+    private var windowedPanelCloseToken: NSObjectProtocol?
     private let windowCoordinator = WindowCoordinator()
     private var statusItem: NSStatusItem?
     private var sessionBadgeTimer: Timer?
     private let logger = Logger(subsystem: "com.clautch.app", category: "AppDelegate")
     private lazy var updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+
+    private static let windowedModeKey = "com.clautch.windowedMode"
+    private static let windowedAlwaysOnTopKey = "com.clautch.windowedAlwaysOnTop"
+    private var isWindowedMode: Bool {
+        UserDefaults.standard.bool(forKey: Self.windowedModeKey)
+    }
+    private var isWindowedAlwaysOnTop: Bool {
+        UserDefaults.standard.bool(forKey: Self.windowedAlwaysOnTopKey)
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -46,7 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             logger.info("Clautch launched in paused mode")
         } else if UserProfile.hasProfile {
             SocketServer.shared.start()
-            setupNotchPanel()
+            setupActivePanel()
             Task {
                 await RoomManager.shared.autoRejoinIfNeeded()
             }
@@ -72,6 +83,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self,
             selector: #selector(preferredScreenChanged),
             name: .clautchPreferredScreenChanged,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowedModeChanged),
+            name: .clautchWindowedModeChanged,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowedAlwaysOnTopChanged),
+            name: .clautchWindowedAlwaysOnTopChanged,
             object: nil
         )
 
@@ -153,7 +176,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                         self?.windowCoordinator.close(key: "onboarding")
                         // Fly creature to notch, THEN show the panel
                         self?.animateCreatureToNotch {
-                            self?.setupNotchPanel()
+                            self?.setupActivePanel()
                             NSApp.setActivationPolicy(.accessory)
                         }
                     }
@@ -228,8 +251,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             showOnboarding()
             return
         }
-        notchPanel?.close()
-        notchPanel = nil
+        tearDownActivePanel()
 
         var didComplete = false
         windowCoordinator.show(
@@ -244,7 +266,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                         self?.windowCoordinator.suppressAccessoryTransition = true
                         self?.windowCoordinator.close(key: "onboarding")
                         self?.animateCreatureToNotch {
-                            self?.setupNotchPanel()
+                            self?.setupActivePanel()
                             NSApp.setActivationPolicy(.accessory)
                         }
                     }
@@ -253,7 +275,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             onClose: { [weak self] in
                 // Dismissed without completing — restore the panel
                 if !didComplete {
-                    self?.setupNotchPanel()
+                    self?.setupActivePanel()
                 }
             }
         )
@@ -395,8 +417,99 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("Notch panel created")
     }
 
+    // MARK: - Panel Mode Dispatch
+
+    /// Show the panel using the user's preferred mode (notch or windowed).
+    private func setupActivePanel() {
+        if isWindowedMode {
+            setupWindowedPanel()
+        } else {
+            setupNotchPanel()
+        }
+    }
+
+    /// Tear down whichever panel is currently shown.
+    private func tearDownActivePanel() {
+        notchPanel?.close()
+        notchPanel = nil
+        if let token = windowedPanelCloseToken {
+            NotificationCenter.default.removeObserver(token)
+            windowedPanelCloseToken = nil
+        }
+        windowedPanel?.close()
+        windowedPanel = nil
+    }
+
+    private func setupWindowedPanel() {
+        NSApp.setActivationPolicy(.accessory)
+
+        // Reuse if already open
+        if let existing = windowedPanel {
+            existing.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let defaultSize = NSSize(width: 380, height: 160)
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: defaultSize),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Clautch"
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
+        window.minSize = NSSize(width: 280, height: 130)
+        window.isReleasedWhenClosed = false
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.setFrameAutosaveName("ClautchWindowedPanel")
+        if window.frame.origin == .zero {
+            window.center()
+        }
+
+        let hosting = NSHostingView(rootView: NotchContentView(forceExpanded: true))
+        hosting.layer?.backgroundColor = .clear
+        window.contentView = hosting
+        window.level = isWindowedAlwaysOnTop ? .floating : .normal
+        window.orderFrontRegardless()
+
+        // Closing the window exits windowed mode and restores the notch panel —
+        // discoverable behavior so the user is never left without a panel.
+        windowedPanelCloseToken = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            UserDefaults.standard.set(false, forKey: Self.windowedModeKey)
+            if let token = self.windowedPanelCloseToken {
+                NotificationCenter.default.removeObserver(token)
+                self.windowedPanelCloseToken = nil
+            }
+            self.windowedPanel = nil
+            self.setupNotchPanel()
+        }
+
+        self.windowedPanel = window
+        logger.info("Windowed panel created")
+    }
+
+    @objc private func windowedModeChanged() {
+        // If paused, no panel is visible — wait until resume to honor the new mode.
+        guard !AnimationSettings.shared.isPaused else { return }
+        tearDownActivePanel()
+        setupActivePanel()
+    }
+
+    @objc private func windowedAlwaysOnTopChanged() {
+        windowedPanel?.level = isWindowedAlwaysOnTop ? .floating : .normal
+    }
+
     @objc private func screenDidChange() {
         guard !windowCoordinator.isOpen("onboarding") else { return }
+        // The windowed panel is screen-agnostic — let macOS keep it where it is.
+        guard !isWindowedMode else { return }
         let wasExpanded = NotchHoverState.shared.isHovered
         notchPanel?.close()
         notchPanel = nil
@@ -405,6 +518,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func preferredScreenChanged() {
+        guard !isWindowedMode else { return }
         let wasExpanded = NotchHoverState.shared.isHovered
         notchPanel?.close()
         notchPanel = nil
@@ -711,6 +825,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func selectDisplay(_ sender: NSMenuItem) {
         guard let screenName = sender.representedObject as? String else { return }
         UserDefaults.standard.set(screenName, forKey: Self.preferredScreenKey)
+        guard !isWindowedMode else { return }
         // Recreate the panel on the new screen
         notchPanel?.close()
         notchPanel = nil
@@ -722,8 +837,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         AnimationSettings.shared.isPaused = pausing
 
         if pausing {
-            notchPanel?.close()
-            notchPanel = nil
+            tearDownActivePanel()
             SocketServer.shared.stop()
             sessionBadgeTimer?.invalidate()
             RoomManager.shared.pauseSync()
@@ -733,7 +847,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             logger.info("Clautch paused")
         } else {
             SocketServer.shared.start()
-            setupNotchPanel()
+            setupActivePanel()
             startSessionBadgeTimer()
             RoomManager.shared.resumeSync()
             logger.info("Clautch resumed")
