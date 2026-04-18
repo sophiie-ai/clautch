@@ -98,6 +98,9 @@ struct GrassIslandView: View {
     let creatures: [CreatureDisplay]
     var isExpanded: Bool = false
     var isWalking: Bool = false
+    /// When true, the scene expands to fill the hosting view's full width
+    /// instead of being capped to the notch-panel shape. Used by windowed mode.
+    var fillWidth: Bool = false
     /// Tracks theme changes to force re-render when scene is switched from the menu.
     @AppStorage("com.clautch.sceneTheme") private var sceneThemeRaw: String = SceneTheme.meadow.rawValue
     /// Triggers re-render when custom background image changes.
@@ -150,7 +153,9 @@ struct GrassIslandView: View {
             let notchWidth = notchWidthInWindow(totalWidth: size.width)
             let midX = size.width / 2
             let notchHalf = notchWidth / 2
-            let expandedPanelHalf = min(size.width / 2 - 2, notchHalf + 50)
+            let expandedPanelHalf = fillWidth
+                ? size.width / 2 - 2
+                : min(size.width / 2 - 2, notchHalf + 50)
             let panelHalf = isExpanded ? expandedPanelHalf : notchHalf + 20
             let bottom = layout.bottom
             let r: CGFloat = isExpanded ? 8 : 6
@@ -335,7 +340,7 @@ struct GrassIslandView: View {
             }
         }
         // Clip everything to the panel shape
-        .clipShape(PanelClipShape(isExpanded: isExpanded, notchHalf: notchHalfForClip, panelHalf: panelHalfForClip, notchHeight: notchHeightForClip, cr: isExpanded ? 8 : 6))
+        .clipShape(PanelClipShape(isExpanded: isExpanded, fillWidth: fillWidth, notchHalf: notchHalfForClip, panelHalf: panelHalfForClip, notchHeight: notchHeightForClip, cr: isExpanded ? 8 : 6))
         // Collapsed chat bubbles rendered OUTSIDE the clip so they can overflow below the menubar
         .overlay {
             if !isExpanded {
@@ -426,6 +431,7 @@ struct GrassIslandView: View {
 
 struct PanelClipShape: Shape {
     let isExpanded: Bool
+    var fillWidth: Bool = false
     let notchHalf: CGFloat
     let panelHalf: CGFloat
     let notchHeight: CGFloat
@@ -434,20 +440,21 @@ struct PanelClipShape: Shape {
     func path(in rect: CGRect) -> Path {
         let midX = rect.midX
         let bottom = rect.maxY
+        let halfWidth = fillWidth ? rect.width / 2 : panelHalf
 
         var path = Path()
         if isExpanded {
-            path.move(to: CGPoint(x: midX - panelHalf, y: 0))
-            path.addLine(to: CGPoint(x: midX + panelHalf, y: 0))
-            path.addLine(to: CGPoint(x: midX + panelHalf, y: bottom - cr))
+            path.move(to: CGPoint(x: midX - halfWidth, y: 0))
+            path.addLine(to: CGPoint(x: midX + halfWidth, y: 0))
+            path.addLine(to: CGPoint(x: midX + halfWidth, y: bottom - cr))
             path.addQuadCurve(
-                to: CGPoint(x: midX + panelHalf - cr, y: bottom),
-                control: CGPoint(x: midX + panelHalf, y: bottom))
-            path.addLine(to: CGPoint(x: midX - panelHalf + cr, y: bottom))
+                to: CGPoint(x: midX + halfWidth - cr, y: bottom),
+                control: CGPoint(x: midX + halfWidth, y: bottom))
+            path.addLine(to: CGPoint(x: midX - halfWidth + cr, y: bottom))
             path.addQuadCurve(
-                to: CGPoint(x: midX - panelHalf, y: bottom - cr),
-                control: CGPoint(x: midX - panelHalf, y: bottom))
-            path.addLine(to: CGPoint(x: midX - panelHalf, y: 0))
+                to: CGPoint(x: midX - halfWidth, y: bottom - cr),
+                control: CGPoint(x: midX - halfWidth, y: bottom))
+            path.addLine(to: CGPoint(x: midX - halfWidth, y: 0))
         } else {
             // Collapsed: clip to just the notch/menu bar height (top of view)
             let clipHeight = min(notchHeight, rect.height)

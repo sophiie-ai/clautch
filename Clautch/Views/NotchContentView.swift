@@ -38,7 +38,7 @@ struct NotchContentView: View {
     private var isExpanded: Bool { forceExpanded || hoverState.isHovered }
 
     var body: some View {
-        GrassIslandView(creatures: allCreatures, isExpanded: isExpanded, isWalking: isWalking)
+        GrassIslandView(creatures: allCreatures, isExpanded: isExpanded, isWalking: isWalking, fillWidth: forceExpanded)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .onAppear { if isExpanded { startWandering() } }
             .onDisappear { stopWandering() }
