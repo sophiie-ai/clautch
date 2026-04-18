@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.0](https://github.com/sophiie-ai/clautch/compare/v0.24.0...v0.25.0) (2026-04-18)
+
+
+### Features
+
+* add windowed mode and tidy room header ([130184b](https://github.com/sophiie-ai/clautch/commit/130184b638f2a0611fb55f5a41a1bcab0f8734bf))
+
 ## [0.24.0](https://github.com/sophiie-ai/clautch/compare/v0.23.1...v0.24.0) (2026-04-17)
 
 
