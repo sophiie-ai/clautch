@@ -460,7 +460,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
-        window.minSize = NSSize(width: 280, height: 130)
+        // Lock aspect ratio so the scaler has a single uniform factor and
+        // drags resize width/height together.
+        window.aspectRatio = defaultSize
+        window.contentAspectRatio = defaultSize
+        window.minSize = NSSize(width: 285, height: 120)
         window.isReleasedWhenClosed = false
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.setFrameAutosaveName("ClautchWindowedPanel")
@@ -468,7 +472,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
         }
 
-        let hosting = NSHostingView(rootView: NotchContentView(forceExpanded: true))
+        let hosting = NSHostingView(rootView: WindowedPanelScaler(baseSize: defaultSize))
         hosting.layer?.backgroundColor = .clear
         window.contentView = hosting
         window.level = isWindowedAlwaysOnTop ? .floating : .normal
