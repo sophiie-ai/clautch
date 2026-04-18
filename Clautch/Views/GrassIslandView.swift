@@ -158,11 +158,13 @@ struct GrassIslandView: View {
             let midX = size.width / 2
             let notchHalf = notchWidth / 2
             let expandedPanelHalf = fillWidth
-                ? size.width / 2 - 2
+                ? size.width / 2
                 : min(size.width / 2 - 2, notchHalf + 50)
             let panelHalf = isExpanded ? expandedPanelHalf : notchHalf + 20
             let bottom = layout.bottom
-            let r: CGFloat = isExpanded ? 8 : 6
+            // Windowed mode: the hosting NSWindow already provides rounded
+            // corners, so the scene paints straight to the edges.
+            let r: CGFloat = fillWidth ? 0 : (isExpanded ? 8 : 6)
             let dropHeight = isExpanded ? layout.maxDrop : CGFloat(0)
             let cr = min(r, dropHeight / 2)
 
@@ -344,7 +346,7 @@ struct GrassIslandView: View {
             }
         }
         // Clip everything to the panel shape
-        .clipShape(PanelClipShape(isExpanded: isExpanded, fillWidth: fillWidth, notchHalf: notchHalfForClip, panelHalf: panelHalfForClip, notchHeight: notchHeightForClip, cr: isExpanded ? 8 : 6))
+        .clipShape(PanelClipShape(isExpanded: isExpanded, fillWidth: fillWidth, notchHalf: notchHalfForClip, panelHalf: panelHalfForClip, notchHeight: notchHeightForClip, cr: fillWidth ? 0 : (isExpanded ? 8 : 6)))
         // Collapsed chat bubbles rendered OUTSIDE the clip so they can overflow below the menubar
         .overlay {
             if !isExpanded {

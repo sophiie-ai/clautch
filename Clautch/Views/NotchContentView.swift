@@ -204,5 +204,9 @@ struct WindowedPanelScaler: View {
                 .frame(width: baseSize.width, height: baseSize.height)
                 .scaleEffect(scale, anchor: .topLeading)
         }
+        // Paint the scene behind the titlebar / traffic lights — NSHostingView
+        // defaults to respecting the titlebar safe area, which leaves a dead
+        // band above the sky.
+        .ignoresSafeArea()
     }
 }

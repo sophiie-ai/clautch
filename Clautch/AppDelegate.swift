@@ -473,6 +473,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let hosting = NSHostingView(rootView: WindowedPanelScaler(baseSize: defaultSize))
+        hosting.wantsLayer = true
         hosting.layer?.backgroundColor = .clear
         window.contentView = hosting
         window.level = isWindowedAlwaysOnTop ? .floating : .normal
