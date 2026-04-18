@@ -192,6 +192,8 @@ struct NotchContentView: View {
 /// Hosts NotchContentView at a fixed base size and scales it uniformly to fill
 /// the surrounding window. Keeps all internal pixel math (creature sizes, log
 /// row height, grass line, clip shape) untouched — the whole canvas just zooms.
+/// Relies on the hosting window's locked aspect ratio so the uniform scale
+/// factor fills both dimensions exactly.
 struct WindowedPanelScaler: View {
     let baseSize: CGSize
 
@@ -201,8 +203,6 @@ struct WindowedPanelScaler: View {
             NotchContentView(forceExpanded: true)
                 .frame(width: baseSize.width, height: baseSize.height)
                 .scaleEffect(scale, anchor: .topLeading)
-                .frame(width: baseSize.width * scale, height: baseSize.height * scale)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
     }
 }
