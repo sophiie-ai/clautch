@@ -616,7 +616,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         sentinel.tag = 399
         menu.addItem(sentinel)
 
-        // ── Room ──
+        // ── Room & Social ──
         menu.addItem(.separator())
         let roomItem = NSMenuItem(title: "Room…", action: #selector(showRoomWindow), keyEquivalent: "r")
         roomItem.target = self
@@ -649,6 +649,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // ── Status ──
         menu.addItem(.separator())
+        let currentStatusLabel = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        currentStatusLabel.tag = 402
+        menu.addItem(currentStatusLabel)
+
         let statusItem = NSMenuItem(title: "Set Status", action: nil, keyEquivalent: "")
         statusItem.tag = 400
         let statusMenu = NSMenu()
@@ -674,35 +678,41 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         clearStatusItem.tag = 401
         menu.addItem(clearStatusItem)
 
-        let currentStatusLabel = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        currentStatusLabel.tag = 402
-        menu.addItem(currentStatusLabel)
-
-        // ── Windows ──
+        // ── Insights ──
         menu.addItem(.separator())
+        let insightsItem = NSMenuItem(title: "Insights", action: nil, keyEquivalent: "")
+        let insightsMenu = NSMenu()
+
         let statsWindowItem = NSMenuItem(title: "Usage Stats…", action: #selector(showStatsWindow), keyEquivalent: "")
         statsWindowItem.target = self
-        menu.addItem(statsWindowItem)
+        insightsMenu.addItem(statsWindowItem)
 
         let achievementsItem = NSMenuItem(title: "Achievements…", action: #selector(showAchievementsWindow), keyEquivalent: "")
         achievementsItem.target = self
-        menu.addItem(achievementsItem)
+        insightsMenu.addItem(achievementsItem)
 
         let journalItem = NSMenuItem(title: "Mood Journal…", action: #selector(showMoodJournal), keyEquivalent: "")
         journalItem.target = self
-        menu.addItem(journalItem)
+        insightsMenu.addItem(journalItem)
 
         let creatureJournalItem = NSMenuItem(title: "Creature Journal…", action: #selector(showCreatureJournal), keyEquivalent: "")
         creatureJournalItem.target = self
-        menu.addItem(creatureJournalItem)
+        insightsMenu.addItem(creatureJournalItem)
 
-        let shareItem = NSMenuItem(title: "Share Creature Card…", action: #selector(showShareCard), keyEquivalent: "")
-        shareItem.target = self
-        menu.addItem(shareItem)
+        insightsItem.submenu = insightsMenu
+        menu.addItem(insightsItem)
+
+        // ── Customize ──
+        let customizeItem = NSMenuItem(title: "Customize", action: nil, keyEquivalent: "")
+        let customizeMenu = NSMenu()
 
         let changeItem = NSMenuItem(title: "Change Creature…", action: #selector(changeCreature), keyEquivalent: "")
         changeItem.target = self
-        menu.addItem(changeItem)
+        customizeMenu.addItem(changeItem)
+
+        let shareItem = NSMenuItem(title: "Share Creature Card…", action: #selector(showShareCard), keyEquivalent: "")
+        shareItem.target = self
+        customizeMenu.addItem(shareItem)
 
         let sceneItem = NSMenuItem(title: "Scene", action: nil, keyEquivalent: "")
         sceneItem.tag = 450
@@ -736,12 +746,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         sceneMenu.addItem(removeBgItem)
 
         sceneItem.submenu = sceneMenu
-        menu.addItem(sceneItem)
+        customizeMenu.addItem(sceneItem)
 
-        // ── Display ──
+        customizeItem.submenu = customizeMenu
+        menu.addItem(customizeItem)
+
+        // ── System ──
+        menu.addItem(.separator())
+
+        let pauseLabel = AnimationSettings.shared.isPaused ? "Resume Clautch" : "Pause Clautch"
+        let pauseItem = NSMenuItem(title: pauseLabel, action: #selector(togglePause), keyEquivalent: "")
+        pauseItem.target = self
+        pauseItem.tag = 800
+        menu.addItem(pauseItem)
+
         let allScreens = NSScreen.screens
         if allScreens.count > 1 {
-            menu.addItem(.separator())
             let displayItem = NSMenuItem(title: "Display", action: nil, keyEquivalent: "")
             displayItem.tag = 850
             let displayMenu = NSMenu()
@@ -759,22 +779,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(displayItem)
         }
 
-        // ── System ──
-        menu.addItem(.separator())
-
-        let pauseLabel = AnimationSettings.shared.isPaused ? "Resume Clautch" : "Pause Clautch"
-        let pauseItem = NSMenuItem(title: pauseLabel, action: #selector(togglePause), keyEquivalent: "")
-        pauseItem.target = self
-        pauseItem.tag = 800
-        menu.addItem(pauseItem)
+        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
 
         let updateItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
         updateItem.target = self
         menu.addItem(updateItem)
-
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
-        settingsItem.target = self
-        menu.addItem(settingsItem)
 
         menu.addItem(.separator())
         let aboutItem = NSMenuItem(title: "Clautch v\(version)", action: nil, keyEquivalent: "")
