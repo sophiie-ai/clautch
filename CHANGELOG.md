@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.0](https://github.com/sophiie-ai/clautch/compare/v0.25.0...v0.26.0) (2026-04-18)
+
+
+### Features
+
+* scale windowed panel proportionally on resize ([057f0f2](https://github.com/sophiie-ai/clautch/commit/057f0f24da7681b92f8978a00831a140635f1b02))
+
 ## [0.25.0](https://github.com/sophiie-ai/clautch/compare/v0.24.0...v0.25.0) (2026-04-18)
 
 
