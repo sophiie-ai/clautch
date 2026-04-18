@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.1](https://github.com/sophiie-ai/clautch/compare/v0.26.0...v0.26.1) (2026-04-18)
+
+
+### Bug Fixes
+
+* anchor windowed panel scaler to window origin ([aabd429](https://github.com/sophiie-ai/clautch/commit/aabd429c5e1c584f8b434a02b554ebaf15da0054))
+
 ## [0.26.0](https://github.com/sophiie-ai/clautch/compare/v0.25.0...v0.26.0) (2026-04-18)
 
 
