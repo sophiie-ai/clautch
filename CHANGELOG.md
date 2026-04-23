@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.1](https://github.com/sophiie-ai/clautch/compare/v0.27.0...v0.27.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* sign prestige/evolution and reset gamification state ([#108](https://github.com/sophiie-ai/clautch/issues/108)) ([8291640](https://github.com/sophiie-ai/clautch/commit/8291640252c6aedfa14cabfea513ebec49b84f29))
+
 ## [0.27.0](https://github.com/sophiie-ai/clautch/compare/v0.26.1...v0.27.0) (2026-04-18)
 
 
