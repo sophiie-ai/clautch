@@ -13,6 +13,12 @@ final class GamificationStore {
     private static let xpKey = "com.clautch.xp"
     private static let prestigeKey = "com.clautch.prestige"
     private static let dailyCountersKey = "com.clautch.dailyCounters"
+    private static let resetVersionKey = "com.clautch.resetVersion"
+
+    /// Bump this when gamification state must be wiped for everyone (e.g. to
+    /// nullify scores from a period where tampering was observed). Each client
+    /// wipes exactly once when it first sees a version higher than the one stored.
+    private static let currentResetVersion = 1
 
     private let logger = Logger(subsystem: "com.clautch.app", category: "Gamification")
 
@@ -60,6 +66,7 @@ final class GamificationStore {
     }
 
     private init() {
+        Self.applyGlobalResetIfNeeded()  // safety net — AppDelegate also runs this early
         streak = Self.loadJSON(key: Self.streakKey) ?? StreakData()
         earnedAchievements = Self.loadJSON(key: Self.achievementsKey) ?? []
         counters = Self.loadJSON(key: Self.countersKey) ?? AchievementCounters()
@@ -70,6 +77,28 @@ final class GamificationStore {
         checkAndUpdateStreak()
         loadQuests()
         loadWeeklyChallenges()
+    }
+
+    /// Wipe every gamification UserDefaults key when the stored reset version is
+    /// behind `currentResetVersion`. Idempotent — safe to call multiple times.
+    /// AppDelegate calls this before touching any singleton so no store can
+    /// snapshot stale defaults into memory before the wipe.
+    static func applyGlobalResetIfNeeded() {
+        let defaults = UserDefaults.standard
+        let stored = defaults.integer(forKey: resetVersionKey)
+        guard stored < currentResetVersion else { return }
+        let keys = [
+            streakKey, achievementsKey, countersKey, xpKey, prestigeKey,
+            dailyCountersKey, questsKey, questDateKey,
+            weeklyChallengesKey, weeklyDateKey,
+            // Session stats feed time-based quests and weekly challenges
+            // (GamificationStore reads SessionStats.shared.dailyTotals to score
+            // time30/time60/w_time*/w_days5). Tampered session time would
+            // regenerate XP on next launch unless we wipe it here.
+            "com.clautch.sessionStats",
+        ]
+        for key in keys { defaults.removeObject(forKey: key) }
+        defaults.set(currentResetVersion, forKey: resetVersionKey)
     }
 
     /// Test-only initializer with injected state.

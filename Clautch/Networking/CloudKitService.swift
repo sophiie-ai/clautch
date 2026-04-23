@@ -122,19 +122,24 @@ final class CloudKitService: CloudKitServiceProtocol, @unchecked Sendable {
             record["accessory"] = state.accessory.rawValue
             record["evolution"] = state.evolution.rawValue
             record["prestige"] = state.prestige as NSNumber
-            record["heartbeat"] = Date() as NSDate
+            let heartbeat = Date()
+            record["heartbeat"] = heartbeat as NSDate
             record["isActive"] = 1
             if let x = state.xPosition {
                 record["xPosition"] = x as NSNumber
             }
-            // Peer signing — covers identity + display fields
+            // Peer signing — covers identity, display, and gamification fields.
+            // Sign the same heartbeat stored on the record so the verifier's
+            // reconstructed payload matches.
             let sig = PeerSigner.sign(
                 peerId: state.peerId, task: state.task.rawValue,
-                emotion: state.emotion.rawValue, timestamp: Date(),
+                emotion: state.emotion.rawValue, timestamp: heartbeat,
                 displayName: state.displayName,
                 chatMessage: state.chatMessage ?? "",
                 reaction: state.reaction?.rawValue ?? "",
-                isTyping: state.isTyping ?? false
+                isTyping: state.isTyping ?? false,
+                prestige: state.prestige,
+                evolution: state.evolution.rawValue
             )
             record["publicKey"] = PeerSigner.publicKeyString
             record["signature"] = sig
@@ -350,8 +355,8 @@ extension PeerState {
 
         let colorRaw = record["colorPreset"] as? String ?? "none"
         let accessoryRaw = record["accessory"] as? String ?? "none"
-        let evolutionRaw = record["evolution"] as? String ?? "baby"
-        let prestigeLevel = (record["prestige"] as? Int64).map { Int($0) } ?? 0
+        var evolutionRaw = record["evolution"] as? String ?? "baby"
+        var prestigeLevel = (record["prestige"] as? Int64).map { Int($0) } ?? 0
         let xPos = record["xPosition"] as? Double
         let pubKey = record["publicKey"] as? String
         let sig = record["signature"] as? String
@@ -368,14 +373,29 @@ extension PeerState {
         let statusExpiresAtVal = record["statusExpiresAt"] as? Date
         let sceneThemeRaw = record["sceneTheme"] as? String ?? ""
 
-        // Verify signature if present — reject peers with invalid signatures
+        // Verify signature if present — reject peers with invalid signatures.
+        // Unsigned peers (no pubKey/sig at all) and legacy-signature peers never
+        // get their prestige/evolution trusted — both are forced to defaults so
+        // only peers running a signing build can influence the room ranking.
         if let pubKey, let sig, !pubKey.isEmpty, !sig.isEmpty {
-            let valid = PeerSigner.verify(
+            let result = PeerSigner.verifyDetailed(
                 signature: sig, publicKey: pubKey,
                 peerId: peerId, task: taskRaw, emotion: emotionRaw, timestamp: heartbeat,
-                displayName: displayName, chatMessage: chatMsg, reaction: reactionRaw, isTyping: typing
+                displayName: displayName, chatMessage: chatMsg, reaction: reactionRaw, isTyping: typing,
+                prestige: prestigeLevel, evolution: evolutionRaw
             )
-            if !valid { return nil }
+            switch result {
+            case .invalid:
+                return nil
+            case .legacy:
+                prestigeLevel = 0
+                evolutionRaw = "baby"
+            case .valid:
+                break
+            }
+        } else {
+            prestigeLevel = 0
+            evolutionRaw = "baby"
         }
 
         self.init(
