@@ -27,6 +27,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
+        // Clear tampered gamification state before ANY store can snapshot it.
+        // Must run before the singletons below because SessionStats / GamificationStore
+        // cache UserDefaults into memory at init.
+        GamificationStore.applyGlobalResetIfNeeded()
+
         // Initialize state machine (sets up socket event callback)
         _ = StateMachine.shared
 

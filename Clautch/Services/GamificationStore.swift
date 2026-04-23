@@ -66,7 +66,7 @@ final class GamificationStore {
     }
 
     private init() {
-        Self.applyGlobalResetIfNeeded()
+        Self.applyGlobalResetIfNeeded()  // safety net — AppDelegate also runs this early
         streak = Self.loadJSON(key: Self.streakKey) ?? StreakData()
         earnedAchievements = Self.loadJSON(key: Self.achievementsKey) ?? []
         counters = Self.loadJSON(key: Self.countersKey) ?? AchievementCounters()
@@ -80,9 +80,10 @@ final class GamificationStore {
     }
 
     /// Wipe every gamification UserDefaults key when the stored reset version is
-    /// behind `currentResetVersion`. Runs before any load so the fresh defaults
-    /// are what the rest of init sees.
-    private static func applyGlobalResetIfNeeded() {
+    /// behind `currentResetVersion`. Idempotent — safe to call multiple times.
+    /// AppDelegate calls this before touching any singleton so no store can
+    /// snapshot stale defaults into memory before the wipe.
+    static func applyGlobalResetIfNeeded() {
         let defaults = UserDefaults.standard
         let stored = defaults.integer(forKey: resetVersionKey)
         guard stored < currentResetVersion else { return }
@@ -90,6 +91,11 @@ final class GamificationStore {
             streakKey, achievementsKey, countersKey, xpKey, prestigeKey,
             dailyCountersKey, questsKey, questDateKey,
             weeklyChallengesKey, weeklyDateKey,
+            // Session stats feed time-based quests and weekly challenges
+            // (GamificationStore reads SessionStats.shared.dailyTotals to score
+            // time30/time60/w_time*/w_days5). Tampered session time would
+            // regenerate XP on next launch unless we wipe it here.
+            "com.clautch.sessionStats",
         ]
         for key in keys { defaults.removeObject(forKey: key) }
         defaults.set(currentResetVersion, forKey: resetVersionKey)

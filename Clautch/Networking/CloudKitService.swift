@@ -122,17 +122,18 @@ final class CloudKitService: CloudKitServiceProtocol, @unchecked Sendable {
             record["accessory"] = state.accessory.rawValue
             record["evolution"] = state.evolution.rawValue
             record["prestige"] = state.prestige as NSNumber
-            record["heartbeat"] = Date() as NSDate
+            let heartbeat = Date()
+            record["heartbeat"] = heartbeat as NSDate
             record["isActive"] = 1
             if let x = state.xPosition {
                 record["xPosition"] = x as NSNumber
             }
             // Peer signing — covers identity, display, and gamification fields.
-            // The heartbeat timestamp we just set is what the verifier uses, so sign the same value.
-            let sigTimestamp = record["heartbeat"] as? Date ?? Date()
+            // Sign the same heartbeat stored on the record so the verifier's
+            // reconstructed payload matches.
             let sig = PeerSigner.sign(
                 peerId: state.peerId, task: state.task.rawValue,
-                emotion: state.emotion.rawValue, timestamp: sigTimestamp,
+                emotion: state.emotion.rawValue, timestamp: heartbeat,
                 displayName: state.displayName,
                 chatMessage: state.chatMessage ?? "",
                 reaction: state.reaction?.rawValue ?? "",
