@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.28.0](https://github.com/sophiie-ai/clautch/compare/v0.27.1...v0.28.0) (2026-04-24)
+
+
+### Features
+
+* promote Achievements to a top-level menu item ([02e3220](https://github.com/sophiie-ai/clautch/commit/02e32208911ad420600bcbd147074cb9f6c2c1db))
+
+
+### Bug Fixes
+
+* promote Achievements to a top-level menu item ([#111](https://github.com/sophiie-ai/clautch/issues/111)) ([427ad45](https://github.com/sophiie-ai/clautch/commit/427ad457f62c5eb3b70238277a5d5a0dc5395bae))
+
 ## [0.27.1](https://github.com/sophiie-ai/clautch/compare/v0.27.0...v0.27.1) (2026-04-23)
 
 
