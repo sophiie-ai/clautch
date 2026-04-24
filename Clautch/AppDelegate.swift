@@ -683,19 +683,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         clearStatusItem.tag = 401
         menu.addItem(clearStatusItem)
 
-        // ── Achievements ──
-        menu.addItem(.separator())
-        let achievementsItem = NSMenuItem(title: "Achievements…", action: #selector(showAchievementsWindow), keyEquivalent: "")
-        achievementsItem.target = self
-        menu.addItem(achievementsItem)
-
         // ── Insights ──
+        menu.addItem(.separator())
         let insightsItem = NSMenuItem(title: "Insights", action: nil, keyEquivalent: "")
         let insightsMenu = NSMenu()
 
         let statsWindowItem = NSMenuItem(title: "Usage Stats…", action: #selector(showStatsWindow), keyEquivalent: "")
         statsWindowItem.target = self
         insightsMenu.addItem(statsWindowItem)
+
+        let achievementsItem = NSMenuItem(title: "Achievements…", action: #selector(showAchievementsWindow), keyEquivalent: "")
+        achievementsItem.target = self
+        insightsMenu.addItem(achievementsItem)
 
         let journalItem = NSMenuItem(title: "Mood Journal…", action: #selector(showMoodJournal), keyEquivalent: "")
         journalItem.target = self
