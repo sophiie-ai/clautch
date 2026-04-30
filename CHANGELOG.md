@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.28.1](https://github.com/sophiie-ai/clautch/compare/v0.28.0...v0.28.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* prevent hook from interfering with Claude Code sessions ([#112](https://github.com/sophiie-ai/clautch/issues/112)) ([e817492](https://github.com/sophiie-ai/clautch/commit/e8174929f366ae9d577a8ed2c895ba1580cbb40c))
+
 ## [0.28.0](https://github.com/sophiie-ai/clautch/compare/v0.27.1...v0.28.0) (2026-04-24)
 
 
