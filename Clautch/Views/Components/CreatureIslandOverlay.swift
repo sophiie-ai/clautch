@@ -200,6 +200,15 @@ struct CreatureIslandOverlay: View {
             let notchW = notchWidthFn(viewWidth)
             let notchHalf = notchW / 2
             let sideMargin: CGFloat = 8
+
+            // Solo: let the creature stroll the full width, briefly hidden by
+            // the notch as it crosses. Driven by the slow wander timer in
+            // NotchContentView.
+            if creatures.count == 1, creature.isLocal {
+                let maxOffset = viewWidth / 2 - creatureSize / 2 - 4
+                return (creature.xPosition * 2 - 1) * maxOffset
+            }
+
             let idx = creatures.firstIndex(where: { $0.id == creature.id }) ?? 0
             let side: CGFloat = idx % 2 == 0 ? -1 : 1
             let slot = CGFloat(idx / 2)
