@@ -30,7 +30,7 @@ struct NotchContentView: View {
     @State private var stateMachine = StateMachine.shared
     @State private var roomManager = RoomManager.shared
     @State private var hoverState = NotchHoverState.shared
-    @State private var wanderPosition: CGFloat = 0.25
+    @State private var wanderPosition: CGFloat = 0.0
     @State private var wanderTimer: Timer?
     @State private var isWalking: Bool = false
     @State private var walkingRight: Bool = true
@@ -40,14 +40,11 @@ struct NotchContentView: View {
     var body: some View {
         GrassIslandView(creatures: allCreatures, isExpanded: isExpanded, isWalking: isWalking, fillWidth: forceExpanded)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .onAppear { if isExpanded { startWandering() } }
+            .onAppear { startWandering() }
             .onDisappear { stopWandering() }
-            .onChange(of: isExpanded) { _, expanded in
-                if expanded {
-                    startWandering()
-                } else {
-                    stopWandering()
-                }
+            .onChange(of: isExpanded) { _, _ in
+                stopWandering()
+                startWandering()
             }
     }
 
@@ -55,6 +52,14 @@ struct NotchContentView: View {
 
     private func startWandering() {
         guard wanderTimer == nil else { return }
+        if isExpanded {
+            startExpandedWander()
+        } else {
+            scheduleMiniStroll(initial: true)
+        }
+    }
+
+    private func startExpandedWander() {
         wanderTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
             // Don't wander when status is active AND Claude Code is idle
             // (if Claude is thinking/working, it overrides the status so wandering is fine)
@@ -73,6 +78,31 @@ struct NotchContentView: View {
             roomManager.updatePosition(newTarget)
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 isWalking = false
+            }
+        }
+    }
+
+    /// Slow back-and-forth stroll for the collapsed mini-widget. Pauses at one
+    /// end for a long random interval, then walks to the opposite end. Repeats.
+    private func scheduleMiniStroll(initial: Bool) {
+        // First pause is short so the creature doesn't sit motionless for a
+        // minute after the user collapses the panel.
+        let pause = initial ? Double.random(in: 8...20) : Double.random(in: 45...120)
+        wanderTimer = Timer.scheduledTimer(withTimeInterval: pause, repeats: false) { [weak hoverState = NotchHoverState.shared] _ in
+            guard hoverState?.isHovered == false else { return }
+            // Walk to the far end opposite of the current side.
+            let newTarget: CGFloat = wanderPosition < 0.5
+                ? CGFloat.random(in: 0.92...1.0)
+                : CGFloat.random(in: 0.0...0.08)
+            walkingRight = newTarget > wanderPosition
+            isWalking = true
+            withAnimation(.easeInOut(duration: 7.0)) {
+                wanderPosition = newTarget
+            }
+            roomManager.updatePosition(newTarget)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 7.0) {
+                isWalking = false
+                scheduleMiniStroll(initial: false)
             }
         }
     }
