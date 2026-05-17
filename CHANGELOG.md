@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.0](https://github.com/sophiie-ai/clautch/compare/v0.28.1...v0.29.0) (2026-05-17)
+
+
+### Features
+
+* slow back-and-forth stroll for collapsed mini-widget ([#114](https://github.com/sophiie-ai/clautch/issues/114)) ([cff02ef](https://github.com/sophiie-ai/clautch/commit/cff02efae05f1c875e445f60c91cabc682a923ed))
+
 ## [0.28.1](https://github.com/sophiie-ai/clautch/compare/v0.28.0...v0.28.1) (2026-04-30)
 
 
